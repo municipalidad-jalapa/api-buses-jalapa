@@ -1,4 +1,4 @@
-package gt.gob.jalapa.buses.common;
+package gt.muni.jalapa.ecoruta.common;;
 
 public class RecursoNoEncontradoException extends RuntimeException {
     public RecursoNoEncontradoException(String recurso, Object id) {

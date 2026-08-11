@@ -1,4 +1,4 @@
-package gt.gob.jalapa.buses.common;
+package gt.muni.jalapa.ecoruta.common;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;

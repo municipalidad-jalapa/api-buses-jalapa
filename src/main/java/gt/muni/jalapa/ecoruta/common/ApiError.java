@@ -1,4 +1,4 @@
-package gt.gob.jalapa.buses.common;
+package gt.muni.jalapa.ecoruta.common;
 
 import java.time.Instant;
 
