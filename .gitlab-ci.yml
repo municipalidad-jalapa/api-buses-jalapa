@@ -1,7 +1,9 @@
 include:
   - project: 'municipalidad-jalapa/ci-templates/pipeline-templates'
-    ref: main
     file: 'docker-build-push.yml'
+
+variables:
+  IMAGE_NAME: "backend-api-buses"
 
 stages:
   - build
@@ -9,56 +11,20 @@ stages:
   - package
   - deploy
 
-maven-build:
+build:
   stage: build
   image: maven:3.9-eclipse-temurin-21
   script:
     - mvn compile
-  cache:
-    key: "$CI_COMMIT_REF_SLUG"
-    paths:
-      - .m2/repository
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-maven-test:
+test:
   stage: test
   image: maven:3.9-eclipse-temurin-21
   script:
     - mvn test
-  artifacts:
-    when: always
-    reports:
-      junit:
-        - target/surefire-reports/*.xml
-  cache:
-    key: "$CI_COMMIT_REF_SLUG"
-    paths:
-      - .m2/repository
-
-docker-build-push:
-  extends: .docker_build_push_template
-
-deploy-qa:
-  stage: deploy
-  image: alpine:latest
-  environment:
-    name: qa
-    url: "https://qa.buses.jalapa.gob.gt"
-  script:
-    - echo "Placeholder del Paso 8, aqui ira el comando kubectl apply para el namespace qa"
-    - echo "Por ahora este job solo simula el despliegue para validar la logica del pipeline"
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-
-deploy-production:
-  stage: deploy
-  image: alpine:latest
-  environment:
-    name: production
-    url: "https://buses.jalapa.gob.gt"
-  script:
-    - echo "Placeholder del Paso 8, aqui ira el comando kubectl apply para el namespace production"
-    - echo "Por ahora este job solo simula el despliegue para validar la logica del pipeline"
-  when: manual
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-    
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
