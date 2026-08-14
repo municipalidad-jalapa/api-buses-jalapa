@@ -51,7 +51,3 @@ mvn test
 ```
 
 Integración con Testcontainers e imagen `postgis/postgis:17-3.5` (requiere Docker en ejecución).
-
-prueba de integración de SSE con `curl`:
-
-```bash
