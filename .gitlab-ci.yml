@@ -4,6 +4,7 @@ include:
 
 variables:
   IMAGE_NAME: "backend-api-buses"
+  ACR_LOGIN_SERVER: "acrbusesjalapa.azurecr.io"
 
 stages:
   - build
@@ -25,6 +26,46 @@ test:
   image: maven:3.9-eclipse-temurin-21
   script:
     - mvn test
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/*.xml
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .m2/repository
+
+docker-build-push:
+  extends: .docker_build_push_template
+
+deploy-qa:
+  stage: deploy
+  image:
+    name: alpine/kubectl:1.35.3
+    entrypoint: [""]
+  environment:
+    name: qa
+    url: "https://qa.buses.jalapa.gob.gt"
+  script:
+    - kubectl config use-context municipalidad-jalapa/infraestructura/k8s-manifest:aks-buses-dev
+    - kubectl set image deployment/$IMAGE_NAME $IMAGE_NAME=$ACR_LOGIN_SERVER/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA -n qa
+    - kubectl rollout status deployment/$IMAGE_NAME -n qa --timeout=120s
   rules:
-    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+
+deploy-production:
+  stage: deploy
+  image:
+    name: alpine/kubectl:1.35.3
+    entrypoint: [""]
+  environment:
+    name: production
+    url: "https://buses.jalapa.gob.gt"
+  script:
+    - kubectl config use-context municipalidad-jalapa/infraestructura/k8s-manifest:aks-buses-prod
+    - kubectl set image deployment/$IMAGE_NAME $IMAGE_NAME=$ACR_LOGIN_SERVER/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA -n production
+    - kubectl rollout status deployment/$IMAGE_NAME -n production --timeout=120s
+  when: manual
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
