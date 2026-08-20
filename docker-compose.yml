@@ -25,6 +25,7 @@ services:
       DB_USER: ecoruta
       DB_PASSWORD: ecoruta
       JWT_SECRET: solo-para-desarrollo-local-no-usar-en-produccion
+      CORS_ORIGENES: http://localhost:5173
       # PROVISIONAL de SCRUM-142 — TODO(SCRUM-134). Habilita ROLE_ADMIN por la
       # cabecera X-Admin-Token para poder provisionar equipos en local. En
       # produccion esta variable NO se define: sin ella nadie es admin.
