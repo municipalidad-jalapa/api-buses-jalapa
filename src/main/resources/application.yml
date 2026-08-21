@@ -1,19 +1,54 @@
+spring:
+  application:
+    name: ecoruta-backend
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:ecoruta}
+    username: ${DB_USER:ecoruta}
+    password: ${DB_PASSWORD:ecoruta}
+  jpa:
+    hibernate:
+      ddl-auto: validate     # El esquema lo gobierna Flyway, nunca Hibernate
+    open-in-view: false
+  flyway:
+    enabled: true
+
+ecoruta:
+  jwt:
+    secret: ${JWT_SECRET:cambiar-en-produccion-minimo-32-caracteres!!}
+    duracion-minutos: 480
+  demanda:
+    umbral-salida: 10
+    ttl-minutos: 20
+    geocerca-metros: 150
+  telemetria:
+    # Tolerancia contra relojes desfasados del equipo a bordo (SCRUM-138).
+    ventana-horas: 12
+    # Stream SSE (SCRUM-140). Al expirar el timeout, EventSource reconecta solo
+    # (ADR-008). El latido va por debajo de los 60 s que Nginx aguanta sin
+    # trafico antes de cerrar la conexion.
+    sse-timeout-minutos: 30
+    latido-segundos: 25
+    reconexion-segundos: 3
+  cors:
+    # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
+    origenes-permitidos: ${CORS_ORIGENES:}
+  admin:
+    # PROVISIONAL de SCRUM-142 - TODO(SCRUM-134). Concede ROLE_ADMIN por la
+    # cabecera X-Admin-Token mientras no exista la autenticacion de personas con
+    # Firebase. Sin esta variable no hay ningun ROLE_ADMIN y /api/v1/admin/**
+    # rechaza a todos: falla cerrado, que es lo correcto en produccion.
+    bootstrap-token: ${ECORUTA_ADMIN_TOKEN:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
 server:
   port: 8080
 
-spring:
-  application:
-    name: api-buses-jalapa
-
-# Nota para el equipo de backend:
-# Cuando se integre PostgreSQL/PostGIS y Firebase, la configuracion de
-# conexion (spring.datasource.*) debe leerse desde variables de entorno,
-# NUNCA escribirse aqui con valores reales. Esas variables ya estan
-# definidas como CI/CD Variables en GitLab (Paso 5): DB_HOST, DB_USER,
-# DB_PASSWORD, FIREBASE_PROJECT_ID, etc. Ejemplo de como referenciarlas:
-#
-# spring:
-#   datasource:
-#     url: jdbc:postgresql://${DB_HOST}:5432/buses_jalapa
-#     username: ${DB_USER}
-#     password: ${DB_PASSWORD}
+# NUNCA activar spring.mvc.log-request-details: imprime todos los headers,
+# incluido Authorization, que es donde viaja el secreto del equipo a bordo.
+# Por la misma razon no se sube org.springframework.security a TRACE aqui,
+# ni se agrega ningun filtro que vuelque cabeceras (SCRUM-142, criterio (d)).
