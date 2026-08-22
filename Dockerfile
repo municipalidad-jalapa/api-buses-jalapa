@@ -1,20 +1,18 @@
-# ---------- Etapa 1: Build ----------
-# Compila el proyecto con Maven dentro de un contenedor temporal.
-# Esta etapa NO forma parte de la imagen final (reduce el tamano).
+# Etapa 1: build
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .
+RUN mvn dependency:go-offline -q
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn package -DskipTests -q
 
-# ---------- Etapa 2: Runtime ----------
-# Imagen final, liviana, basada en Ubuntu 22.04 LTS (Jammy),
-# coherente con "Ubuntu Server LTS" definido en la ficha tecnica
-# del proyecto. Solo contiene el JRE y el .jar ya compilado.
-FROM eclipse-temurin:21-jre-jammy
+# Etapa 2: runtime
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN addgroup -S ecoruta && adduser -S ecoruta -G ecoruta
+USER ecoruta
 COPY --from=build /app/target/*.jar app.jar
-
 EXPOSE 8080
-
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1
 ENTRYPOINT ["java", "-jar", "app.jar"]
