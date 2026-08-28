@@ -2,6 +2,7 @@ package gt.muni.jalapa.ecoruta.seguridad;
 
 import gt.muni.jalapa.ecoruta.flota.seguridad.EquipoAuthFilter;
 import gt.muni.jalapa.ecoruta.seguridad.bootstrap.AdminBootstrapFilter;
+import gt.muni.jalapa.ecoruta.seguridad.conductor.ConductorAuthFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,7 @@ public class SecurityConfig {
     public SecurityFilterChain cadenaApi(HttpSecurity http,
                                          EquipoAuthFilter equipoAuthFilter,
                                          AdminBootstrapFilter adminBootstrapFilter,
+                                         ConductorAuthFilter conductorAuthFilter,
                                          ApiErrorAuthenticationEntryPoint entryPoint,
                                          ApiErrorAccessDeniedHandler accessDenied,
                                          CorsConfigurationSource corsConfigurationSource)
@@ -73,6 +75,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/stream").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/rutas", "/api/v1/rutas/**").permitAll()
                         .requestMatchers("/api/v1/demanda/**").permitAll()
+                        // Login provisional de conductor. No es /api/v1/auth/login:
+                        // esa sigue reservada para SCRUM-134 (Firebase).
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/conductor/login")
+                        .permitAll()
 
                         // SCRUM-142: la ingesta la hace el equipo a bordo con su
                         // credencial propia. Ya no interviene ningun rol de persona.
@@ -80,6 +86,9 @@ public class SecurityConfig {
                         .hasRole("EQUIPO")
 
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/v1/paradas/*/reservas")
+                        .hasRole("CONDUCTOR")
 
                         // Cierra por defecto: una ruta nueva sin regla explicita se
                         // rechaza en vez de quedar publicada por descuido.
@@ -90,10 +99,11 @@ public class SecurityConfig {
                 .addFilterBefore(equipoAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         // ---- INICIO del bloque provisional. TODO(SCRUM-134): borrar entero ----
-        // Concede ROLE_ADMIN por cabecera X-Admin-Token mientras no exista el
-        // JwtAuthFilter de Firebase. Al borrarlo, los controladores no cambian:
-        // siguen exigiendo hasRole('ADMIN') igual que hoy.
+        // Concede ROLE_ADMIN por cabecera X-Admin-Token y ROLE_CONDUCTOR por JWT
+        // propio mientras no exista el JwtAuthFilter de Firebase. Al borrarlo,
+        // los controladores no cambian: siguen exigiendo hasRole(...) igual que hoy.
         http.addFilterBefore(adminBootstrapFilter, EquipoAuthFilter.class);
+        http.addFilterBefore(conductorAuthFilter, EquipoAuthFilter.class);
         // ---- FIN del bloque provisional ----
 
         return http.build();
@@ -124,6 +134,14 @@ public class SecurityConfig {
     public FilterRegistrationBean<EquipoAuthFilter> noRegistrarEquipoAuthFilter(
             EquipoAuthFilter filtro) {
         FilterRegistrationBean<EquipoAuthFilter> registro = new FilterRegistrationBean<>(filtro);
+        registro.setEnabled(false);
+        return registro;
+    }
+
+    @Bean
+    public FilterRegistrationBean<ConductorAuthFilter> noRegistrarConductorAuthFilter(
+            ConductorAuthFilter filtro) {
+        FilterRegistrationBean<ConductorAuthFilter> registro = new FilterRegistrationBean<>(filtro);
         registro.setEnabled(false);
         return registro;
     }
