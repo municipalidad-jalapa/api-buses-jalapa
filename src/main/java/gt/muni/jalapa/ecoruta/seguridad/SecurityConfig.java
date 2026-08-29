@@ -75,6 +75,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/stream").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/rutas", "/api/v1/rutas/**").permitAll()
                         .requestMatchers("/api/v1/demanda/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/dispositivos/notificaciones")
+                                .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/abordaje")
+                                .permitAll()
 
                         // HU-Desarrollo-63: el conductor entrega el idToken de
                         // Firebase aqui; todavia no hay sesion propia.

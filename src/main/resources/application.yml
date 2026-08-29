@@ -28,6 +28,10 @@ ecoruta:
     umbral-salida: 10
     ttl-minutos: 20
     geocerca-metros: 150
+  notificaciones:
+    # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
+    radio-aproximacion-metros: ${NOTIF_RADIO_APROXIMACION_METROS:250}
+    radio-llegada-metros: ${NOTIF_RADIO_LLEGADA_METROS:40}
   telemetria:
     # Tolerancia contra relojes desfasados del equipo a bordo (SCRUM-138).
     ventana-horas: 12

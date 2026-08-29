@@ -7,6 +7,8 @@ import com.google.firebase.auth.FirebaseToken;
 import gt.muni.jalapa.ecoruta.identidad.FirebaseProperties;
 import gt.muni.jalapa.ecoruta.identidad.servicio.IdentidadFirebase;
 
+import java.util.Optional;
+
 /**
  * Acceso al SDK Admin. Si no hay credenciales, {@link #disponible()} es false
  * y quien verifique el idToken responde 401: falla cerrado.
@@ -29,6 +31,11 @@ public class ClienteFirebaseAdmin implements ClienteFirebaseAuth {
     @Override
     public FirebaseProperties propiedades() {
         return propiedades;
+    }
+
+    @Override
+    public Optional<FirebaseApp> firebaseApp() {
+        return Optional.ofNullable(app);
     }
 
     @Override

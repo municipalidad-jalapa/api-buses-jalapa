@@ -6,3 +6,4 @@ target/
 google-services.json
 *serviceAccount*.json
 .env
+tools/fcm-token/local-config.js
