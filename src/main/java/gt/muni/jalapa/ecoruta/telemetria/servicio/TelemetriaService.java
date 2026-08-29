@@ -5,12 +5,15 @@ import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import gt.muni.jalapa.ecoruta.flota.dominio.Equipo;
 import gt.muni.jalapa.ecoruta.flota.repositorio.EquipoRepository;
 import gt.muni.jalapa.ecoruta.flota.servicio.EquipoAutenticado;
-import gt.muni.jalapa.ecoruta.telemetria.dominio.Geo;
+import gt.muni.jalapa.ecoruta.common.Geo;
 import gt.muni.jalapa.ecoruta.telemetria.dominio.PosicionHistorica;
 import gt.muni.jalapa.ecoruta.telemetria.repositorio.PosicionHistoricaRepository;
 import gt.muni.jalapa.ecoruta.telemetria.web.dto.LoteAceptadoResponse;
 import gt.muni.jalapa.ecoruta.telemetria.web.dto.PosicionActualResponse;
 import gt.muni.jalapa.ecoruta.telemetria.web.dto.PosicionRequest;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -22,6 +25,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** Ingesta y consulta de posiciones (SCRUM-138 y SCRUM-139). */
 @Service
@@ -33,6 +37,20 @@ public class TelemetriaService {
     private final EquipoRepository equipos;
     private final TelemetriaProperties propiedades;
     private final ApplicationEventPublisher eventos;
+    private final MeterRegistry metricas;
+
+    // Epoch-seconds del ultimo lote recibido, sin importar cuantas lecturas
+    // se descartaron. SCRUM-151 (HU-56, AC3) alerta si esto no avanza durante
+    // el horario de operacion.
+    private final AtomicLong ultimaIngestaEpochSegundos = new AtomicLong(0);
+
+    @PostConstruct
+    void registrarMetricaDeIngesta() {
+        Gauge.builder("ecoruta_telemetria_ultima_recepcion_timestamp_seconds",
+                        ultimaIngestaEpochSegundos, AtomicLong::get)
+                .description("Epoch-seconds del ultimo lote de telemetria recibido")
+                .register(metricas);
+    }
 
     /**
      * Recibe un lote de posiciones de un equipo ya autenticado.
@@ -56,6 +74,7 @@ public class TelemetriaService {
         Equipo equipo = equipos.findById(autenticado.equipoId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Equipo", autenticado.equipoId()));
         Instant ahora = Instant.now();
+        ultimaIngestaEpochSegundos.set(ahora.getEpochSecond());
 
         List<PosicionRequest> aceptables = lote.stream()
                 .filter(posicion -> dentroDeLaVentana(posicion.timestamp(), ahora))

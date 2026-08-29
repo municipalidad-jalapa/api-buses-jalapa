@@ -159,6 +159,121 @@ Consultar la posición de un vehículo concreto: `GET /api/v1/telemetria/posicio
 > La credencial solo es confidencial sobre TLS. En producción el proxy inverso termina HTTPS
 > (ADR-006); en desarrollo local viaja en claro.
 
+## Simular el bus en movimiento
+
+El bus real todavia no lleva el equipo instalado. Sin posiciones entrando, la pantalla del
+pasajero sale con el marcador quieto: no se puede desarrollar el mapa ni ensenarlo. El simulador
+recorre la ruta y reporta posiciones **por el mismo camino que usaria el equipo real** —misma
+credencial de dispositivo, mismo endpoint— asi que lo que se ve en la demo es la ruta de datos
+de produccion, no un atajo.
+
+No inventa el recorrido: pide `GET /api/v1/rutas` y camina el `trazado`, que son los vertices
+reales de las calles. Si la ruta cambia en la base, el simulador cambia con ella.
+
+### Arrancar
+
+```bash
+export ECORUTA_ADMIN_TOKEN='solo-para-desarrollo-local-no-usar-en-produccion'
+python3 tools/simulador-gps.py
+```
+
+Solo necesita Python 3, nada que instalar. En el primer arranque aprovisiona un equipo y imprime
+su credencial; guardala y reusala con `--credencial` para no crear uno nuevo cada vez:
+
+```bash
+python3 tools/simulador-gps.py --credencial eq_AokFXQjVmNSW.8y8tT23HaA4...
+```
+
+### Parar
+
+`Ctrl-C` en su terminal. Si lo lanzaste en segundo plano:
+
+```bash
+pkill -f simulador-gps.py
+```
+
+Parar el simulador **no borra nada**: la ultima posicion se queda como vigente y el mapa la sigue
+mostrando con su hora. Es el mismo comportamiento que con el bus apagado.
+
+### Ajustar el recorrido
+
+| Opcion | Por defecto | Para que |
+|---|---|---|
+| `--velocidad` | `30` | km/h del bus. 30 es realista en ciudad; `--velocidad 120` para una vuelta rapida en una demo |
+| `--intervalo` | `2` | segundos entre reportes. Bajarlo da un movimiento mas fluido y mas carga |
+| `--espera-parada` | `5` | segundos detenido en cada parada. En parada reporta 0 km/h |
+| `--vueltas` | `0` | numero de vueltas; `0` es sin fin |
+| `--api` | `http://localhost:8080` | contra que backend reportar |
+| `--credencial` | — | equipo ya aprovisionado; si falta, crea uno |
+
+La vuelta completa son 5.17 km, asi que a 30 km/h dura unos 10 minutos y a 120 unos 2.5.
+
+```bash
+# Una sola vuelta, rapida, para comprobar que la cadena entera funciona
+python3 tools/simulador-gps.py --velocidad 300 --intervalo 0.5 --vueltas 1
+```
+
+### La ruta que recorre
+
+> **No es la ruta real del bus.** `V6__circuito_de_ejemplo.sql` siembra un circuito **inventado
+> para la demo**, con nombres de parada inventados tambien. La ruta oficial la fija HU-41
+> (SCRUM-136), que esta en Sprint 5 y necesita levantamiento en campo. Por eso la ruta se llama
+> *"Ruta de ejemplo - Centro de Jalapa"*: para que nadie la tome por buena.
+
+Lo unico real son las **calles**. El circuito va del **Parque Central** por la **6a Avenida** y la
+**1a Calle** hacia el oeste, gira en **Llano Grande** y vuelve por la **Calle Transito Rojas** hasta
+cerrar en el parque. Sus 74 vertices salen de OpenStreetMap enrutados sobre la red vial, que es
+por lo que la linea cae encima de las calles en vez de atravesar manzanas.
+
+La migracion se aplica en **todos los entornos**, tambien QA y produccion: `flyway.enabled` es
+`true` y el proyecto no tiene perfiles de Spring. Es deliberado — lo que hay hoy en produccion
+tambien es semilla inventada (V2), y esta al menos cae sobre calles de verdad.
+
+## Flujo de una coordenada, de punta a punta
+
+Util cuando algo no se ve en el mapa: dice en que eslabon mirar.
+
+```
+ simulador (o equipo a bordo)
+   |  POST /api/v1/telemetria/posiciones   Authorization: Bearer eq_<codigo>.<secreto>
+   v
+ EquipoAuthFilter          flota/seguridad/EquipoAuthFilter.java
+   |  valida la credencial contra el hash bcrypt y rechaza las revocadas
+   v
+ TelemetriaController      telemetria/web/TelemetriaController.java:62
+   |
+   v
+ TelemetriaService         telemetria/servicio/TelemetriaService.java:70
+   |  guarda cada PosicionHistorica y publica PosicionVigenteActualizada (:89)
+   v
+ DifusorDePosiciones       telemetria/web/DifusorDePosiciones.java
+   |  @TransactionalEventListener(AFTER_COMMIT): difunde solo lo ya confirmado
+   |  GET /api/v1/telemetria/stream  (SSE, publico)
+   v
+ flujoDePosiciones.ts      frontend: src/core/flujoDePosiciones.ts
+   |  EventSource escuchando el evento 'posicion'
+   v
+ usePosicionBus.ts         frontend: src/hooks/usePosicionBus.ts
+   |  combina la carga inicial (GET /telemetria/posicion) con el flujo en vivo
+   v
+ MapaOpenStreetMap.tsx     frontend: src/componentes/MapaOpenStreetMap.tsx
+      mueve el marcador del bus; la linea la dibuja del `trazado` de la ruta
+```
+
+Dos detalles que explican casi todos los sustos:
+
+- **El evento se difunde despues del commit**, no dentro. Un `@EventListener` normal empujaria al
+  pasajero una posicion que todavia puede hacer rollback.
+- **El frontend escucha `addEventListener('posicion', ...)`, no `onmessage`.** El backend nombra
+  el evento, y `onmessage` solo recibe los que van sin nombre: con `onmessage` no llega nada y no
+  hay ningun error que lo delate.
+
+Para verlo crudo, sin frontend:
+
+```bash
+curl -N localhost:8080/api/v1/telemetria/stream
+```
+
 ## Ver el bus moverse en tiempo real
 
 El stream empuja cada posición apenas se ingesta, sin que el cliente pregunte (ADR-008). Al

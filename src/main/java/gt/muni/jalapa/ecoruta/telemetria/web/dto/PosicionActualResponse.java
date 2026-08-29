@@ -1,6 +1,6 @@
 package gt.muni.jalapa.ecoruta.telemetria.web.dto;
 
-import gt.muni.jalapa.ecoruta.telemetria.dominio.Geo;
+import gt.muni.jalapa.ecoruta.common.Geo;
 import gt.muni.jalapa.ecoruta.telemetria.dominio.PosicionHistorica;
 import io.swagger.v3.oas.annotations.media.Schema;
 

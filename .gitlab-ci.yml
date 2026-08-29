@@ -2,6 +2,9 @@ include:
   - project: 'municipalidad-jalapa/ci-templates/pipeline-templates'
     ref: main
     file: 'docker-build-push.yml'
+  # HU-23/SCRUM-118: verificacion automatica en cada MR que falla si detecta
+  # un secreto commiteado. Corre en el stage "test" por defecto.
+  - template: Security/Secret-Detection.gitlab-ci.yml
 
 variables:
   IMAGE_NAME: "backend-api-buses"
