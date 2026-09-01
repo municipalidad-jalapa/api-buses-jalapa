@@ -43,7 +43,8 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        # prometheus: metricas para SCRUM-151 (HU-56, disponibilidad/latencia/5xx).
+        include: health,info,metrics,prometheus
 
 server:
   port: 8080

@@ -107,9 +107,29 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(CorsProperties propiedades) {
         CorsConfiguration configuracion = new CorsConfiguration();
         configuracion.setAllowedOrigins(propiedades.origenesPermitidos());
-        configuracion.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuracion.setAllowedHeaders(List.of("*"));
 
+        configuracion.setAllowedMethods(
+        List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+);
+
+configuracion.setAllowedHeaders(
+        List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Last-Event-ID"
+        )
+);
+
+configuracion.setExposedHeaders(
+        List.of(
+                "Cache-Control",
+                "Content-Type"
+        )
+);
+
+configuracion.setAllowCredentials(true);
+configuracion.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource fuente = new UrlBasedCorsConfigurationSource();
         fuente.registerCorsConfiguration("/api/**", configuracion);
         return fuente;

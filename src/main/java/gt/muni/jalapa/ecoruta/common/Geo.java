@@ -1,4 +1,4 @@
-package gt.muni.jalapa.ecoruta.telemetria.dominio;
+package gt.muni.jalapa.ecoruta.common;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -12,6 +12,10 @@ import org.locationtech.jts.geom.PrecisionModel;
  * (longitud, latitud), mientras los DTO de la API se llaman latitud/longitud y
  * se leen en el orden contrario. Centralizarlo en una fabrica hace que el error
  * solo se pueda cometer una vez, aqui, y que una prueba lo fije para siempre.
+ *
+ * <p>Vive en common/ y no dentro de un modulo porque lo usan telemetria (al
+ * escribir posiciones) y catalogo (al leer paradas). Tenerlo dos veces seria
+ * exactamente la forma de que las coordenadas se inviertan en uno de los dos.
  */
 public final class Geo {
 
