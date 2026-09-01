@@ -73,6 +73,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/stream").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/rutas", "/api/v1/rutas/**").permitAll()
                         .requestMatchers("/api/v1/demanda/**").permitAll()
+                        // Desarrollo-135: la reserva de parada la hace el pasajero
+                        // anonimo, identificado por el id de su dispositivo.
+                        .requestMatchers("/api/v1/reservas/**").permitAll()
 
                         // SCRUM-142: la ingesta la hace el equipo a bordo con su
                         // credencial propia. Ya no interviene ningun rol de persona.

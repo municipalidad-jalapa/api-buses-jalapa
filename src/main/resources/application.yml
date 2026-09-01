@@ -20,6 +20,10 @@ ecoruta:
     umbral-salida: 10
     ttl-minutos: 20
     geocerca-metros: 150
+    # Desarrollo-135: la reserva de parada dura estos minutos desde que se crea
+    # o se renueva; la tarea programada barre las vencidas cada barrido-segundos.
+    vigencia-minutos: 5
+    barrido-segundos: 60
   telemetria:
     # Tolerancia contra relojes desfasados del equipo a bordo (SCRUM-138).
     ventana-horas: 12
