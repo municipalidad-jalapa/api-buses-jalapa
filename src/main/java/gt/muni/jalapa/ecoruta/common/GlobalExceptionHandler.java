@@ -1,5 +1,6 @@
 package gt.muni.jalapa.ecoruta.common;
 
+import org.springframework.security.access.AccessDeniedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> unprocessable(ReglaDeNegocioException ex, HttpServletRequest req) {
         return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), req);
     }
+
+    @ExceptionHandler(AccessDeniedException.class)
+public ResponseEntity<ApiError> forbidden(
+        AccessDeniedException ex,
+        HttpServletRequest req) {
+
+    return build(
+            HttpStatus.FORBIDDEN,
+            ex.getMessage(),
+            req
+    );
+}
 
     /**
      * Sin esto la BadCredentialsException escapa del controller y la atrapa
