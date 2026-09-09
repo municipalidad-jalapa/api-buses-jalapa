@@ -50,15 +50,7 @@ jobs:
             target/cucumber/
           if-no-files-found: ignore
 
-  secretos:
-    # GitHub trae escaneo de secretos nativo y gratis en repos publicos, pero
-    # solo avisa sobre patrones de proveedores conocidos. gitleaks cubre el
-    # mismo rol que el template Secret-Detection de GitLab en cada PR.
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# El template Secret-Detection de GitLab se reemplaza por el escaneo de
+# secretos NATIVO de GitHub (Settings > Code security), gratis en repos
+# publicos y con push protection: bloquea el commit antes de que entre.
+# No hace falta un job: gitleaks-action exige licencia paga en organizaciones.
