@@ -36,7 +36,7 @@ jobs:
       # Docker nativo, asi que no hace falta dind ni DOCKER_HOST ni
       # TESTCONTAINERS_HOST_OVERRIDE. Ryuk tambien vuelve a funcionar.
       - name: Verificar Docker del runner
-        run: docker info --format 'Docker OK: {{.ServerVersion}}'
+        run: docker info --format 'Docker {{.ServerVersion}} disponible'
 
       - run: mvn -B test
 
