@@ -1,0 +1,64 @@
+name: CI
+
+# Reemplaza a los jobs maven-build, maven-test y al template de
+# Secret-Detection de GitLab CI.
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+jobs:
+  compilar:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: mvn -B compile
+
+  pruebas:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # En GitLab hacia falta un servicio docker:27-dind y un runner
+      # privilegiado para que Testcontainers levantara PostGIS (H2 no sirve:
+      # medio dominio son columnas geometry). Los runners de GitHub ya traen
+      # Docker nativo, asi que no hace falta dind ni DOCKER_HOST ni
+      # TESTCONTAINERS_HOST_OVERRIDE. Ryuk tambien vuelve a funcionar.
+      - name: Verificar Docker del runner
+        run: docker info --format 'Docker OK: {{.ServerVersion}}'
+
+      - run: mvn -B test
+
+      - name: Publicar reportes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportes-pruebas
+          path: |
+            target/surefire-reports/*.xml
+            target/cucumber/
+          if-no-files-found: ignore
+
+  secretos:
+    # GitHub trae escaneo de secretos nativo y gratis en repos publicos, pero
+    # solo avisa sobre patrones de proveedores conocidos. gitleaks cubre el
+    # mismo rol que el template Secret-Detection de GitLab en cada PR.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
