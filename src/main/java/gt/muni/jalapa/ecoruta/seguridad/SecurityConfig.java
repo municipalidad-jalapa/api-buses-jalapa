@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta.seguridad;
 
 import gt.muni.jalapa.ecoruta.flota.seguridad.EquipoAuthFilter;
+import gt.muni.jalapa.ecoruta.identidad.seguridad.ConductorJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.seguridad.bootstrap.AdminBootstrapFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +38,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain cadenaApi(HttpSecurity http,
                                          EquipoAuthFilter equipoAuthFilter,
+                                         ConductorJwtAuthFilter conductorJwtAuthFilter,
                                          AdminBootstrapFilter adminBootstrapFilter,
                                          ApiErrorAuthenticationEntryPoint entryPoint,
                                          ApiErrorAccessDeniedHandler accessDenied,
@@ -76,10 +78,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/reservas").permitAll()
                         .requestMatchers("/api/v1/demanda/**").permitAll()
 
+                        // HU-Desarrollo-63: el conductor entrega el idToken de
+                        // Firebase aqui; todavia no hay sesion propia.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/conductor").permitAll()
+
                         // SCRUM-142: la ingesta la hace el equipo a bordo con su
                         // credencial propia. Ya no interviene ningun rol de persona.
                         .requestMatchers(HttpMethod.POST, "/api/v1/telemetria/posiciones")
                         .hasRole("EQUIPO")
+
+                        // Panel del conductor: solo el JWT propio con rol conductor.
+                        .requestMatchers("/api/v1/conductor/**").hasRole("CONDUCTOR")
 
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
@@ -89,7 +98,8 @@ public class SecurityConfig {
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(accessDenied))
-                .addFilterBefore(equipoAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(equipoAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(conductorJwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         // ---- INICIO del bloque provisional. TODO(SCRUM-134): borrar entero ----
         // Concede ROLE_ADMIN por cabecera X-Admin-Token mientras no exista el
@@ -140,12 +150,20 @@ configuracion.setMaxAge(3600L);
     /**
      * Todo bean de tipo Filter lo recoge Boot y lo instala TAMBIEN en la cadena de
      * servlets, donde correria antes de Spring Security y en cada peticion. Estos
-     * dos filtros solo deben vivir dentro de la cadena de seguridad.
+     * filtros solo deben vivir dentro de la cadena de seguridad.
      */
     @Bean
     public FilterRegistrationBean<EquipoAuthFilter> noRegistrarEquipoAuthFilter(
             EquipoAuthFilter filtro) {
         FilterRegistrationBean<EquipoAuthFilter> registro = new FilterRegistrationBean<>(filtro);
+        registro.setEnabled(false);
+        return registro;
+    }
+
+    @Bean
+    public FilterRegistrationBean<ConductorJwtAuthFilter> noRegistrarConductorJwtAuthFilter(
+            ConductorJwtAuthFilter filtro) {
+        FilterRegistrationBean<ConductorJwtAuthFilter> registro = new FilterRegistrationBean<>(filtro);
         registro.setEnabled(false);
         return registro;
     }
