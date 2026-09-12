@@ -74,9 +74,9 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
         reset(enviador);
         credencialEquipo = bearer(equipoService.emitir(busPiloto(), "Tableta HU-57"));
         paradaParque = jdbc.queryForObject(
-                "SELECT id FROM paradas WHERE nombre = 'Parque Central'", Long.class);
+                "SELECT id FROM paradas WHERE nombre = 'Parque Central' AND ruta_id = 1", Long.class);
         paradaLejana = jdbc.queryForObject(
-                "SELECT id FROM paradas WHERE nombre = 'Llano Grande'", Long.class);
+                "SELECT id FROM paradas WHERE nombre = 'Llano Grande' AND ruta_id = 1", Long.class);
     }
 
     @Test

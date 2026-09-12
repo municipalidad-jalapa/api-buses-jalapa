@@ -49,9 +49,9 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
         // contra el valor crudo de la base, no solo contra el DTO, porque a
         // nivel de DTO pasaria igual si escritura y lectura invirtieran a la vez.
         Double latEnBase = jdbc.queryForObject(
-                "SELECT ST_Y(ubicacion) FROM paradas WHERE orden = 1", Double.class);
+                "SELECT ST_Y(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = 1", Double.class);
         Double lonEnBase = jdbc.queryForObject(
-                "SELECT ST_X(ubicacion) FROM paradas WHERE orden = 1", Double.class);
+                "SELECT ST_X(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = 1", Double.class);
 
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(jsonPath("$[0].paradas[0].latitud").value(latEnBase))
@@ -64,13 +64,14 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void una_ruta_inactiva_no_aparece_en_el_listado() throws Exception {
-        jdbc.update("UPDATE rutas SET activa = false WHERE id = 1");
+        // Todas: con la ruta de prueba de V12 hay mas de una.
+        jdbc.update("UPDATE rutas SET activa = false");
         try {
             mockMvc.perform(get("/api/v1/rutas"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
         } finally {
-            jdbc.update("UPDATE rutas SET activa = true WHERE id = 1");
+            jdbc.update("UPDATE rutas SET activa = true");
         }
     }
 
