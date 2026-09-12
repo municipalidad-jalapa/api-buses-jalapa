@@ -24,6 +24,12 @@ Uso:
     python3 tools/simulador-gps.py --velocidad 120       # vuelta rapida, para demo
     python3 tools/simulador-gps.py --credencial eq_xx.yy # reusa un equipo ya creado
     python3 tools/simulador-gps.py --vueltas 1           # una vuelta y termina
+    python3 tools/simulador-gps.py --ruta 2              # recorre la ruta 2 con su bus
+
+Cada ruta tiene su propio bus (V12). Con --ruta el simulador recorre esa ruta y,
+si tiene que aprovisionar un equipo, lo monta en el bus asignado a esa ruta. Para
+simular dos rutas a la vez, corre dos simuladores, uno por ruta, cada uno con la
+credencial de su propio equipo.
 
 En cada parada el bus se detiene EN la parada (no unos metros despues) y espera
 --espera-parada segundos. Si en esa parada hay reservas activas espera mas
@@ -121,7 +127,7 @@ class Recorrido:
         return None
 
 
-def aprovisionar(api, token_admin):
+def aprovisionar(api, token_admin, ruta_id=None):
     """Crea un equipo a bordo y devuelve su credencial.
 
     La credencial solo se muestra al crearla: en la base queda su hash bcrypt.
@@ -137,7 +143,12 @@ def aprovisionar(api, token_admin):
     if not vehiculos:
         sys.exit("No hay vehiculos dados de alta. Crea uno en /api/v1/admin/vehiculos.")
 
-    vehiculo = vehiculos[0]
+    # El equipo va montado en el bus de la ruta que se va a recorrer: si fuera en
+    # el bus de otra ruta, sus posiciones apareceran en la ruta equivocada.
+    de_la_ruta = [v for v in vehiculos if ruta_id is not None and v.get("rutaId") == ruta_id]
+    if ruta_id is not None and not de_la_ruta:
+        sys.exit(f"Ningun vehiculo tiene asignada la ruta {ruta_id}.")
+    vehiculo = de_la_ruta[0] if de_la_ruta else vehiculos[0]
     alta = peticion(f"{api}/api/v1/admin/vehiculos/{vehiculo['id']}/equipos",
                     metodo="POST",
                     cuerpo={"etiqueta": "Simulador de recorrido (desarrollo)"},
@@ -162,6 +173,8 @@ def main():
                    help="segundos detenido en cada parada (por defecto: 5)")
     p.add_argument("--espera-con-reserva", type=float, default=20.0,
                    help="segundos detenido si la parada tiene reservas activas (por defecto: 20)")
+    p.add_argument("--ruta", type=int, default=None,
+                   help="id de la ruta a recorrer (por defecto: la primera activa)")
     p.add_argument("--vueltas", type=int, default=0,
                    help="numero de vueltas; 0 = sin fin (por defecto: 0)")
     args = p.parse_args()
@@ -171,13 +184,20 @@ def main():
     rutas = peticion(f"{api}/api/v1/rutas")
     if not rutas:
         sys.exit("No hay rutas activas.")
-    ruta = rutas[0]
+    if args.ruta is None:
+        ruta = rutas[0]
+    else:
+        ruta = next((r for r in rutas if r["id"] == args.ruta), None)
+        if ruta is None:
+            sys.exit(f"No hay ruta activa con id {args.ruta}. "
+                     f"Disponibles: {', '.join(str(r['id']) for r in rutas)}.")
     if not ruta.get("trazado"):
         sys.exit(f"La ruta '{ruta['nombre']}' no tiene trazado cargado. "
                  "Aplica V6__circuito_de_ejemplo.sql.")
 
     recorrido = Recorrido(ruta["trazado"], ruta["paradas"])
-    credencial = args.credencial or aprovisionar(api, os.environ.get("ECORUTA_ADMIN_TOKEN"))
+    credencial = args.credencial or aprovisionar(api, os.environ.get("ECORUTA_ADMIN_TOKEN"),
+                                                 ruta["id"])
 
     vuelta_min = (recorrido.largo / 1000) / args.velocidad * 60
     print(f"Ruta      : {ruta['nombre']}")

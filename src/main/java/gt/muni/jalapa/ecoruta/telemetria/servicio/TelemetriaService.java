@@ -4,6 +4,7 @@ import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
 import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import gt.muni.jalapa.ecoruta.flota.dominio.Equipo;
 import gt.muni.jalapa.ecoruta.flota.repositorio.EquipoRepository;
+import gt.muni.jalapa.ecoruta.flota.repositorio.VehiculoRepository;
 import gt.muni.jalapa.ecoruta.flota.servicio.EquipoAutenticado;
 import gt.muni.jalapa.ecoruta.common.Geo;
 import gt.muni.jalapa.ecoruta.telemetria.dominio.PosicionHistorica;
@@ -35,6 +36,7 @@ public class TelemetriaService {
 
     private final PosicionHistoricaRepository posiciones;
     private final EquipoRepository equipos;
+    private final VehiculoRepository vehiculos;
     private final TelemetriaProperties propiedades;
     private final ApplicationEventPublisher eventos;
     private final MeterRegistry metricas;
@@ -104,7 +106,8 @@ public class TelemetriaService {
                 // El DTO se arma AQUI, dentro de la transaccion: es el unico punto
                 // donde el vehiculo LAZY todavia se puede navegar. Quien escucha el
                 // evento lo hace despues del commit, sin sesion.
-                .map(vigente -> PosicionActualResponse.de(vigente, autenticado.identificadorVehiculo()))
+                .map(vigente -> PosicionActualResponse.de(vigente, autenticado.identificadorVehiculo(),
+                        equipo.getVehiculo() != null ? equipo.getVehiculo().getRutaId() : null))
                 .ifPresent(vigente -> eventos.publishEvent(new PosicionVigenteActualizada(vigente)));
 
         return new LoteAceptadoResponse(lote.size(), aceptables.size(), descartadas);
@@ -127,6 +130,20 @@ public class TelemetriaService {
         return vigente.map(posicion -> PosicionActualResponse.de(posicion,
                 posicion.getVehiculo() != null
                         ? posicion.getVehiculo().getIdentificador()
+                        : null,
+                posicion.getVehiculo() != null
+                        ? posicion.getVehiculo().getRutaId()
                         : null));
+    }
+
+    /**
+     * La posicion vigente del bus que recorre una ruta (SCRUM-166: un bus por
+     * ruta). Vacio si la ruta no tiene bus activo o si su bus aun no reporta:
+     * nunca se devuelve la posicion de un bus de otra ruta.
+     */
+    @Transactional(readOnly = true)
+    public Optional<PosicionActualResponse> posicionVigentePorRuta(Long rutaId) {
+        return vehiculos.findFirstByRutaIdAndActivoTrue(rutaId)
+                .flatMap(vehiculo -> posicionVigente(vehiculo.getId()));
     }
 }

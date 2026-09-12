@@ -13,13 +13,17 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void devuelve_las_rutas_activas_con_sus_paradas() throws Exception {
-        // V6 siembra la ruta de ejemplo: un circuito con ocho paradas.
+        // V6 siembra la ruta de ejemplo (ocho paradas) y V12 la ruta de prueba a
+        // la Metroplaza (cinco paradas).
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
                 .andExpect(jsonPath("$[0].nombre").value("Ruta de ejemplo - Centro de Jalapa"))
                 .andExpect(jsonPath("$[0].activa").value(true))
-                .andExpect(jsonPath("$[0].paradas", org.hamcrest.Matchers.hasSize(8)));
+                .andExpect(jsonPath("$[0].paradas", org.hamcrest.Matchers.hasSize(8)))
+                .andExpect(jsonPath("$[1].nombre").value("Ruta de prueba - Parque Central a Metroplaza"))
+                .andExpect(jsonPath("$[1].paradas", org.hamcrest.Matchers.hasSize(5)))
+                .andExpect(jsonPath("$[1].paradas[4].nombre").value("Metroplaza"));
     }
 
     @Test

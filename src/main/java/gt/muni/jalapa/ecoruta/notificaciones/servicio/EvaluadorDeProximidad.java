@@ -49,7 +49,7 @@ public class EvaluadorDeProximidad {
     }
 
     void evaluar(PosicionActualResponse posicion) {
-        List<ReservaConDistancia> vigentes = vigentes(posicion.latitud(), posicion.longitud());
+        List<ReservaConDistancia> vigentes = vigentes(posicion.latitud(), posicion.longitud(), posicion.rutaId());
         for (ReservaConDistancia reserva : vigentes) {
             transicionar(reserva, TipoAviso.APROXIMACION, radios.radioAproximacionMetros());
             transicionar(reserva, TipoAviso.LLEGADA, radios.radioLlegadaMetros());
@@ -110,7 +110,16 @@ public class EvaluadorDeProximidad {
         return estado;
     }
 
-    private List<ReservaConDistancia> vigentes(double latitud, double longitud) {
+    /**
+     * Reservas vigentes con su distancia al bus. Con {@code rutaId}, solo las de
+     * paradas de esa ruta: el bus de la Metroplaza pasando por el Parque Central no
+     * puede avisar a quien espera en el Parque Central de la otra ruta.
+     */
+    private List<ReservaConDistancia> vigentes(double latitud, double longitud, Long rutaId) {
+        String filtroDeRuta = rutaId != null ? "AND p.ruta_id = ?" : "";
+        Object[] parametros = rutaId != null
+                ? new Object[] {longitud, latitud, rutaId}
+                : new Object[] {longitud, latitud};
         return jdbc.query("""
                         SELECT r.id,
                                r.dispositivo_id,
@@ -124,14 +133,14 @@ public class EvaluadorDeProximidad {
                           JOIN paradas p ON p.id = r.parada_id
                          WHERE r.estado IN ('ACTIVA', 'RENOVADA')
                            AND r.expira_en > now()
-                        """,
+                        """ + filtroDeRuta,
                 (rs, i) -> new ReservaConDistancia(
                         rs.getLong("id"),
                         rs.getString("dispositivo_id"),
                         rs.getLong("parada_id"),
                         rs.getString("nombre"),
                         rs.getDouble("metros")),
-                longitud, latitud);
+                parametros);
     }
 
     record ReservaConDistancia(Long reservaId, String dispositivoId, Long paradaId,
