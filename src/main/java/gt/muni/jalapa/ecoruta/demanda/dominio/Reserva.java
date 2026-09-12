@@ -20,11 +20,7 @@ import lombok.ToString;
 import java.time.Instant;
 
 /**
- * Registro de un pasajero esperando en una parada ({@code registros_espera}).
- *
- * <p>SCRUM-306 crea la reserva en estado {@link EstadoReserva#ACTIVA}. La
- * renovacion, el abordaje, la cancelacion y la expiracion programada pertenecen
- * a otras historias.
+ * Registro de un pasajero esperando en una parada.
  */
 @Entity
 @Table(name = "registros_espera")
@@ -59,12 +55,79 @@ public class Reserva {
     @ToString.Include
     private Instant expiraEn;
 
-    public Reserva(String dispositivoId, Parada parada, EstadoReserva estado,
-                   Instant creadoEn, Instant expiraEn) {
+    /**
+     * Momento en que el conductor marco
+     * que el pasajero ya abordo.
+     */
+    @Column(name = "abordado_en")
+    private Instant abordadoEn;
+
+    /**
+     * Usuario del conductor que realizo
+     * la accion.
+     */
+    @Column(name = "abordado_por", length = 50)
+    private String abordadoPor;
+
+    /**
+     * Declaracion realizada por el pasajero.
+     *
+     * Se guarda separada del estado de la reserva
+     * porque la confirmacion del conductor tiene
+     * prioridad.
+     */
+    @Column(
+            name = "pasajero_declaro_no_abordo",
+            nullable = false
+    )
+    private boolean pasajeroDeclaroNoAbordo;
+
+    /**
+     * Momento en que el pasajero indico
+     * que no abordo el bus.
+     */
+    @Column(name = "declaracion_no_abordo_en")
+    private Instant declaracionNoAbordoEn;
+
+    public Reserva(
+            String dispositivoId,
+            Parada parada,
+            EstadoReserva estado,
+            Instant creadoEn,
+            Instant expiraEn
+    ) {
         this.dispositivoId = dispositivoId;
         this.parada = parada;
         this.estado = estado;
         this.creadoEn = creadoEn;
         this.expiraEn = expiraEn;
+        this.pasajeroDeclaroNoAbordo = false;
+    }
+
+    /**
+     * HU-76.
+     *
+     * La declaracion del pasajero se conserva
+     * independientemente del estado final.
+     */
+    public void declararNoAbordo(Instant momento) {
+        this.pasajeroDeclaroNoAbordo = true;
+        this.declaracionNoAbordoEn = momento;
+    }
+
+    /**
+     * HU-76.
+     *
+     * La confirmacion del conductor tiene prioridad.
+     * La reserva pasa a ABORDO, pero NO se elimina
+     * la declaracion previa del pasajero.
+     */
+    public void marcarAbordo(
+            String conductor,
+            Instant momento
+    ) {
+        this.estado = EstadoReserva.ABORDO;
+        this.abordadoPor = conductor;
+        this.abordadoEn = momento;
     }
 }
