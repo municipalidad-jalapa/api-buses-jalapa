@@ -44,6 +44,19 @@ ecoruta:
     sse-timeout-minutos: 30
     latido-segundos: 25
     reconexion-segundos: 3
+  eta:
+    # SCRUM-166 (HU-71). Calculo propio sobre el trazado, sin servicios externos.
+    # PROVISIONAL: 20 km/h hasta tener la velocidad promedio del estudio de campo.
+    velocidad-respaldo-kmh: ${ETA_VELOCIDAD_RESPALDO_KMH:20}
+    # Lecturas mas lentas son el bus detenido: no representan el avance.
+    velocidad-minima-kmh: 5
+    # Tramo reciente: hasta N lecturas dentro de la ventana previa a la ultima.
+    muestras-velocidad: 5
+    ventana-velocidad-minutos: 3
+    # Posicion mas vieja que esto: el ETA se marca como no disponible.
+    antiguedad-maxima-segundos: ${ETA_ANTIGUEDAD_MAXIMA_SEGUNDOS:120}
+    # Limite de frecuencia del recalculo al llegar posiciones.
+    intervalo-minimo-recalculo-segundos: 10
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
