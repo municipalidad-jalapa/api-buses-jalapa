@@ -6,13 +6,12 @@ entrando la pantalla del pasajero no se puede ver ni demostrar: el mapa sale con
 el marcador quieto o directamente vacio.
 
 No inventa el recorrido. Lo pide a GET /api/v1/rutas y camina el `trazado`, cuyos
-vertices caen sobre calles reales (ver V6__circuito_de_ejemplo.sql). Asi las
-coordenadas viven en un solo sitio: si la ruta cambia en la base, el simulador
-cambia con ella y no hay dos verdades que se puedan desincronizar.
+vertices salen del levantamiento GPS de campo (V13__datos_reales_de_las_rutas_de_jalapa.sql).
+Asi las coordenadas viven en un solo sitio: si la ruta cambia en la base, el
+simulador cambia con ella y no hay dos verdades que se puedan desincronizar.
 
-Ojo: la ruta sembrada hoy es un EJEMPLO para la demo, no el recorrido real del
-bus. Las calles son de verdad; el circuito que describen, no. El dato bueno lo
-carga HU-41 (SCRUM-136), y cuando llegue el simulador lo recorrera sin cambios.
+La semilla actual es el dato real de HU-41 (SCRUM-136): RUTA PRINCIPAL (circuito
+completo) y RUTA SECUNDARIA (tramo parcial disponible).
 
 Habla con la API igual que hablaria el equipo real: se autentica con credencial
 de dispositivo en la cabecera Authorization (SCRUM-142) y manda lotes al mismo
@@ -193,7 +192,7 @@ def main():
                      f"Disponibles: {', '.join(str(r['id']) for r in rutas)}.")
     if not ruta.get("trazado"):
         sys.exit(f"La ruta '{ruta['nombre']}' no tiene trazado cargado. "
-                 "Aplica V6__circuito_de_ejemplo.sql.")
+                 "Aplica V13__datos_reales_de_las_rutas_de_jalapa.sql.")
 
     recorrido = Recorrido(ruta["trazado"], ruta["paradas"])
     credencial = args.credencial or aprovisionar(api, os.environ.get("ECORUTA_ADMIN_TOKEN"),

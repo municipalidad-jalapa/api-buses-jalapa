@@ -74,7 +74,7 @@ public class PasosDeCredencialDelEquipo {
     }
 
     private Long busPiloto() {
-        return vehiculos.findByIdentificador("BUS-01").orElseThrow().getId();
+        return vehiculos.findByIdentificador("BUS-1").orElseThrow().getId();
     }
 
     @Dado("el equipo ya reportó su posición correctamente")
