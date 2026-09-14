@@ -71,16 +71,21 @@ public class TelemetriaController {
     @Operation(summary = "Ultima posicion conocida del bus",
             description = """
                     Publico. Responde 204 mientras no haya llegado ninguna posicion.
-                    Sin vehiculoId devuelve la mas reciente de la flota.""")
+                    Con rutaId devuelve la del bus de esa ruta (un bus por ruta).
+                    Con vehiculoId, la de ese bus. Sin ninguno, la mas reciente
+                    de la flota.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Posicion vigente"),
             @ApiResponse(responseCode = "204", description = "Todavia no hay ninguna posicion")
     })
     @GetMapping("/posicion")
     public ResponseEntity<PosicionActualResponse> posicionVigente(
-            @RequestParam(required = false) Long vehiculoId) {
+            @RequestParam(required = false) Long vehiculoId,
+            @RequestParam(required = false) Long rutaId) {
 
-        return telemetriaService.posicionVigente(vehiculoId)
+        return (rutaId != null
+                ? telemetriaService.posicionVigentePorRuta(rutaId)
+                : telemetriaService.posicionVigente(vehiculoId))
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     }
@@ -95,19 +100,25 @@ public class TelemetriaController {
                     mapa no arranque vacio. Despues llega un evento 'posicion' por cada
                     lote aceptado, y un comentario de latido cuando el bus esta parado.
 
+                    Con rutaId solo llegan las posiciones del bus de esa ruta; sin
+                    el, las de toda la flota.
+
                     Como respaldo, si el stream no conecta, esta GET /telemetria/posicion.""")
     @ApiResponse(responseCode = "200", description = "Stream abierto (text/event-stream)")
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(HttpServletResponse respuesta) {
+    public SseEmitter stream(HttpServletResponse respuesta,
+                             @RequestParam(required = false) Long rutaId) {
         respuesta.setHeader(HttpHeaders.CACHE_CONTROL, "no-cache");
         // ADR-008 lo deja escrito: "si el proxy acumula la respuesta, el stream
         // nunca llega". Esta cabecera es la mitad que le toca a la aplicacion;
         // el proxy_buffering off del Ingress es de SCRUM-149 (DevOps).
         respuesta.setHeader("X-Accel-Buffering", "no");
 
-        SseEmitter emisor = difusor.suscribir();
+        SseEmitter emisor = difusor.suscribir(rutaId);
         // Sin esto el mapa se queda en blanco hasta el siguiente lote.
-        telemetriaService.posicionVigente(null)
+        (rutaId != null
+                ? telemetriaService.posicionVigentePorRuta(rutaId)
+                : telemetriaService.posicionVigente(null))
                 .ifPresent(vigente -> difusor.enviarA(emisor, vigente));
         return emisor;
     }

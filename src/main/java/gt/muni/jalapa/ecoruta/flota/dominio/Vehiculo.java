@@ -38,6 +38,14 @@ public class Vehiculo {
     @ToString.Include
     private String placa;
 
+    /**
+     * Ruta que recorre este bus (V12). Cada ruta tiene un solo bus activo
+     * (SCRUM-166); la base lo garantiza con uq_vehiculo_activo_por_ruta.
+     * Se guarda el id y no la relacion para no acoplar flota con catalogo.
+     */
+    @Column(name = "ruta_id")
+    private Long rutaId;
+
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 

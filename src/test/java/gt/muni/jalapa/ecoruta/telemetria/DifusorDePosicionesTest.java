@@ -51,6 +51,32 @@ class DifusorDePosicionesTest {
     }
 
     @Test
+    void quien_sigue_una_ruta_no_recibe_el_bus_de_otra() {
+        // Se observa con una conexion rota: si el difusor intenta enviarle algo,
+        // falla y sale de la lista. Mientras no se le envie, se queda.
+        difusor.suscribir(2L).completeWithError(new IOException("se cayo la red"));
+
+        difusor.difundir(new PosicionVigenteActualizada(posicionDeRuta(1L)));
+        assertThat(difusor.cuantosSuscriptores())
+                .as("la posicion del bus de la ruta 1 no se le envia a quien sigue la ruta 2")
+                .isEqualTo(1);
+
+        difusor.difundir(new PosicionVigenteActualizada(posicionDeRuta(2L)));
+        assertThat(difusor.cuantosSuscriptores())
+                .as("la del bus de su propia ruta si se le envia")
+                .isZero();
+    }
+
+    @Test
+    void quien_no_elige_ruta_recibe_toda_la_flota() {
+        difusor.suscribir().completeWithError(new IOException("se cayo la red"));
+
+        difusor.difundir(new PosicionVigenteActualizada(posicionDeRuta(2L)));
+
+        assertThat(difusor.cuantosSuscriptores()).isZero();
+    }
+
+    @Test
     void difundir_sin_suscriptores_no_revienta() {
         difusor.difundir(new PosicionVigenteActualizada(unaPosicion()));
 
@@ -62,6 +88,10 @@ class DifusorDePosicionesTest {
         difusor.latir();
 
         assertThat(difusor.cuantosSuscriptores()).isZero();
+    }
+
+    private static PosicionActualResponse posicionDeRuta(Long rutaId) {
+        return new PosicionActualResponse(14.6335, -89.9885, 18.0, Instant.now(), "BUS-0" + rutaId, rutaId);
     }
 
     private static PosicionActualResponse unaPosicion() {
