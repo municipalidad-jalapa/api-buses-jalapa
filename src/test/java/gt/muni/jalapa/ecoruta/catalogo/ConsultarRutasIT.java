@@ -13,17 +13,16 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void devuelve_las_rutas_activas_con_sus_paradas() throws Exception {
-        // V6 siembra la ruta de ejemplo (ocho paradas) y V12 la ruta de prueba a
-        // la Metroplaza (cinco paradas).
+        // V13 siembra RUTA PRINCIPAL (8 paradas) y RUTA SECUNDARIA parcial (6).
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
-                .andExpect(jsonPath("$[0].nombre").value("Ruta de ejemplo - Centro de Jalapa"))
+                .andExpect(jsonPath("$[0].nombre").value("RUTA PRINCIPAL"))
                 .andExpect(jsonPath("$[0].activa").value(true))
                 .andExpect(jsonPath("$[0].paradas", org.hamcrest.Matchers.hasSize(8)))
-                .andExpect(jsonPath("$[1].nombre").value("Ruta de prueba - Parque Central a Metroplaza"))
-                .andExpect(jsonPath("$[1].paradas", org.hamcrest.Matchers.hasSize(5)))
-                .andExpect(jsonPath("$[1].paradas[4].nombre").value("Metroplaza"));
+                .andExpect(jsonPath("$[1].nombre").value("RUTA SECUNDARIA"))
+                .andExpect(jsonPath("$[1].paradas", org.hamcrest.Matchers.hasSize(6)))
+                .andExpect(jsonPath("$[1].paradas[5].nombre").value("Parada 6"));
     }
 
     @Test
@@ -38,9 +37,9 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
         // pierde, la ruta sale hecha un garabato.
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(jsonPath("$[0].paradas[0].orden").value(1))
-                .andExpect(jsonPath("$[0].paradas[0].nombre").value("Parque Central"))
+                .andExpect(jsonPath("$[0].paradas[0].nombre").value("Parada 1"))
                 .andExpect(jsonPath("$[0].paradas[7].orden").value(8))
-                .andExpect(jsonPath("$[0].paradas[7].nombre").value("Transito Rojas - Chipilapa"));
+                .andExpect(jsonPath("$[0].paradas[7].nombre").value("Parada 8"));
     }
 
     @Test
@@ -48,10 +47,14 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
         // ADR-007, el error clasico: PostGIS guarda (lon, lat). Se comprueba
         // contra el valor crudo de la base, no solo contra el DTO, porque a
         // nivel de DTO pasaria igual si escritura y lectura invirtieran a la vez.
+        Long rutaPrincipal = jdbc.queryForObject(
+                "SELECT id FROM rutas WHERE nombre = 'RUTA PRINCIPAL'", Long.class);
         Double latEnBase = jdbc.queryForObject(
-                "SELECT ST_Y(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = 1", Double.class);
+                "SELECT ST_Y(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = ?",
+                Double.class, rutaPrincipal);
         Double lonEnBase = jdbc.queryForObject(
-                "SELECT ST_X(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = 1", Double.class);
+                "SELECT ST_X(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = ?",
+                Double.class, rutaPrincipal);
 
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(jsonPath("$[0].paradas[0].latitud").value(latEnBase))
@@ -64,7 +67,7 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void una_ruta_inactiva_no_aparece_en_el_listado() throws Exception {
-        // Todas: con la ruta de prueba de V12 hay mas de una.
+        // Todas: con la ruta secundaria de V13 hay mas de una.
         jdbc.update("UPDATE rutas SET activa = false");
         try {
             mockMvc.perform(get("/api/v1/rutas"))
@@ -77,9 +80,11 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void se_puede_consultar_una_ruta_por_su_identificador() throws Exception {
-        mockMvc.perform(get("/api/v1/rutas/1"))
+        Long rutaPrincipal = jdbc.queryForObject(
+                "SELECT id FROM rutas WHERE nombre = 'RUTA PRINCIPAL'", Long.class);
+        mockMvc.perform(get("/api/v1/rutas/" + rutaPrincipal))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").value(rutaPrincipal))
                 .andExpect(jsonPath("$.paradas", org.hamcrest.Matchers.hasSize(8)));
     }
 

@@ -35,7 +35,7 @@ class IngestaConCredencialDeEquipoIT extends IntegracionPostgisTest {
     private VehiculoRepository vehiculos;
 
     private Long busPiloto() {
-        return vehiculos.findByIdentificador("BUS-01").orElseThrow().getId();
+        return vehiculos.findByIdentificador("BUS-1").orElseThrow().getId();
     }
 
     private AltaDeEquipo emitir() {

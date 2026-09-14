@@ -34,7 +34,7 @@ class SecretoNoSeFiltraIT extends IntegracionPostgisTest {
     private VehiculoRepository vehiculos;
 
     private AltaDeEquipo emitir() {
-        Long bus = vehiculos.findByIdentificador("BUS-01").orElseThrow().getId();
+        Long bus = vehiculos.findByIdentificador("BUS-1").orElseThrow().getId();
         return equipoService.emitir(bus, "Tableta de pruebas");
     }
 

@@ -33,10 +33,10 @@ class EsquemaFlotaTest extends IntegracionPostgisTest {
 
     @Test
     void v5_sembro_el_vehiculo_piloto() {
-        assertThat(vehiculos.findByIdentificador("BUS-01"))
+        assertThat(vehiculos.findByIdentificador("BUS-1"))
                 .get()
                 .satisfies(v -> {
-                    assertThat(v.getPlaca()).isEqualTo("P-000BBB");
+                    assertThat(v.getPlaca()).isEqualTo("MIBUS-001");
                     assertThat(v.isActivo()).isTrue();
                     assertThat(v.getCreadoEn()).isNotNull();
                 });
@@ -44,7 +44,7 @@ class EsquemaFlotaTest extends IntegracionPostgisTest {
 
     @Test
     void un_equipo_se_guarda_con_su_vehiculo_y_nace_activo() {
-        Vehiculo bus = vehiculos.findByIdentificador("BUS-01").orElseThrow();
+        Vehiculo bus = vehiculos.findByIdentificador("BUS-1").orElseThrow();
 
         Equipo guardado = equipos.save(
                 new Equipo("eq_AAAAAAAAAAAA", "$2a$10$hashDePrueba", "Tableta cabina", bus));
@@ -58,7 +58,7 @@ class EsquemaFlotaTest extends IntegracionPostgisTest {
 
     @Test
     void la_base_impide_dos_equipos_activos_en_el_mismo_vehiculo() {
-        Vehiculo bus = vehiculos.findByIdentificador("BUS-01").orElseThrow();
+        Vehiculo bus = vehiculos.findByIdentificador("BUS-1").orElseThrow();
         equipos.saveAndFlush(new Equipo("eq_BBBBBBBBBBBB", "$2a$10$hash", "Primera", bus));
 
         // uq_equipo_activo_por_vehiculo: la regla vive en la base, no solo en el
@@ -70,7 +70,7 @@ class EsquemaFlotaTest extends IntegracionPostgisTest {
 
     @Test
     void revocar_libera_el_vehiculo_para_un_equipo_nuevo() {
-        Vehiculo bus = vehiculos.findByIdentificador("BUS-01").orElseThrow();
+        Vehiculo bus = vehiculos.findByIdentificador("BUS-1").orElseThrow();
         Equipo viejo = equipos.saveAndFlush(
                 new Equipo("eq_DDDDDDDDDDDD", "$2a$10$hash", "Vieja", bus));
 
@@ -92,7 +92,7 @@ class EsquemaFlotaTest extends IntegracionPostgisTest {
 
     @Test
     void revocar_dos_veces_no_mueve_la_fecha_de_la_primera_revocacion() {
-        Vehiculo bus = vehiculos.findByIdentificador("BUS-01").orElseThrow();
+        Vehiculo bus = vehiculos.findByIdentificador("BUS-1").orElseThrow();
         Equipo equipo = equipos.saveAndFlush(
                 new Equipo("eq_FFFFFFFFFFFF", "$2a$10$hash", "Unica", bus));
 
