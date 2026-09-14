@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta.seguridad;
 
 import gt.muni.jalapa.ecoruta.flota.seguridad.EquipoAuthFilter;
+import gt.muni.jalapa.ecoruta.identidad.seguridad.AdminJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.identidad.seguridad.ConductorJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.seguridad.bootstrap.AdminBootstrapFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -38,6 +39,7 @@ public class SecurityConfig {
     public SecurityFilterChain cadenaApi(HttpSecurity http,
                                          EquipoAuthFilter equipoAuthFilter,
                                          ConductorJwtAuthFilter conductorJwtAuthFilter,
+                                         AdminJwtAuthFilter adminJwtAuthFilter,
                                          AdminBootstrapFilter adminBootstrapFilter,
                                          ApiErrorAuthenticationEntryPoint entryPoint,
                                          ApiErrorAccessDeniedHandler accessDenied,
@@ -89,6 +91,8 @@ public class SecurityConfig {
                         // HU-Desarrollo-63: el conductor entrega el idToken de
                         // Firebase aqui; todavia no hay sesion propia.
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/conductor").permitAll()
+                        // SCRUM-173: login del panel municipal, mismo mecanismo.
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/admin").permitAll()
 
                         // SCRUM-142: la ingesta la hace el equipo a bordo con su
                         // credencial propia. Ya no interviene ningun rol de persona.
@@ -107,7 +111,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler(accessDenied))
                 .addFilterBefore(equipoAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(conductorJwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(conductorJwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(adminJwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         // ---- INICIO del bloque provisional. TODO(SCRUM-134): borrar entero ----
         // Concede ROLE_ADMIN por cabecera X-Admin-Token mientras no exista el
@@ -165,6 +170,13 @@ configuracion.setMaxAge(3600L);
     public FilterRegistrationBean<EquipoAuthFilter> noRegistrarEquipoAuthFilter(
             EquipoAuthFilter filtro) {
         FilterRegistrationBean<EquipoAuthFilter> registro = new FilterRegistrationBean<>(filtro);
+        registro.setEnabled(false);
+        return registro;
+    }
+
+    @Bean
+    public FilterRegistrationBean<AdminJwtAuthFilter> noRegistrarAdminJwtAuthFilter(AdminJwtAuthFilter filtro) {
+        FilterRegistrationBean<AdminJwtAuthFilter> registro = new FilterRegistrationBean<>(filtro);
         registro.setEnabled(false);
         return registro;
     }

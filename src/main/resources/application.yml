@@ -47,6 +47,15 @@ ecoruta:
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
+  panel-admin:
+    # SCRUM-173. Sin actividad durante este plazo, la sesion del panel se cierra.
+    inactividad-minutos: ${PANEL_ADMIN_INACTIVIDAD_MINUTOS:30}
+    # Una posicion mas vieja se muestra como "sin datos recientes".
+    datos-recientes-segundos: 120
+    # Primera cuenta de administrador: uid de Firebase. Vacio = no se crea.
+    # La contrasena vive solo en Firebase; nunca en el repositorio.
+    firebase-uid-inicial: ${ECORUTA_ADMIN_FIREBASE_UID:}
+    usuario-inicial: ${ECORUTA_ADMIN_USUARIO:admin}
   admin:
     # PROVISIONAL de SCRUM-142 - TODO(SCRUM-134). Concede ROLE_ADMIN por la
     # cabecera X-Admin-Token mientras no exista la autenticacion de personas con
