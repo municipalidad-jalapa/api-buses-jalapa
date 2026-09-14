@@ -51,4 +51,9 @@ public class Usuario {
     public boolean puedeIniciarSesionComoConductor() {
         return activo && rol.esConductor();
     }
+
+    /** SCRUM-173. El rol de administrador no esta atado a ninguna ruta. */
+    public boolean puedeEntrarAlPanelMunicipal() {
+        return activo && rol == Rol.ADMIN;
+    }
 }
