@@ -113,6 +113,79 @@ public class PasosDeEta {
         insertarPosicion(identificador, 14.638392, -89.987701, 20d, Instant.now());
     }
 
+    @Dado("que el vehiculo {string} reporta dos posiciones sin velocidad avanzando sobre el trazado")
+    public void dos_posiciones_sin_velocidad(String identificador) {
+        Instant ahora = Instant.now();
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, null, ahora.minusSeconds(15));
+        // Siguiente vertice del trazado, ~125 m despues: ~30 km/h.
+        insertarPosicion(identificador, 14.632733, -89.986725, null, ahora);
+    }
+
+    @Dado("que la parada de orden {int} tiene una reserva activa")
+    public void la_parada_tiene_una_reserva(int orden) {
+        jdbc.update("""
+                INSERT INTO registros_espera (dispositivo_id, parada_id, estado, creado_en, expira_en)
+                SELECT 'bdd-eta', p.id, 'ACTIVA', now(), now() + interval '30 minutes'
+                  FROM paradas p WHERE p.ruta_id = 1 AND p.orden = ?
+                """, orden);
+    }
+
+    @Dado("que el vehiculo {string} lleva {int} minutos detenido fuera de cualquier parada")
+    public void detenido_fuera_de_parada(String identificador, int minutos) {
+        Instant ahora = Instant.now();
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 30d,
+                ahora.minusSeconds(minutos * 60L + 20));
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 0d,
+                ahora.minusSeconds(minutos * 60L));
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 0d, ahora);
+    }
+
+    @Dado("que el vehiculo {string} sale del trazado a unos 300 metros de la 1a Calle")
+    public void sale_del_trazado(String identificador) {
+        Instant ahora = Instant.now();
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 25d, ahora.minusSeconds(40));
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2 + 0.003, LON_ANTES_DE_PARADA_2 - 0.001, 25d, ahora);
+    }
+
+    @Entonces("el estado del bus es {string}")
+    public void el_estado_es(String estado) throws Exception {
+        assertThat(respuesta().get("estado").asText()).isEqualTo(estado);
+    }
+
+    @Entonces("los minutos a la parada de orden {int} incluyen la espera con reserva de la parada de orden {int}")
+    public void incluyen_la_espera(int destino, int intermedia) throws Exception {
+        // Se reproduce el calculo con la distancia medida por PostGIS: 36 km/h = 10 m/s.
+        Double metros = jdbc.queryForObject("""
+                SELECT (ST_LineLocatePoint(r.trazado, p.ubicacion)
+                        - ST_LineLocatePoint(r.trazado, ST_SetSRID(ST_MakePoint(?, ?), 4326)))
+                       * ST_Length(r.trazado::geography)
+                  FROM rutas r JOIN paradas p ON p.ruta_id = r.id
+                 WHERE r.id = 1 AND p.orden = ?
+                """, Double.class, LON_ANTES_DE_PARADA_2, LAT_ANTES_DE_PARADA_2, destino);
+        int esperado = (int) Math.ceil((metros / 10 + propiedades.esperaConReservaSegundos()) / 60);
+        int sinEspera = (int) Math.ceil(metros / 10 / 60);
+
+        JsonNode eta = respuesta();
+        assertThat(minutos(eta, destino)).isEqualTo(esperado);
+        assertThat(minutos(eta, destino)).isGreaterThanOrEqualTo(sinEspera);
+        assertThat(minutos(eta, intermedia)).isLessThan(minutos(eta, destino));
+    }
+
+    @Y("el desvio trae el punto de reincorporacion y el recorrido estimado")
+    public void el_desvio_trae_reincorporacion() throws Exception {
+        JsonNode desvio = respuesta().get("desvio");
+        assertThat(desvio.get("metrosFueraDelTrazado").asInt()).isGreaterThan(propiedades.desvioMetros());
+        assertThat(desvio.get("reincorporacion").get("latitud").isNumber()).isTrue();
+        assertThat(desvio.get("recorridoEstimado").size()).isGreaterThan(3);
+    }
+
+    @Y("el recorrido estimado empieza donde el bus dejo el trazado")
+    public void empieza_donde_salio() throws Exception {
+        JsonNode primero = respuesta().get("desvio").get("recorridoEstimado").get(0);
+        assertThat(primero.get("latitud").asDouble()).isEqualTo(LAT_ANTES_DE_PARADA_2);
+        assertThat(primero.get("longitud").asDouble()).isEqualTo(LON_ANTES_DE_PARADA_2);
+    }
+
     @Dado("que el intervalo minimo de recalculo es de {int} segundos")
     public void el_intervalo_minimo_es(int segundos) {
         assertThat(propiedades.intervaloMinimoRecalculoSegundos()).isEqualTo(segundos);

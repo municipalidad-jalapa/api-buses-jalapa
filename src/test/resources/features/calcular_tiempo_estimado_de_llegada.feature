@@ -69,6 +69,44 @@ Característica: Calcular el tiempo estimado de llegada
   Escenario: No se consume ningun servicio externo
     Entonces el calculo del ETA no usa ningun cliente HTTP
 
+  @HU-84 @CP-ETA-01
+  Escenario: Sin velocidad reportada se deduce de las posiciones del GPS
+    Dado que el vehiculo "BUS-01" reporta dos posiciones sin velocidad avanzando sobre el trazado
+    Cuando consulto el ETA de la ruta 1
+    Entonces el estado del bus es "EN_RUTA"
+    Y las paradas pendientes son confiables
+
+  @HU-84 @CP-ETA-03
+  Escenario: Las paradas intermedias suman su espera, mayor si tienen reservas
+    Dado que la parada de orden 2 tiene una reserva activa
+    Y que el vehiculo "BUS-01" reporta posiciones recientes a 36 km/h antes de la parada 2
+    Cuando consulto el ETA de la ruta 1
+    Entonces los minutos a la parada de orden 3 incluyen la espera con reserva de la parada de orden 2
+
+  @HU-84 @CP-ETA-05
+  Escenario: Detenido fuera de parada por mucho tiempo no proyecta un numero optimista
+    Dado que el vehiculo "BUS-01" lleva 6 minutos detenido fuera de cualquier parada
+    Cuando consulto el ETA de la ruta 1
+    Entonces el estado del bus es "DETENIDO_FUERA_DE_PARADA"
+    Y todas las paradas tienen minutos nulos
+
+  @HU-84 @CP-ETA-04
+  Escenario: Una detencion breve fuera de parada no anula la estimacion
+    Dado que el vehiculo "BUS-01" lleva 1 minutos detenido fuera de cualquier parada
+    Cuando consulto el ETA de la ruta 1
+    Entonces el estado del bus es "EN_RUTA"
+    Y las paradas pendientes tienen minutos calculados
+
+  @HU-84 @CP-ETA-10
+  Escenario: En desvio el tiempo se recalcula por el camino que sigue el bus
+    Dado que el vehiculo "BUS-01" sale del trazado a unos 300 metros de la 1a Calle
+    Cuando consulto el ETA de la ruta 1
+    Entonces el estado del bus es "EN_DESVIO"
+    Y el desvio trae el punto de reincorporacion y el recorrido estimado
+    Y el recorrido estimado empieza donde el bus dejo el trazado
+    Y las paradas pendientes tienen minutos calculados
+    Y las paradas pendientes no son confiables
+
   Escenario: Ruta inexistente
     Cuando consulto el ETA de la ruta 999999
     Entonces la respuesta tiene codigo 404
