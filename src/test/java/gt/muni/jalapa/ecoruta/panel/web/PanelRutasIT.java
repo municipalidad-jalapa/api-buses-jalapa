@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.RequestBuilder;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -90,7 +91,8 @@ class PanelRutasIT extends IntegracionPostgisTest {
         assertThat(ruta.get("transmitiendo").asBoolean()).isTrue();
         assertThat(ruta.get("posicion").get("latitud").asDouble()).isEqualTo(14.6335);
         assertThat(ruta.get("posicion").get("longitud").asDouble()).isEqualTo(-89.9885);
-        assertThat(Instant.parse(ruta.get("posicion").get("registradaEn").asText())).isEqualTo(ahora);
+        assertThat(Instant.parse(ruta.get("posicion").get("registradaEn").asText()))
+                .isEqualTo(ahora.truncatedTo(ChronoUnit.MICROS));
     }
 
     @Test
