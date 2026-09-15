@@ -99,6 +99,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/conductor/**").hasRole("CONDUCTOR")
 
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // HU-79: el panel municipal ve la operacion de todas las
+                        // rutas. Mismo ROLE_ADMIN que /admin; el AdminBootstrapFilter
+                        // lo cubre mientras no llegue SCRUM-134.
+                        .requestMatchers("/api/v1/panel/**").hasRole("ADMIN")
 
                         // Cierra por defecto: una ruta nueva sin regla explicita se
                         // rechaza en vez de quedar publicada por descuido.
