@@ -104,16 +104,19 @@ public class ReservaService {
     }
 
     /**
-     * El pasajero suelta su reserva a mano (HU-124). No se borra: pasa a
-     * CANCELADA y guarda cuando se cancelo.
+     * El pasajero suelta su reserva a mano (HU-124 / SCRUM-172). No se borra:
+     * pasa a CANCELADA y guarda cuando se cancelo.
      *
      * <p>Solo el dispositivo que la creo puede cancelarla. Sin ese control,
      * cualquiera podria soltar la reserva de otro probando ids, que son
      * secuenciales.
      *
+     * <p>Una reserva en {@link EstadoReserva#ABORDO} jamás pasa a CANCELADA por
+     * este flujo: el pasajero ya subió y el conteo de espera ya no la incluye.
+     *
      * @throws RecursoNoEncontradoException si no existe
      * @throws AccessDeniedException        si es de otro dispositivo (403)
-     * @throws ReglaDeNegocioException      si ya estaba cancelada o no esta vigente
+     * @throws ReglaDeNegocioException      si ya estaba cancelada, abordada o no esta vigente
      */
     @Transactional
     public void cancelar(Long reservaId, String dispositivoId) {
@@ -125,6 +128,10 @@ public class ReservaService {
         }
         if (reserva.getEstado() == EstadoReserva.CANCELADA) {
             throw new ReglaDeNegocioException("Esta reserva ya estaba cancelada.");
+        }
+        if (reserva.getEstado() == EstadoReserva.ABORDO) {
+            throw new ReglaDeNegocioException(
+                    "No se puede cancelar una reserva ya marcada como abordada.");
         }
 
         Instant ahora = Instant.now(reloj);
