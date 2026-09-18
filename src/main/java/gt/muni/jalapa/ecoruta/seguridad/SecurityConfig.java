@@ -23,169 +23,416 @@ import java.util.List;
 /**
  * Cadena de seguridad de la API.
  *
- * <p>Hasta ahora no existia ninguna, asi que Spring Boot ponia HTTP Basic con
- * contrasena generada sobre absolutamente todo.
- *
- * <p>No hay una historia propia de SecurityConfig: esta implicito en SCRUM-134
- * (login de personas con Firebase), SCRUM-142 (credencial de equipo) y SCRUM-274
- * (CORS), las tres de owner-D4. Por eso este archivo se escribe pensando en que
- * las otras dos lleguen despues sin reescribirlo.
+ * La API utiliza tokens enviados en cabeceras
+ * y no mantiene sesiones en el servidor.
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain cadenaApi(HttpSecurity http,
-                                         EquipoAuthFilter equipoAuthFilter,
-                                         ConductorJwtAuthFilter conductorJwtAuthFilter,
-                                         AdminJwtAuthFilter adminJwtAuthFilter,
-                                         AdminBootstrapFilter adminBootstrapFilter,
-                                         ApiErrorAuthenticationEntryPoint entryPoint,
-                                         ApiErrorAccessDeniedHandler accessDenied,
-                                         CorsConfigurationSource corsConfigurationSource)
-            throws Exception {
+    public SecurityFilterChain cadenaApi(
+            HttpSecurity http,
+            EquipoAuthFilter equipoAuthFilter,
+            ConductorJwtAuthFilter conductorJwtAuthFilter,
+            AdminJwtAuthFilter adminJwtAuthFilter,
+            AdminBootstrapFilter adminBootstrapFilter,
+            ApiErrorAuthenticationEntryPoint entryPoint,
+            ApiErrorAccessDeniedHandler accessDenied,
+            CorsConfigurationSource corsConfigurationSource
+    ) throws Exception {
 
         http
-                // API con token en cabecera y sin cookies de sesion: CSRF no aplica.
+                /*
+                 * API sin cookies de sesión.
+                 */
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Sin deshabilitarlos, Boot monta Basic y formulario sobre todo.
+
+                .sessionManagement(
+                        sesion -> sesion.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
+                /*
+                 * No utilizar HTTP Basic ni login por formulario.
+                 */
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
-                // Gancho para SCRUM-274: hoy la fuente no permite ningun origen.
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+
+                /*
+                 * Configuración CORS.
+                 */
+                .cors(cors ->
+                        cors.configurationSource(
+                                corsConfigurationSource
+                        )
+                )
+
                 .authorizeHttpRequests(rutas -> rutas
-                        // /error tiene que ser publico: en Spring Security 6 el
-                        // AuthorizationFilter filtra tambien el dispatch ERROR, y sin
-                        // esto todo error se vuelve un 403 sin cuerpo. Es la causa mas
-                        // comun de "por que mi 401 es un 403".
-                        .requestMatchers("/error").permitAll()
 
-                        .requestMatchers("/actuator/health", "/actuator/health/**",
-                                "/actuator/info").permitAll()
-                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**",
-                                "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        /*
+                         * Permitir que Spring procese correctamente
+                         * los errores HTTP.
+                         */
+                        .requestMatchers("/error")
+                        .permitAll()
 
-                        // Publico para el pasajero anonimo. Se permiten ya las rutas que
-                        // SCRUM-130/131/132/133 y SCRUM-139/140 declaran publicas, para
-                        // que el denyAll() de abajo no se convierta en una mina que deje
-                        // en 403 las ramas de D1, D2 y D3 al mergear.
-                        .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/posicion").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/stream").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/rutas", "/api/v1/rutas/**").permitAll()
-                        // SCRUM-306: el pasajero anonimo indica que espera en la parada.
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas").permitAll()
-                        // HU-135: renueva su propia reserva antes de que venza.
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/renovacion")
-                                .permitAll()
-                        // HU-124: cancela su propia reserva. El servicio exige que la
-                        // cabecera X-Dispositivo-Id coincida con quien la creo.
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reservas/*").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/dispositivos/notificaciones")
-                                .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/abordaje")
-                                .permitAll()
+                        /*
+                         * Actuator.
+                         */
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/health/**",
+                                "/actuator/info"
+                        )
+                        .permitAll()
 
-                        // HU-Desarrollo-63: el conductor entrega el idToken de
-                        // Firebase aqui; todavia no hay sesion propia.
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/conductor").permitAll()
-                        // SCRUM-173: login del panel municipal, mismo mecanismo.
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/admin").permitAll()
+                        /*
+                         * Swagger / OpenAPI.
+                         */
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        )
+                        .permitAll()
 
-                        // SCRUM-142: la ingesta la hace el equipo a bordo con su
-                        // credencial propia. Ya no interviene ningun rol de persona.
-                        .requestMatchers(HttpMethod.POST, "/api/v1/telemetria/posiciones")
+                        /*
+                         * TELEMETRÍA PÚBLICA
+                         */
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/telemetria/posicion"
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/telemetria/stream"
+                        )
+                        .permitAll()
+
+                        /*
+                         * CATÁLOGO DE RUTAS
+                         */
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/rutas",
+                                "/api/v1/rutas/**"
+                        )
+                        .permitAll()
+
+                        /*
+                         * RESERVAS DEL PASAJERO
+                         */
+
+                        /*
+                         * SCRUM-306 / HU-134.
+                         * Crear una reserva.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/reservas"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-135.
+                         * Renovar su propia reserva.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/reservas/*/renovacion"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-124.
+                         * Cancelar su propia reserva.
+                         */
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/v1/reservas/*"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-76.
+                         * El pasajero consulta el estado de
+                         * una de sus reservas.
+                         */
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/reservas/*"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-76.
+                         * El pasajero declara que no abordó.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/reservas/*/declaracion-no-abordo"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-57.
+                         * El pasajero responde al aviso
+                         * de abordaje.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/reservas/*/abordaje"
+                        )
+                        .permitAll()
+
+                        /*
+                         * Registro del dispositivo
+                         * para notificaciones.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/dispositivos/notificaciones"
+                        )
+                        .permitAll()
+
+                        /*
+                         * AUTENTICACIÓN DEL CONDUCTOR
+                         *
+                         * El conductor entrega aquí su
+                         * idToken de Firebase.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/conductor"
+                        )
+                        .permitAll()
+
+                        /*
+                         * AUTENTICACIÓN DEL PANEL MUNICIPAL (SCRUM-173)
+                         *
+                         * Mismo mecanismo que el conductor: idToken de
+                         * Firebase a cambio del JWT de administrador.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/admin"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-76.
+                         *
+                         * El conductor marca una parada
+                         * como atendida.
+                         *
+                         * Requiere un JWT válido que otorgue
+                         * ROLE_CONDUCTOR.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/rutas/*/paradas/*/atendida"
+                        )
+                        .hasRole("CONDUCTOR")
+
+                        /*
+                         * INGESTA DE TELEMETRÍA
+                         *
+                         * Solo un equipo autenticado puede
+                         * registrar posiciones.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/telemetria/posiciones"
+                        )
                         .hasRole("EQUIPO")
 
-                        // Panel del conductor: solo el JWT propio con rol conductor.
-                        .requestMatchers("/api/v1/conductor/**").hasRole("CONDUCTOR")
+                        /*
+                         * PANEL DEL CONDUCTOR
+                         */
+                        .requestMatchers(
+                                "/api/v1/conductor/**"
+                        )
+                        .hasRole("CONDUCTOR")
 
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        /*
+                         * ADMINISTRACIÓN
+                         */
+                        .requestMatchers(
+                                "/api/v1/admin/**"
+                        )
+                        .hasRole("ADMIN")
 
-                        // Cierra por defecto: una ruta nueva sin regla explicita se
-                        // rechaza en vez de quedar publicada por descuido.
-                        .anyRequest().denyAll())
-                .exceptionHandling(e -> e
+                        /*
+                         * Cualquier endpoint que no tenga
+                         * una regla explícita queda cerrado.
+                         */
+                        .anyRequest()
+                        .denyAll()
+                )
+
+                /*
+                 * Respuestas uniformes para:
+                 * 401 Unauthorized
+                 * 403 Forbidden
+                 */
+                .exceptionHandling(errores -> errores
                         .authenticationEntryPoint(entryPoint)
-                        .accessDeniedHandler(accessDenied))
-                .addFilterBefore(equipoAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(conductorJwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(adminJwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        .accessDeniedHandler(accessDenied)
+                )
 
-        // ---- INICIO del bloque provisional. TODO(SCRUM-134): borrar entero ----
-        // Concede ROLE_ADMIN por cabecera X-Admin-Token mientras no exista el
-        // JwtAuthFilter de Firebase. Al borrarlo, los controladores no cambian:
-        // siguen exigiendo hasRole('ADMIN') igual que hoy.
-        http.addFilterBefore(adminBootstrapFilter, EquipoAuthFilter.class);
-        // ---- FIN del bloque provisional ----
+                /*
+                 * Autenticación del equipo GPS.
+                 */
+                .addFilterBefore(
+                        equipoAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
+                /*
+                 * Autenticación JWT del conductor.
+                 */
+                .addFilterBefore(
+                        conductorJwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
+                /*
+                 * Autenticación JWT del administrador municipal (SCRUM-173).
+                 */
+                .addFilterBefore(
+                        adminJwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
+        /*
+         * BLOQUE PROVISIONAL.
+         *
+         * Permite ROLE_ADMIN mediante X-Admin-Token
+         * mientras no exista completamente el filtro
+         * definitivo de autenticación administrativa.
+         */
+        http.addFilterBefore(
+                adminBootstrapFilter,
+                EquipoAuthFilter.class
+        );
 
         return http.build();
     }
 
     /**
-     * Sin origenes por ahora. SCRUM-274 llena {@code ecoruta.cors.origenes-permitidos}
-     * por ambiente y aqui no hay nada mas que tocar.
+     * Configuración CORS de la API.
      */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(CorsProperties propiedades) {
-        CorsConfiguration configuracion = new CorsConfiguration();
-        configuracion.setAllowedOrigins(propiedades.origenesPermitidos());
+    public CorsConfigurationSource corsConfigurationSource(
+            CorsProperties propiedades
+    ) {
+
+        CorsConfiguration configuracion =
+                new CorsConfiguration();
+
+        configuracion.setAllowedOrigins(
+                propiedades.origenesPermitidos()
+        );
 
         configuracion.setAllowedMethods(
-        List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-);
+                List.of(
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "PATCH",
+                        "DELETE",
+                        "OPTIONS"
+                )
+        );
 
-configuracion.setAllowedHeaders(
-        List.of(
-                "Authorization",
-                "Content-Type",
-                "Accept",
-                "Last-Event-ID",
-                "X-Dispositivo-Id"
-        )
-);
+        configuracion.setAllowedHeaders(
+                List.of(
+                        "Authorization",
+                        "Content-Type",
+                        "Accept",
+                        "Last-Event-ID",
+                        "X-Dispositivo-Id"
+                )
+        );
 
-configuracion.setExposedHeaders(
-        List.of(
-                "Cache-Control",
-                "Content-Type"
-        )
-);
+        configuracion.setExposedHeaders(
+                List.of(
+                        "Cache-Control",
+                        "Content-Type"
+                )
+        );
 
-configuracion.setAllowCredentials(true);
-configuracion.setMaxAge(3600L);
-        UrlBasedCorsConfigurationSource fuente = new UrlBasedCorsConfigurationSource();
-        fuente.registerCorsConfiguration("/api/**", configuracion);
+        configuracion.setAllowCredentials(true);
+        configuracion.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource fuente =
+                new UrlBasedCorsConfigurationSource();
+
+        fuente.registerCorsConfiguration(
+                "/api/**",
+                configuracion
+        );
+
         return fuente;
     }
 
     /**
-     * Todo bean de tipo Filter lo recoge Boot y lo instala TAMBIEN en la cadena de
-     * servlets, donde correria antes de Spring Security y en cada peticion. Estos
-     * filtros solo deben vivir dentro de la cadena de seguridad.
+     * EquipoAuthFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security.
      */
     @Bean
-    public FilterRegistrationBean<EquipoAuthFilter> noRegistrarEquipoAuthFilter(
-            EquipoAuthFilter filtro) {
-        FilterRegistrationBean<EquipoAuthFilter> registro = new FilterRegistrationBean<>(filtro);
+    public FilterRegistrationBean<EquipoAuthFilter>
+    noRegistrarEquipoAuthFilter(
+            EquipoAuthFilter filtro
+    ) {
+
+        FilterRegistrationBean<EquipoAuthFilter> registro =
+                new FilterRegistrationBean<>(filtro);
+
         registro.setEnabled(false);
+
         return registro;
     }
 
+    /**
+     * AdminJwtAuthFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security (SCRUM-173).
+     */
     @Bean
-    public FilterRegistrationBean<AdminJwtAuthFilter> noRegistrarAdminJwtAuthFilter(AdminJwtAuthFilter filtro) {
-        FilterRegistrationBean<AdminJwtAuthFilter> registro = new FilterRegistrationBean<>(filtro);
+    public FilterRegistrationBean<AdminJwtAuthFilter>
+    noRegistrarAdminJwtAuthFilter(
+            AdminJwtAuthFilter filtro
+    ) {
+
+        FilterRegistrationBean<AdminJwtAuthFilter> registro =
+                new FilterRegistrationBean<>(filtro);
+
         registro.setEnabled(false);
+
         return registro;
     }
 
+    /**
+     * ConductorJwtAuthFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security.
+     */
     @Bean
-    public FilterRegistrationBean<ConductorJwtAuthFilter> noRegistrarConductorJwtAuthFilter(
-            ConductorJwtAuthFilter filtro) {
-        FilterRegistrationBean<ConductorJwtAuthFilter> registro = new FilterRegistrationBean<>(filtro);
+    public FilterRegistrationBean<ConductorJwtAuthFilter>
+    noRegistrarConductorJwtAuthFilter(
+            ConductorJwtAuthFilter filtro
+    ) {
+
+        FilterRegistrationBean<ConductorJwtAuthFilter> registro =
+                new FilterRegistrationBean<>(filtro);
+
         registro.setEnabled(false);
+
         return registro;
     }
 }
