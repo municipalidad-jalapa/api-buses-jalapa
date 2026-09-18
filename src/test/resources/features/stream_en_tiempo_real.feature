@@ -27,7 +27,7 @@ Característica: Recibir la posición del bus en tiempo real
     Dado un equipo "Tableta cabina 1" con credencial vigente
     Y un pasajero conectado al stream
     Cuando el equipo reporta su posición
-    Entonces el pasajero recibe la posición del "BUS-01"
+    Entonces el pasajero recibe la posición del "BUS-1"
 
   @criterio-2
   Escenario: La misma posición llega a todos los suscriptores
