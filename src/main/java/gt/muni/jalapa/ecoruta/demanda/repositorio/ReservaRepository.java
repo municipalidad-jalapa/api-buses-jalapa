@@ -9,39 +9,94 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
-public interface ReservaRepository extends JpaRepository<Reserva, Long> {
+public interface ReservaRepository
+        extends JpaRepository<Reserva, Long> {
 
     /**
-     * Una sola consulta: ¿el dispositivo ya tiene una reserva vigente?
-     * Vigente = {@code ACTIVA} o {@code RENOVADA}. {@code ABORDO} no cuenta.
+     * Una sola consulta:
+     * ¿el dispositivo ya tiene una reserva vigente?
+     *
+     * Vigente = ACTIVA o RENOVADA.
+     * ABORDO no cuenta.
      */
     @Query("""
-            SELECT CASE WHEN COUNT(r) > 0 THEN TRUE ELSE FALSE END
+            SELECT CASE WHEN COUNT(r) > 0
+                   THEN TRUE ELSE FALSE END
               FROM Reserva r
              WHERE r.dispositivoId = :dispositivoId
                AND r.estado IN :estados
             """)
-    boolean existeVigentePorDispositivo(@Param("dispositivoId") String dispositivoId,
-                                        @Param("estados") Collection<EstadoReserva> estados);
+    boolean existeVigentePorDispositivo(
+            @Param("dispositivoId")
+            String dispositivoId,
 
-    long countByDispositivoIdAndEstadoIn(String dispositivoId, Collection<EstadoReserva> estados);
+            @Param("estados")
+            Collection<EstadoReserva> estados
+    );
 
     /**
-     * Pasa a EXPIRADA toda reserva vigente cuya fecha de expiracion ya paso
-     * (HU-135). Es un UPDATE masivo: lo corre la tarea programada sin cargar
-     * entidades.
+     * Cuenta las reservas del dispositivo
+     * que se encuentran en alguno de los
+     * estados indicados.
+     */
+    long countByDispositivoIdAndEstadoIn(
+            String dispositivoId,
+            Collection<EstadoReserva> estados
+    );
+
+    /**
+     * HU-76.
      *
-     * <p>{@code clearAutomatically} vacia el contexto de persistencia despues,
-     * para que nadie siga viendo el estado viejo de una fila recien tocada.
+     * Obtiene las reservas que siguen pendientes
+     * en una parada determinada.
+     *
+     * El servicio envía ACTIVA y RENOVADA,
+     * por lo que CANCELADA, EXPIRADA y ABORDO
+     * no aparecen.
+     */
+    List<Reserva> findByParada_IdAndEstadoIn(
+            Long paradaId,
+            Collection<EstadoReserva> estados
+    );
+
+    /**
+     * Busca una reserva verificando también
+     * el dispositivo que la creó.
+     *
+     * Utilizado por las operaciones donde el
+     * pasajero solamente puede modificar
+     * sus propias reservas.
+     */
+    Optional<Reserva> findByIdAndDispositivoId(
+            Long id,
+            String dispositivoId
+    );
+
+    /**
+     * HU-135.
+     *
+     * Pasa a EXPIRADA toda reserva vigente
+     * cuya fecha de expiración ya pasó.
+     *
+     * Es una actualización masiva para evitar
+     * cargar las entidades una por una.
      */
     @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Reserva r
-               SET r.estado = gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva.EXPIRADA
+               SET r.estado =
+                   gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva.EXPIRADA
              WHERE r.estado IN :estados
                AND r.expiraEn <= :ahora
             """)
-    int marcarExpiradas(@Param("estados") Collection<EstadoReserva> estados,
-                        @Param("ahora") Instant ahora);
+    int marcarExpiradas(
+            @Param("estados")
+            Collection<EstadoReserva> estados,
+
+            @Param("ahora")
+            Instant ahora
+    );
 }
