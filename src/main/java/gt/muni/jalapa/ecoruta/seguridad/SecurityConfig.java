@@ -3,6 +3,7 @@ package gt.muni.jalapa.ecoruta.seguridad;
 import gt.muni.jalapa.ecoruta.flota.seguridad.EquipoAuthFilter;
 import gt.muni.jalapa.ecoruta.identidad.seguridad.ConductorJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.seguridad.bootstrap.AdminBootstrapFilter;
+import gt.muni.jalapa.ecoruta.seguridad.ratelimit.RateLimitFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,10 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -35,6 +40,7 @@ public class SecurityConfig {
             EquipoAuthFilter equipoAuthFilter,
             ConductorJwtAuthFilter conductorJwtAuthFilter,
             AdminBootstrapFilter adminBootstrapFilter,
+            RateLimitFilter rateLimitFilter,
             ApiErrorAuthenticationEntryPoint entryPoint,
             ApiErrorAccessDeniedHandler accessDenied,
             CorsConfigurationSource corsConfigurationSource
@@ -67,6 +73,32 @@ public class SecurityConfig {
                                 corsConfigurationSource
                         )
                 )
+
+                /*
+                 * HU Desarrollo-95: cabeceras de seguridad.
+                 *
+                 * contentTypeOptions, frameOptions y cacheControl ya vienen
+                 * activas por defecto en HttpSecurity; aqui solo se deja
+                 * explicito lo que hace falta ajustar (HSTS) y lo que Spring
+                 * Security no activa solo (Referrer-Policy, Permissions-Policy).
+                 *
+                 * La CSP se limita a /api/**: swagger-ui sirve su propio HTML
+                 * con script inline y una CSP global lo rompe.
+                 */
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.deny())
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .permissionsPolicyHeader(permisos -> permisos.policy(
+                                "geolocation=(), camera=(), microphone=(), payment=(), usb=()"))
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                new AntPathRequestMatcher("/api/**"),
+                                new StaticHeadersWriter(
+                                        "Content-Security-Policy",
+                                        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))))
 
                 .authorizeHttpRequests(rutas -> rutas
 
@@ -300,6 +332,17 @@ public class SecurityConfig {
                 EquipoAuthFilter.class
         );
 
+        /*
+         * HU Desarrollo-95: antes que cualquier autenticacion, incluido el
+         * filtro provisional de arriba. Una peticion que ya viene mal de
+         * ritmo no necesita gastar trabajo de autenticacion ni de base de
+         * datos.
+         */
+        http.addFilterBefore(
+                rateLimitFilter,
+                AdminBootstrapFilter.class
+        );
+
         return http.build();
     }
 
@@ -389,6 +432,24 @@ public class SecurityConfig {
     ) {
 
         FilterRegistrationBean<ConductorJwtAuthFilter> registro =
+                new FilterRegistrationBean<>(filtro);
+
+        registro.setEnabled(false);
+
+        return registro;
+    }
+
+    /**
+     * RateLimitFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security.
+     */
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter>
+    noRegistrarRateLimitFilter(
+            RateLimitFilter filtro
+    ) {
+
+        FilterRegistrationBean<RateLimitFilter> registro =
                 new FilterRegistrationBean<>(filtro);
 
         registro.setEnabled(false);

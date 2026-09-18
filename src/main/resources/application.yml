@@ -31,6 +31,9 @@ ecoruta:
     # Cada cuanto la tarea programada barre las reservas vencidas.
     barrido-segundos: 60
     geocerca-metros: 150
+    # Tiempo minimo entre dos reservas creadas por el mismo dispositivo, cuente
+    # o no como vigente la anterior (HU Desarrollo-95, anti-abuso de conteo).
+    ritmo-minimo-segundos: 5
   notificaciones:
     # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
     radio-aproximacion-metros: ${NOTIF_RADIO_APROXIMACION_METROS:250}
@@ -47,6 +50,19 @@ ecoruta:
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
+  rate-limit:
+    # HU Desarrollo-95: limite de peticiones por IP y por dispositivo en los
+    # endpoints publicos. Los valores por defecto son generosos a proposito:
+    # en Guatemala es comun que muchos telefonos compartan una sola IP publica
+    # por NAT de operador movil, y el stream SSE reconecta solo cada pocos
+    # segundos si hay cortes de red (ADR-008). El limite por IP es un respaldo
+    # contra un flood, no la defensa principal: esa la da el limite por
+    # dispositivo, que si identifica a cada telefono.
+    habilitado: true
+    por-ip-capacidad: 300
+    por-ip-ventana-segundos: 60
+    por-dispositivo-capacidad: 60
+    por-dispositivo-ventana-segundos: 60
   admin:
     # PROVISIONAL de SCRUM-142 - TODO(SCRUM-134). Concede ROLE_ADMIN por la
     # cabecera X-Admin-Token mientras no exista la autenticacion de personas con
@@ -63,6 +79,14 @@ management:
 
 server:
   port: 8080
+  # ADR-009: produccion corre detras de un proxy inverso (mismo host, misma red
+  # docker) que termina TLS. "native" hace que el contenedor (Tomcat) resuelva
+  # la IP real del cliente desde X-Forwarded-For y el esquema real desde
+  # X-Forwarded-Proto -- confia solo en saltos desde redes privadas por
+  # defecto, que es exactamente donde vive el proxy en este despliegue. Sin
+  # esto, el limite de peticiones por IP (HU Desarrollo-95) cuenta a todo
+  # internet como una sola IP: la del proxy.
+  forward-headers-strategy: native
 
 # NUNCA activar spring.mvc.log-request-details: imprime todos los headers,
 # incluido Authorization, que es donde viaja el secreto del equipo a bordo.

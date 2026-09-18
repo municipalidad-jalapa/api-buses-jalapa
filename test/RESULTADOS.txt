@@ -1,32 +1,73 @@
 ================================================================================
- RESULTADOS DE PRUEBAS  -  HU Desarrollo-135
- Vigencia de cinco minutos con renovacion y expiracion
+ RESULTADOS DE PRUEBAS  -  HU Desarrollo-95
+ Endurecer la seguridad de la API (D4 + O4)
 ================================================================================
- Fecha de ejecucion : 2026-08-31 23:01 - 23:05 (America/Guatemala)
- Ejecutado por      : mvn test  +  prueba manual con curl
+ Fecha de ejecucion : 2026-09-18, 00:37 - 01:15 (America/Guatemala)
+ Ejecutado por      : mvn test (tres corridas)  +  prueba manual con curl,
+                       ambas contra la app real y ambas fases
  Entorno
-   - JDK            : Eclipse Temurin 21.0.7  (JAVA_HOME apuntado a JDK 21)
-   - Maven          : 3.9.11
+   - JDK            : Oracle JDK 22 (build 22+36-2370)  [el pom.xml pide 21+;
+                       el equipo compila en local con JDK 22/24, ver pom.xml]
+   - Maven          : 3.9.6
    - SO             : Windows 11
-   - Base de datos  : PostGIS 17-3.5 en contenedor (Testcontainers / docker compose)
-   - Rama git       : main   (cambios de la HU aun sin commitear)
+   - Docker         : Desktop 29.6.2 (motor Linux)
+   - Base de datos  : PostGIS 17-3.5 en contenedor (Testcontainers para
+                       mvn test; docker-compose "db" para la prueba manual)
+   - Rama           : HU-Desarrollo-95-endurecer-seguridad-api (sobre develop)
 ================================================================================
+
+NOTA: la carpeta local no estaba al dia con origin/develop cuando arranco esta
+HU (le faltaba HU-76, "marcado de abordaje / atencion de parada", ya integrada
+en develop). Las corridas A y B de abajo son de ANTES de notarlo. Al conectar
+el repositorio con GitHub se detecto el desfase, se trajo develop completo y
+se volvieron a aplicar los cambios de esta HU sobre esa base correcta (ver
+C mas abajo para el detalle y el conteo final real: 298/298).
 
 
 ================================================================================
  A) SUITE AUTOMATICA COMPLETA   ->   mvn test
 ================================================================================
 
+Primera corrida: 291 OK / 1 fallo. El fallo NO es un defecto de la
+funcionalidad nueva: es un caso preexistente de HU-135 (ReservaVigenciaIT,
+"una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva") que recreaba
+una reserva del mismo dispositivo al instante de haber creado la anterior --
+exactamente el ritmo que esta HU ahora bloquea a proposito. Se ajusto ese caso
+para crear la reserva original fuera de la ventana de ritmo minimo (creado_en
+una hora atras), sin tocar lo que el caso realmente prueba: que una reserva ya
+EXPIRADA no cuenta como activa ni bloquea una nueva. Ver el detalle en
+test/README.md y en el propio archivo (comentario en el caso).
+
+Segunda corrida, con el ajuste aplicado:
+
 [INFO] Running gt.muni.jalapa.ecoruta.catalogo.ConsultarRutasIT
 [INFO] Tests run: 7,  Failures: 0, Errors: 0, Skipped: 0   -- ConsultarRutasIT
+[INFO] Running gt.muni.jalapa.ecoruta.catalogo.repositorio.RutaRepositoryResumenIT
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- RutaRepositoryResumenIT
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.CrearReservaIT
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0   -- CrearReservaIT           (7 casos NUEVOS - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.DemandaCancelacionIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- DemandaCancelacionIT
 [INFO] Running gt.muni.jalapa.ecoruta.demanda.dominio.ReservaTest
-[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaTest              (NUEVA - HU-135)
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaTest
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.repositorio.ConsultaDemandaRepositoryIT
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- ConsultaDemandaRepositoryIT
 [INFO] Running gt.muni.jalapa.ecoruta.demanda.ReservaVigenciaIT
-[INFO] Tests run: 9,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaVigenciaIT        (NUEVA - HU-135)
-[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.DemandaServiceTest
-[INFO] Tests run: 8,  Failures: 0, Errors: 0, Skipped: 0   -- DemandaServiceTest       (NUEVA - HU-135)
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0   -- ReservaVigenciaIT        (AJUSTADA - HU-95, ver arriba)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.AbordajeServiceTest
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- AbordajeServiceTest
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.ReservaCancelacionTest
+[INFO] Tests run: 7,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaCancelacionTest   (ajuste minimo - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.ReservaRenovacionTest
+[INFO] Tests run: 7,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaRenovacionTest    (ajuste minimo - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.ReservaServiceTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0   -- ReservaServiceTest       (3 casos NUEVOS - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.ResumenRutaServiceTest
+[INFO] Tests run: 11, Failures: 0, Errors: 0, Skipped: 0   -- ResumenRutaServiceTest
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.web.ResumenRutaIT
+[INFO] Tests run: 8,  Failures: 0, Errors: 0, Skipped: 0   -- ResumenRutaIT
 [INFO] Running gt.muni.jalapa.ecoruta.EsquemaValidaTest
-[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- EsquemaValidaTest        (valida esquema + V7)
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- EsquemaValidaTest
 [INFO] Running gt.muni.jalapa.ecoruta.flota.CambioDeEquipoConservaHistorialIT
 [INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- CambioDeEquipoConservaHistorialIT
 [INFO] Running gt.muni.jalapa.ecoruta.flota.EsquemaFlotaTest
@@ -37,133 +78,273 @@
 [INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0   -- CredencialesTest
 [INFO] Running gt.muni.jalapa.ecoruta.flota.web.AdminDeEquiposIT
 [INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- AdminDeEquiposIT
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.seguridad.AccesoPanelConductorIT
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- AccesoPanelConductorIT
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.seguridad.ConductorJwtAuthFilterTest
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- ConductorJwtAuthFilterTest
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.servicio.AutenticacionDeConductorTest
+[INFO] Tests run: 5,  Failures: 0, Errors: 0, Skipped: 0   -- AutenticacionDeConductorTest
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.servicio.EmisorDeJwtTest
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- EmisorDeJwtTest
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.servicio.VerificadorFirebaseAdminTest
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- VerificadorFirebaseAdminTest
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.web.AuthConductorControllerTest
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- AuthConductorControllerTest
+[INFO] Running gt.muni.jalapa.ecoruta.identidad.web.AuthConductorIT
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- AuthConductorIT
+[INFO] Running gt.muni.jalapa.ecoruta.notificaciones.AvisoDeAproximacionIT
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0   -- AvisoDeAproximacionIT
 [INFO] Running gt.muni.jalapa.ecoruta.seguridad.CorsIT
-[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- CorsIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- CorsIT                   (SCRUM-274, sin cambios - se reverifico)
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.ratelimit.LimitadorDeVentanaFijaTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- LimitadorDeVentanaFijaTest (NUEVA - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.ratelimit.RateLimitFilterTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitFilterTest      (NUEVA - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.RateLimitPorDispositivoIT
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitPorDispositivoIT (NUEVA - HU-95)
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.RateLimitPorIpIT
+[INFO] Tests run: 5,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitPorIpIT         (NUEVA - HU-95)
 [INFO] Running gt.muni.jalapa.ecoruta.seguridad.SecretoNoSeFiltraIT
 [INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- SecretoNoSeFiltraIT
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.SecurityHeadersIT
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- SecurityHeadersIT        (NUEVA - HU-95)
 [INFO] Running gt.muni.jalapa.ecoruta.telemetria.DifusorDePosicionesTest
-[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- DifusorDePosicionesTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- DifusorDePosicionesTest
 [INFO] Running gt.muni.jalapa.ecoruta.telemetria.IngestaConCredencialDeEquipoIT
 [INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0   -- IngestaConCredencialDeEquipoIT
 [INFO] Running gt.muni.jalapa.ecoruta.telemetria.StreamDePosicionesIT
 [INFO] Tests run: 8,  Failures: 0, Errors: 0, Skipped: 0   -- StreamDePosicionesIT
 [INFO] Running gt.muni.jalapa.ecoruta.aceptacion.PruebasDeAceptacionTest
-[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0   -- PruebasDeAceptacionTest (Gherkin)
+[INFO] Tests run: 45, Failures: 0, Errors: 0, Skipped: 0   -- PruebasDeAceptacionTest (Gherkin, incluye cancelar_reserva.feature HU-124)
 
 [INFO] Results:
-[INFO] Tests run: 136, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 292, Failures: 0, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
 
-RESUMEN A:  136 pruebas ejecutadas / 136 OK / 0 fallos / 0 errores.
-            Ninguna prueba preexistente se rompio con los cambios de la HU-135.
-
-
-================================================================================
- B) DETALLE DE LAS PRUEBAS NUEVAS DE LA HU-135
-================================================================================
-
---- ReservaTest  (dominio puro, sin Spring ni Docker) --------------------------  6/6 OK
-  [OK] una_reserva_activa_con_expiracion_futura_esta_vigente
-  [OK] una_reserva_cuya_expiracion_ya_paso_no_esta_vigente
-  [OK] una_reserva_que_no_esta_en_estado_renovable_no_esta_vigente_aunque_no_haya_expirado
-  [OK] renovar_extiende_la_expiracion_y_deja_la_reserva_renovada
-  [OK] expirar_pasa_la_reserva_a_expirada
-  [OK] los_conjuntos_de_estados_reflejan_el_indice_parcial
-
---- DemandaServiceTest  (servicio con mocks, sin Docker) -----------------------  8/8 OK
-  [OK] crear_fija_la_expiracion_cinco_minutos_despues_y_deja_la_reserva_activa      -> criterio 1
-  [OK] crear_falla_con_404_si_la_parada_no_existe
-  [OK] crear_falla_con_422_si_el_dispositivo_ya_tiene_una_reserva_que_ocupa_cupo
-  [OK] renovar_una_reserva_vigente_la_extiende_otros_cinco_minutos_y_la_deja_renovada -> criterio 2
-  [OK] renovar_una_reserva_inexistente_falla_con_404
-  [OK] renovar_una_reserva_ya_expirada_falla_con_422                                 -> criterio 3
-  [OK] renovar_una_reserva_que_no_esta_activa_falla_con_422                          -> criterio 3
-  [OK] expirar_vencidas_delega_el_barrido_masivo_sobre_los_estados_renovables        -> criterio 4
-
---- ReservaVigenciaIT  (integracion: MockMvc + PostGIS real via Testcontainers) -  9/9 OK
-  [OK] al_crearse_la_reserva_expira_cinco_minutos_despues                           -> criterio 1
-  [OK] renovar_una_reserva_vigente_extiende_la_expiracion_y_responde_200            -> criterio 2
-  [OK] renovar_una_reserva_ya_expirada_responde_422                                 -> criterio 3
-  [OK] renovar_una_reserva_que_no_esta_activa_responde_422                          -> criterio 3
-  [OK] la_tarea_programada_marca_expirada_toda_reserva_vencida                      -> criterio 4
-  [OK] una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva              -> criterio 5
-  [OK] un_dispositivo_con_reserva_vigente_no_puede_crear_otra
-  [OK] renovar_una_reserva_inexistente_responde_404
-  [OK] crear_una_reserva_para_una_parada_que_no_existe_responde_404
-
---- EsquemaValidaTest  (arranque con Flyway V7 + ddl-auto=validate) ------------  4/4 OK
-  [OK] el_contexto_arranca_con_el_esquema_de_flyway_sobre_postgis
-  [OK] flyway_aplico_todas_las_migraciones_sin_fallar          (incluye V7)
-  [OK] las_tablas_del_esquema_inicial_existen
-  [OK] la_ubicacion_de_las_posiciones_es_geometry_point_4326
+RESUMEN A:  292 pruebas ejecutadas / 292 OK / 0 fallos / 0 errores.
+            (30 pruebas nuevas de esta HU: 6+6+3+5+4=24 en el paquete
+             seguridad/seguridad.ratelimit, 3 nuevas en ReservaServiceTest,
+             3 nuevas [un metodo parametrizado x3 estados] en CrearReservaIT
+             -- el resto de sus 19 ya existian --, mas los ajustes sin caso
+             nuevo en ReservaVigenciaIT, ReservaRenovacionTest y
+             ReservaCancelacionTest.)
+            Ninguna otra prueba preexistente se rompio con los cambios de
+            esta HU -- incluida la suite de aceptacion Gherkin completa
+            (45/45), que ejercita entre otras cosas cancelar_reserva.feature
+            (HU-124), la mas parecida en forma al nuevo anti-abuso de ritmo.
 
 
 ================================================================================
- C) PRUEBA MANUAL END-TO-END  (app real + Postgres real)
+ B) DETALLE DE LAS PRUEBAS NUEVAS DE ESTA HU
 ================================================================================
- App lanzada con:  -Decoruta.demanda.vigencia-minutos=1  -Decoruta.demanda.barrido-segundos=5
- (5 minutos reales de vigencia se comprueban en A/B; aqui se baja a 1 min para
-  poder observar el vencimiento y la tarea programada sin esperar tanto)
 
-### Fecha: Mon Aug 31 23:03:47 HAC 2026
+--- LimitadorDeVentanaFijaTest  (contador puro, sin Spring ni Docker) -------  6/6 OK
+  [OK] permite_peticiones_hasta_la_capacidad
+  [OK] rechaza_al_superar_la_capacidad_dentro_de_la_misma_ventana
+  [OK] informa_cuanto_falta_para_poder_reintentar
+  [OK] cada_clave_tiene_su_propio_cupo
+  [OK] reinicia_el_cupo_cuando_la_ventana_termina
+  [OK] limpiar_no_rompe_una_clave_todavia_activa
 
---- 1. POST /api/v1/reservas  (crear)  -> se espera 201 con expiraEn a +1min, estado ACTIVA
-{"id":1,"dispositivoId":"dev-manual","paradaId":1,"estado":"ACTIVA","creadoEn":"2026-09-01T05:03:47.471234Z","expiraEn":"2026-09-01T05:04:47.485231400Z"}
-HTTP 201                                                                     [OK] criterio 1
+--- RateLimitFilterTest  (filtro aislado, MockHttpServletRequest/Response) -- 6/6 OK
+  [OK] una_ruta_no_protegida_nunca_se_limita
+  [OK] una_ruta_protegida_responde_429_al_superar_el_limite_por_ip
+  [OK] ips_distintas_tienen_cupos_independientes
+  [OK] dispositivos_distintos_tienen_cupos_independientes_aunque_compartan_ip
+  [OK] sin_cabecera_de_dispositivo_solo_aplica_el_limite_por_ip
+  [OK] deshabilitado_no_limita_nada
 
---- 2. POST /api/v1/reservas/1/renovacion  (vigente)  -> 200, estado RENOVADA, mismo id, nuevo expiraEn
-{"id":1,"dispositivoId":"dev-manual","paradaId":1,"estado":"RENOVADA","creadoEn":"2026-09-01T05:03:47.471234Z","expiraEn":"2026-09-01T05:04:47.725448800Z"}
-HTTP 200                                                                     [OK] criterio 2  (mismo id=1, estado RENOVADA, expiraEn mayor)
+--- RateLimitPorIpIT  (integracion: MockMvc + PostGIS real) ----------------  5/5 OK
+  [OK] supera_el_limite_por_ip_en_una_ruta_publica_y_responde_429       -> criterio 1
+  [OK] otra_ip_no_hereda_el_limite_ya_agotado_de_la_primera             -> criterio 1
+  [OK] una_ruta_publica_fuera_de_la_lista_protegida_no_se_limita        -> criterio 1
+  [OK] un_429_conserva_las_cabeceras_cors_del_origen_permitido          -> criterios 1+2
+  [OK] cancelar_tambien_esta_protegido_por_el_limite_de_ip              -> criterio 1
 
---- 3. POST /api/v1/reservas  mismo dispositivo  -> 422 (ya tiene una vigente)
-{"timestamp":"2026-09-01T05:03:47.914120700Z","status":422,"error":"Unprocessable Entity","message":"El dispositivo ya tiene una reserva vigente en una parada.","path":"/api/v1/reservas"}
-HTTP 422                                                                     [OK]
+--- RateLimitPorDispositivoIT  (integracion: MockMvc + PostGIS real) -------  3/3 OK
+  [OK] supera_el_limite_por_dispositivo_y_responde_429                  -> criterio 1
+  [OK] otro_dispositivo_no_hereda_el_limite_ya_agotado_del_primero      -> criterio 1
+  [OK] sin_cabecera_de_dispositivo_el_limite_por_dispositivo_no_aplica  -> criterio 1
 
---- 4. POST /api/v1/reservas/999999/renovacion  -> 404
-{"timestamp":"2026-09-01T05:03:48.086732200Z","status":404,"error":"Not Found","message":"Reserva con id 999999 no existe","path":"/api/v1/reservas/999999/renovacion"}
-HTTP 404                                                                     [OK]
+--- SecurityHeadersIT  (integracion: MockMvc + PostGIS real) ---------------  4/4 OK
+  [OK] una_respuesta_publica_trae_las_cabeceras_de_seguridad             -> criterio 3
+  [OK] la_csp_no_se_aplica_fuera_de_la_api_para_no_romper_swagger_ui     -> criterio 3
+  [OK] hsts_solo_viaja_en_una_conexion_que_el_servidor_considera_segura  -> criterio 3
+  [OK] un_error_de_negocio_tambien_trae_las_cabeceras_de_seguridad       -> criterio 3
 
---- 5. POST /api/v1/reservas  con paradaId inexistente  -> 404
-{"timestamp":"2026-09-01T05:03:48.266386700Z","status":404,"error":"Not Found","message":"Parada con id 424242 no existe","path":"/api/v1/reservas"}
-HTTP 404                                                                     [OK]
+--- ReservaServiceTest  (servicio con mocks, sin Docker) -- 15/15 OK (3 nuevos)
+  [OK] dispositivo_que_creo_una_reserva_hace_poco_no_puede_crear_otra_aunque_no_tenga_vigente -> criterio 4
+  [OK] dispositivo_sin_creaciones_recientes_si_puede_crear_otra                               -> criterio 4
+  [OK] el_ritmo_minimo_usa_la_ventana_configurada_y_no_un_numero_hardcodeado                  -> criterio 4
+  [OK] (12 casos preexistentes de creacion de reserva, sin cambios de comportamiento)
 
---- 6. POST /api/v1/reservas  body sin dispositivoId  -> 400
-{"timestamp":"2026-09-01T05:03:48.436976500Z","status":400,"error":"Bad Request","message":"dispositivoId: el dispositivo es obligatorio","path":"/api/v1/reservas"}
-HTTP 400                                                                     [OK] (validacion de entrada)
+--- CrearReservaIT  (integracion: MockMvc + PostGIS real) -- 19/19 OK (1 nuevo x3 estados)
+  [OK] dispositivo_que_creo_una_reserva_hace_instantes_no_puede_crear_otra_aunque_ya_no_este_vigente
+       [CANCELADA, EXPIRADA, ABORDO]                                     -> criterio 4
+  [OK] (16 casos preexistentes de SCRUM-306, sin cambios de comportamiento)
 
-### Esperando 75s a que venza la reserva (vigencia=1min) y actue la tarea programada (cada 5s)...
+--- ReservaVigenciaIT  (integracion: MockMvc + PostGIS real, HU-135) ----- 10/10 OK
+  [OK] una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva
+       (AJUSTADA: la reserva original ahora se crea con creado_en una hora
+        atras, para probar el estado sin chocar con el ritmo minimo; el
+        criterio 5 de HU-135 que prueba sigue intacto)
+  [OK] (9 casos preexistentes de HU-135, sin cambios)
 
---- 7. Estado en BD de la reserva 1 (la marca la tarea @Scheduled, sin intervencion)
-   id | dispositivo_id | estado   | vencida
-    1 | dev-manual     | EXPIRADA | t                                       [OK] criterio 4
+--- CorsIT  (integracion: MockMvc + PostGIS real, SCRUM-274) --------------  6/6 OK
+  [OK] preflight_desde_qa_es_permitido                                   -> criterio 2
+  [OK] preflight_desde_produccion_es_permitido                          -> criterio 2
+  [OK] preflight_desde_origen_no_autorizado_es_rechazado                -> criterio 2
+  [OK] preflight_permite_las_cabeceras_requeridas                       -> criterio 2
+  [OK] stream_expone_las_cabeceras_necesarias_para_el_navegador         -> criterio 2
+  [OK] preflight_de_endpoint_protegido_no_pide_autenticacion            -> criterio 2
+  (Sin cambios en esta HU: ya lo entregaba SCRUM-274; se reverifico completo.)
 
---- 8. POST /api/v1/reservas/1/renovacion  (ya EXPIRADA)  -> 422
-{"timestamp":"2026-09-01T05:05:04.249582100Z","status":422,"error":"Unprocessable Entity","message":"La reserva 1 ya expiro o no esta activa; no se puede renovar.","path":"/api/v1/reservas/1/renovacion"}
-HTTP 422                                                                     [OK] criterio 3
 
---- 9. POST /api/v1/reservas  mismo dispositivo dev-manual  -> 201 (una EXPIRADA no bloquea)
-{"id":2,"dispositivoId":"dev-manual","paradaId":1,"estado":"ACTIVA","creadoEn":"2026-09-01T05:05:04.417088Z","expiraEn":"2026-09-01T05:06:04.419028300Z"}
-HTTP 201                                                                     [OK] criterio 5
+================================================================================
+ C) PRUEBA MANUAL END-TO-END  (app real + Postgres real via docker-compose)
+================================================================================
+ Dos fases, cada una con su propia instancia de la app (ver test/MANUAL_DE_PRUEBAS.md
+ 3.1 para el porque). Puerto 8081: el 8080 de esta maquina lo tenia tomado un
+ listener de Oracle preexistente, sin relacion con este proyecto.
 
---- 10. Filas del dispositivo dev-manual en BD (1 EXPIRADA + 1 ACTIVA)
-    1 | EXPIRADA
-    2 | ACTIVA                                                               [OK] la EXPIRADA no cuenta como activa
+### Fecha: Fri Sep 18 00:45:38 - 00:46:47 HAC 2026
 
---- 11. Log de la tarea programada (Spring Scheduling)
-2026-08-31T23:04:47.732-06:00  INFO --- [   scheduling-1] g.m.j.e.demanda.servicio.DemandaService : Reservas expiradas por vencimiento: 1
-                                                                            [OK] corrio sola, hilo scheduling-1
+--- FASE ip  (por-ip-capacidad=5, por-dispositivo-capacidad=1000) ---
 
-RESUMEN C:  11/11 pasos con el resultado esperado.
+### HU Desarrollo-95 - prueba manual   (Fri Sep 18 00:45:38 HAC 2026)   fase=ip
+### dispositivo base de prueba: dev-manual-1789713938
+
+--- Criterio 1: límite por IP (requiere por-ip-capacidad=5) ---
+    [OK] intento 1 dentro del cupo -> HTTP 200
+    [OK] intento 2 dentro del cupo -> HTTP 200
+    [OK] intento 3 dentro del cupo -> HTTP 200
+    [OK] intento 4 dentro del cupo -> HTTP 200
+    [OK] intento 5 dentro del cupo -> HTTP 200
+    [OK] intento 6, ya sin cupo -> HTTP 429
+
+--- Criterio 1: una ruta pública fuera de la lista protegida no se limita ---
+    [OK] 6 peticiones a /actuator/health, todas 200 pese al límite de IP agotado
+
+### resumen fase=ip: 0 fallo(s)
+### TODO OK
+
+--- FASE resto  (por-ip-capacidad=1000, por-dispositivo-capacidad=3, ritmo-minimo-segundos=5) ---
+
+### HU Desarrollo-95 - prueba manual   (Fri Sep 18 00:46:38 HAC 2026)   fase=resto
+### dispositivo base de prueba: dev-manual-1789713998
+
+--- Criterio 3: cabeceras de seguridad ---
+    [OK] X-Frame-Options: DENY
+    [OK] X-Content-Type-Options: nosniff
+    [OK] Referrer-Policy correcta
+    [OK] Permissions-Policy presente
+    [OK] Content-Security-Policy presente en /api/**
+    [OK] CSP ausente fuera de /api/** (swagger-ui a salvo)
+
+--- Criterio 2: CORS restringido a orígenes conocidos ---
+    [OK] preflight desde origen permitido -> HTTP 200
+    [OK] preflight desde origen NO autorizado sin Access-Control-Allow-Origin
+
+--- Criterio 1: límite por dispositivo (requiere por-dispositivo-capacidad=3) ---
+    [OK] dispositivo dev-manual-1789713998-ritmo, intento 1 (id no existe, pero llega al controlador) -> HTTP 404
+    [OK] dispositivo dev-manual-1789713998-ritmo, intento 2 (id no existe, pero llega al controlador) -> HTTP 404
+    [OK] dispositivo dev-manual-1789713998-ritmo, intento 3 (id no existe, pero llega al controlador) -> HTTP 404
+    [OK] dispositivo dev-manual-1789713998-ritmo, intento 4 (cortado antes del controlador) -> HTTP 429
+    [OK] otro dispositivo (dev-manual-1789713998-otro) no hereda el límite agotado -> HTTP 404
+
+--- Criterio 4: ritmo imposible para una persona (requiere ritmo-minimo-segundos=5) ---
+    crear -> {"id":2,"paradaId":1,"estado":"ACTIVA","expiraEn":"2026-09-18T06:51:41.415249900Z"}
+    [OK] primera reserva creada (id=2)
+    [OK] cancelar de inmediato -> HTTP 204
+    reintento inmediato -> {"timestamp":"2026-09-18T06:46:41.752614900Z","status":422,"error":"Unprocessable Entity",
+      "message":"Este dispositivo está registrando demanda a un ritmo que no es posible para una persona.
+      Espera unos segundos e intenta de nuevo.","path":"/api/v1/reservas"}
+    HTTP 422
+    [OK] reintento inmediato rechazado por ritmo (422)
+    esperando 6 s (ritmo-minimo-segundos=5)...
+    [OK] reintento tras esperar el ritmo mínimo -> HTTP 201
+
+### resumen fase=resto: 0 fallo(s)
+### TODO OK
+
+RESUMEN C:  24/24 verificaciones manuales OK (7 en fase ip + 17 en fase resto),
+            0 fallos, contra la aplicacion real con PostGIS real. La primera
+            corrida del script (una sola fase mezclando todo) dio 9 "fallos"
+            que en realidad eran el limite de IP funcionando: la seccion de
+            cabeceras y CORS ya habia consumido la bolsa compartida antes de
+            llegar a la seccion de dispositivo/ritmo. No era un defecto del
+            filtro, era un guion mal secuenciado; se corrigio separando en dos
+            fases (igual que RateLimitPorIpIT / RateLimitPorDispositivoIT en
+            el suite automatico). Ver test/MANUAL_DE_PRUEBAS.md 3.1.
+
+
+================================================================================
+ D) RECONCILIACION CON origin/develop Y CORRIDA FINAL
+================================================================================
+
+Al conectar este directorio con el repositorio de GitHub
+(municipalidad-jalapa/api-buses-jalapa) para crear la rama de esta HU, se
+detecto que la copia local NO estaba al dia con origin/develop: le faltaba
+completa la funcionalidad de HU-76 ("marcado de abordaje" / "atencion de
+parada" -- AtencionParadaController/Service/Repository, tres migraciones V13
+a V15, dos excepciones nuevas, y cambios en Reserva, ReservaController,
+ReservaService, ReservaRepository y SecurityConfig). Las corridas A, B y C de
+arriba se hicieron sobre esa base desactualizada.
+
+Se resolvio asi, sin perder nada de HU-76 ni de esta HU:
+  1. Se restauraron desde origin/develop todos los archivos que esta HU no
+     toca (la funcionalidad de HU-76 completa).
+  2. En los tres archivos que SI cambian ambas historias (ReservaRepository,
+     ReservaService, SecurityConfig) se partio de la version de develop y se
+     volvio a insertar a mano el fragmento especifico de esta HU (el metodo
+     existsByDispositivoIdAndCreadoEnAfter, el chequeo de ritmo en crear(), y
+     el filtro + cabeceras de seguridad), sin tocar lo que HU-76 habia
+     agregado ahi.
+  3. Se sumaron a la lista de rutas protegidas de RateLimitFilter dos
+     endpoints publicos de HU-76 que no existian cuando se diseno el filtro:
+     GET /api/v1/reservas/{id} (consultar) y
+     POST /api/v1/reservas/{id}/declaracion-no-abordo.
+  4. Se corrio la suite completa de nuevo para verificar que la reconciliacion
+     no rompio nada, ni de HU-76 ni de esta HU.
+
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- AtenderParadaIT              (HU-76, restaurada)
+[INFO] Tests run: 2,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaAbordajePasajeroIT     (HU-76, restaurada)
+[INFO] Tests run: 19, Failures: 0, Errors: 0, Skipped: 0   -- CrearReservaIT
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0   -- ReservaVigenciaIT
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0   -- ReservaServiceTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- CorsIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- LimitadorDeVentanaFijaTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitFilterTest
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitPorDispositivoIT
+[INFO] Tests run: 5,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitPorIpIT
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- SecurityHeadersIT
+[INFO] Tests run: 45, Failures: 0, Errors: 0, Skipped: 0   -- PruebasDeAceptacionTest (Gherkin)
+[INFO] Results:
+[INFO] Tests run: 298, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+RESUMEN D:  298/298 OK -- los 292 de las corridas A/B (30 nuevos de esta HU)
+            mas los 6 de HU-76 (AtenderParadaIT + ReservaAbordajePasajeroIT)
+            que faltaban por estar la copia local desactualizada. Compilacion
+            limpia (130 clases main, 51 de prueba) y BUILD SUCCESS. Esta es la
+            corrida que quedo reflejada en la rama subida a GitHub.
 
 
 ================================================================================
  VEREDICTO
 ================================================================================
-  - Suite automatica  : 136/136 OK  (incluye 27 pruebas nuevas de la HU-135)
-  - Prueba manual E2E  : 11/11 pasos OK
-  - Los 5 criterios de aceptacion + el contrato (200/422/404) quedan cubiertos
-    tanto por pruebas automaticas como por la verificacion manual contra la app real.
-  - Ninguna prueba preexistente se rompio.
+  - Suite automatica  : 298/298 OK  (30 pruebas nuevas de esta HU + ajustes sin
+    caso nuevo en 3 archivos preexistentes de HU-95, mas la reconciliacion con
+    HU-76 que ya estaba integrada en develop -- ver seccion D)
+  - Prueba manual E2E  : 24/24 verificaciones OK, en dos fases contra la app real
+  - Los 4 criterios de aceptacion quedan cubiertos por pruebas automaticas Y por
+    verificacion manual contra la app real:
+      1) Limite de peticiones por dispositivo y por IP en endpoints publicos
+      2) CORS restringido a origenes conocidos (SCRUM-274, reverificado)
+      3) Cabeceras de seguridad configuradas y verificadas
+      4) Un dispositivo no puede registrar demanda a un ritmo imposible
+  - Un ajuste necesario a una prueba preexistente (ReservaVigenciaIT, HU-135),
+    documentado y sin perdida de cobertura del criterio original.
+  - Ninguna otra prueba preexistente se rompio, ni de esta HU ni de HU-76.
 ================================================================================

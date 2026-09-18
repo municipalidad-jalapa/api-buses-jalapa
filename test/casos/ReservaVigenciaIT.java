@@ -9,6 +9,8 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -32,6 +34,7 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
 
     @Test
     void al_crearse_la_reserva_expira_cinco_minutos_despues() throws Exception {
+        Instant antes = Instant.now();
         String cuerpo = crear("disp-crear", PARADA)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.estado").value("ACTIVA"))
@@ -39,12 +42,12 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
                 .andExpect(jsonPath("$.expiraEn").exists())
                 .andReturn().getResponse().getContentAsString();
 
-        Instant creadoEn = Instant.parse(JsonPath.read(cuerpo, "$.creadoEn"));
         Instant expiraEn = Instant.parse(JsonPath.read(cuerpo, "$.expiraEn"));
 
-        // Cinco minutos, con holgura por el desfase entre el now() de la base y
-        // el Instant.now() del servicio.
-        assertThat(Duration.between(creadoEn, expiraEn))
+        // Cinco minutos contados desde que se pidio, con holgura. El contrato de
+        // SCRUM-306 no expone creadoEn, asi que se mide contra el reloj de la
+        // prueba y no contra un campo de la respuesta.
+        assertThat(Duration.between(antes, expiraEn))
                 .isBetween(Duration.ofMinutes(4), Duration.ofMinutes(6));
     }
 
@@ -106,7 +109,15 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
     @Test
     void una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva() throws Exception {
         long primera = idDe(crear("disp-repite", PARADA).andExpect(status().isCreated()));
-        jdbc.update("UPDATE registros_espera SET expira_en = now() - interval '1 minute' WHERE id = ?", primera);
+        // Tambien fuera de la ventana de ritmo minimo (HU Desarrollo-95): este
+        // caso prueba que el ESTADO expirado no bloquea, no que el ritmo lo
+        // permita. El ritmo minimo se prueba aparte en CrearReservaIT.
+        jdbc.update("""
+                UPDATE registros_espera
+                   SET expira_en = now() - interval '1 minute',
+                       creado_en = now() - interval '1 hour'
+                 WHERE id = ?
+                """, primera);
         expirador.barrer();
 
         // El mismo dispositivo crea otra sin tropezar con el indice unico parcial.
@@ -115,7 +126,7 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
         Integer vigentes = jdbc.queryForObject("""
                 SELECT count(*) FROM registros_espera
                  WHERE dispositivo_id = 'disp-repite'
-                   AND estado IN ('ACTIVA', 'RENOVADA', 'ABORDO')
+                   AND estado IN ('ACTIVA', 'RENOVADA')
                 """, Integer.class);
         assertThat(vigentes).isEqualTo(1);
 
@@ -132,8 +143,22 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
     }
 
     @Test
+    void un_dispositivo_no_puede_renovar_la_reserva_de_otro() throws Exception {
+        long id = idDe(crear("disp-dueno", PARADA).andExpect(status().isCreated()));
+
+        mockMvc.perform(post("/api/v1/reservas/" + id + "/renovacion")
+                        .header("X-Dispositivo-Id", "disp-intruso"))
+                .andExpect(status().isForbidden());
+
+        assertThat(jdbc.queryForObject(
+                "SELECT estado FROM registros_espera WHERE id = ?", String.class, id))
+                .isEqualTo("ACTIVA");
+    }
+
+    @Test
     void renovar_una_reserva_inexistente_responde_404() throws Exception {
-        mockMvc.perform(post("/api/v1/reservas/999999/renovacion"))
+        mockMvc.perform(post("/api/v1/reservas/999999/renovacion")
+                        .header("X-Dispositivo-Id", "cualquiera"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
@@ -145,15 +170,30 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
 
     // --- helpers ---------------------------------------------------------------
 
+    /**
+     * Reserva por el contrato real de SCRUM-306, que exige coordenadas y aplica
+     * la geocerca. Se reserva parado sobre la parada; si la parada no existe,
+     * cualquier punto sirve porque el 404 se decide antes que la geocerca.
+     */
     private ResultActions crear(String dispositivo, long parada) throws Exception {
+        List<Map<String, Object>> puntos = jdbc.queryForList(
+                "SELECT ST_Y(ubicacion) AS lat, ST_X(ubicacion) AS lon FROM paradas WHERE id = ?",
+                parada);
+        Object lat = puntos.isEmpty() ? 14.6349 : puntos.get(0).get("lat");
+        Object lon = puntos.isEmpty() ? -89.9882 : puntos.get(0).get("lon");
         return mockMvc.perform(post("/api/v1/reservas")
                 .contentType(APPLICATION_JSON)
                 .content("""
-                        {"dispositivoId": "%s", "paradaId": %d}""".formatted(dispositivo, parada)));
+                        {"dispositivoId": "%s", "paradaId": %d, "latitud": %s, "longitud": %s}"""
+                        .formatted(dispositivo, parada, lat, lon)));
     }
 
+    /** Renueva como el dispositivo que la creo: el unico autorizado a hacerlo. */
     private ResultActions renovar(long id) throws Exception {
-        return mockMvc.perform(post("/api/v1/reservas/" + id + "/renovacion"));
+        String dueno = jdbc.queryForObject(
+                "SELECT dispositivo_id FROM registros_espera WHERE id = ?", String.class, id);
+        return mockMvc.perform(post("/api/v1/reservas/" + id + "/renovacion")
+                .header("X-Dispositivo-Id", dueno));
     }
 
     private long idDe(ResultActions respuesta) throws Exception {

@@ -49,7 +49,7 @@ class ReservaRenovacionTest {
 
     @BeforeEach
     void armarServicio() {
-        DemandaProperties demanda = new DemandaProperties(10, TTL_MINUTOS, 150);
+        DemandaProperties demanda = new DemandaProperties(10, TTL_MINUTOS, 150, 5);
         servicio = new ReservaService(reservas, paradas, demanda, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 

@@ -48,6 +48,22 @@ public interface ReservaRepository
     );
 
     /**
+     * HU Desarrollo-95.
+     *
+     * ¿El dispositivo creó alguna reserva después de {@code desde},
+     * sin importar su estado actual?
+     *
+     * A diferencia de {@link #existeVigentePorDispositivo}, cuenta
+     * también las ya canceladas o expiradas: es justo lo que un bucle
+     * crear-cancelar necesita para no quedar atrapado nunca por el
+     * índice de "una vigente por dispositivo".
+     */
+    boolean existsByDispositivoIdAndCreadoEnAfter(
+            String dispositivoId,
+            Instant desde
+    );
+
+    /**
      * HU-76.
      *
      * Obtiene las reservas que siguen pendientes

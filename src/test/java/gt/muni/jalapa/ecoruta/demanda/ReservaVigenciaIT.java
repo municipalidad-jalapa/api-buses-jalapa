@@ -109,7 +109,15 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
     @Test
     void una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva() throws Exception {
         long primera = idDe(crear("disp-repite", PARADA).andExpect(status().isCreated()));
-        jdbc.update("UPDATE registros_espera SET expira_en = now() - interval '1 minute' WHERE id = ?", primera);
+        // Tambien fuera de la ventana de ritmo minimo (HU Desarrollo-95): este
+        // caso prueba que el ESTADO expirado no bloquea, no que el ritmo lo
+        // permita. El ritmo minimo se prueba aparte en CrearReservaIT.
+        jdbc.update("""
+                UPDATE registros_espera
+                   SET expira_en = now() - interval '1 minute',
+                       creado_en = now() - interval '1 hour'
+                 WHERE id = ?
+                """, primera);
         expirador.barrer();
 
         // El mismo dispositivo crea otra sin tropezar con el indice unico parcial.
