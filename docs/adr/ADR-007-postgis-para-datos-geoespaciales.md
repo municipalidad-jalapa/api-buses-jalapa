@@ -25,7 +25,8 @@ ST_DWithin(p.ubicacion::geography,
            :metros)
 ```
 
-Todas las geometrías usan **SRID 4326** (WGS-84, el mismo del GPS y de Google Maps).
+Todas las geometrías usan **SRID 4326** (WGS-84, el mismo que reporta el GPS y el que
+esperan MapLibre y OpenStreetMap).
 
 El esquema lo gobierna Flyway; Hibernate queda en `ddl-auto: validate`
 (ver [HU-18](../../qa/hu-18-esquema-flyway/MANIFIESTO.md)).

@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta.seguridad;
 
 import gt.muni.jalapa.ecoruta.flota.seguridad.EquipoAuthFilter;
+import gt.muni.jalapa.ecoruta.identidad.seguridad.ConductorJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.seguridad.bootstrap.AdminBootstrapFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -21,8 +22,8 @@ import java.util.List;
 /**
  * Cadena de seguridad de la API.
  *
- * La API trabaja con tokens en cabecera y no utiliza
- * sesiones del servidor.
+ * La API utiliza tokens enviados en cabeceras
+ * y no mantiene sesiones en el servidor.
  */
 @Configuration
 @EnableWebSecurity
@@ -32,6 +33,7 @@ public class SecurityConfig {
     public SecurityFilterChain cadenaApi(
             HttpSecurity http,
             EquipoAuthFilter equipoAuthFilter,
+            ConductorJwtAuthFilter conductorJwtAuthFilter,
             AdminBootstrapFilter adminBootstrapFilter,
             ApiErrorAuthenticationEntryPoint entryPoint,
             ApiErrorAccessDeniedHandler accessDenied,
@@ -39,7 +41,9 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-                // API sin cookies de sesion.
+                /*
+                 * API sin cookies de sesión.
+                 */
                 .csrf(AbstractHttpConfigurer::disable)
 
                 .sessionManagement(
@@ -48,12 +52,16 @@ public class SecurityConfig {
                         )
                 )
 
-                // No utilizar login por formulario ni HTTP Basic.
+                /*
+                 * No utilizar HTTP Basic ni login por formulario.
+                 */
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
 
-                // Configuracion CORS.
+                /*
+                 * Configuración CORS.
+                 */
                 .cors(cors ->
                         cors.configurationSource(
                                 corsConfigurationSource
@@ -63,8 +71,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(rutas -> rutas
 
                         /*
-                         * /error debe ser publico para que los errores
-                         * mantengan su codigo HTTP correcto.
+                         * Permitir que Spring procese correctamente
+                         * los errores HTTP.
                          */
                         .requestMatchers("/error")
                         .permitAll()
@@ -91,7 +99,7 @@ public class SecurityConfig {
                         .permitAll()
 
                         /*
-                         * TELEMETRIA PUBLICA
+                         * TELEMETRÍA PÚBLICA
                          */
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -106,7 +114,7 @@ public class SecurityConfig {
                         .permitAll()
 
                         /*
-                         * CATALOGO DE RUTAS
+                         * CATÁLOGO DE RUTAS
                          */
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -118,6 +126,11 @@ public class SecurityConfig {
                         /*
                          * RESERVAS DEL PASAJERO
                          */
+
+                        /*
+                         * SCRUM-306 / HU-134.
+                         * Crear una reserva.
+                         */
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/v1/reservas"
@@ -125,45 +138,99 @@ public class SecurityConfig {
                         .permitAll()
 
                         /*
-                         * HU-76:
-                         * consultar una reserva.
+                         * HU-135.
+                         * Renovar su propia reserva.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/reservas/*/renovacion"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-124.
+                         * Cancelar su propia reserva.
+                         */
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/v1/reservas/*"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-76.
+                         * El pasajero consulta el estado de
+                         * una de sus reservas.
                          */
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/v1/reservas/{reservaId}"
+                                "/api/v1/reservas/*"
                         )
                         .permitAll()
 
                         /*
-                         * HU-76:
-                         * pasajero declara que no abordo.
+                         * HU-76.
+                         * El pasajero declara que no abordó.
                          */
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/v1/reservas/{reservaId}/declaracion-no-abordo"
-                        )
-                        .permitAll()
-
-                        .requestMatchers(
-                                "/api/v1/demanda/**"
+                                "/api/v1/reservas/*/declaracion-no-abordo"
                         )
                         .permitAll()
 
                         /*
-                         * HU-76
+                         * HU-57.
+                         * El pasajero responde al aviso
+                         * de abordaje.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/reservas/*/abordaje"
+                        )
+                        .permitAll()
+
+                        /*
+                         * Registro del dispositivo
+                         * para notificaciones.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/dispositivos/notificaciones"
+                        )
+                        .permitAll()
+
+                        /*
+                         * AUTENTICACIÓN DEL CONDUCTOR
                          *
-                         * El conductor marca una parada como atendida.
-                         * Solamente ROLE_CONDUCTOR puede utilizar
-                         * este endpoint.
+                         * El conductor entrega aquí su
+                         * idToken de Firebase.
                          */
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/v1/rutas/{rutaId}/paradas/{paradaId}/atendida"
+                                "/api/v1/auth/conductor"
+                        )
+                        .permitAll()
+
+                        /*
+                         * HU-76.
+                         *
+                         * El conductor marca una parada
+                         * como atendida.
+                         *
+                         * Requiere un JWT válido que otorgue
+                         * ROLE_CONDUCTOR.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/rutas/*/paradas/*/atendida"
                         )
                         .hasRole("CONDUCTOR")
 
                         /*
-                         * INGESTA DE TELEMETRIA
+                         * INGESTA DE TELEMETRÍA
+                         *
+                         * Solo un equipo autenticado puede
+                         * registrar posiciones.
                          */
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -172,7 +239,15 @@ public class SecurityConfig {
                         .hasRole("EQUIPO")
 
                         /*
-                         * ADMINISTRACION
+                         * PANEL DEL CONDUCTOR
+                         */
+                        .requestMatchers(
+                                "/api/v1/conductor/**"
+                        )
+                        .hasRole("CONDUCTOR")
+
+                        /*
+                         * ADMINISTRACIÓN
                          */
                         .requestMatchers(
                                 "/api/v1/admin/**"
@@ -180,8 +255,8 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
 
                         /*
-                         * Cualquier endpoint que no tenga una
-                         * regla explicita queda bloqueado.
+                         * Cualquier endpoint que no tenga
+                         * una regla explícita queda cerrado.
                          */
                         .anyRequest()
                         .denyAll()
@@ -198,18 +273,27 @@ public class SecurityConfig {
                 )
 
                 /*
-                 * Autenticacion de equipos.
+                 * Autenticación del equipo GPS.
                  */
                 .addFilterBefore(
                         equipoAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+
+                /*
+                 * Autenticación JWT del conductor.
+                 */
+                .addFilterBefore(
+                        conductorJwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
                 );
 
         /*
-         * Provisional:
-         * permite ROLE_ADMIN mediante X-Admin-Token
-         * mientras no exista completamente la
-         * autenticacion de personas.
+         * BLOQUE PROVISIONAL.
+         *
+         * Permite ROLE_ADMIN mediante X-Admin-Token
+         * mientras no exista completamente el filtro
+         * definitivo de autenticación administrativa.
          */
         http.addFilterBefore(
                 adminBootstrapFilter,
@@ -220,7 +304,7 @@ public class SecurityConfig {
     }
 
     /**
-     * Configuracion CORS de la API.
+     * Configuración CORS de la API.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
@@ -250,7 +334,8 @@ public class SecurityConfig {
                         "Authorization",
                         "Content-Type",
                         "Accept",
-                        "Last-Event-ID"
+                        "Last-Event-ID",
+                        "X-Dispositivo-Id"
                 )
         );
 
@@ -276,8 +361,8 @@ public class SecurityConfig {
     }
 
     /**
-     * EquipoAuthFilter solo debe ejecutarse
-     * dentro de Spring Security.
+     * EquipoAuthFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security.
      */
     @Bean
     public FilterRegistrationBean<EquipoAuthFilter>
@@ -286,6 +371,24 @@ public class SecurityConfig {
     ) {
 
         FilterRegistrationBean<EquipoAuthFilter> registro =
+                new FilterRegistrationBean<>(filtro);
+
+        registro.setEnabled(false);
+
+        return registro;
+    }
+
+    /**
+     * ConductorJwtAuthFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security.
+     */
+    @Bean
+    public FilterRegistrationBean<ConductorJwtAuthFilter>
+    noRegistrarConductorJwtAuthFilter(
+            ConductorJwtAuthFilter filtro
+    ) {
+
+        FilterRegistrationBean<ConductorJwtAuthFilter> registro =
                 new FilterRegistrationBean<>(filtro);
 
         registro.setEnabled(false);

@@ -66,7 +66,7 @@ void limpiarDatosHu76() {
                   FROM registros_espera
                  WHERE parada_id = 1
                    AND estado = 'ABORDO'
-                   AND abordado_en IS NOT NULL
+                   AND abordaje_en IS NOT NULL
                    AND abordado_por = 'conductor1'
                 """,
                 Long.class);

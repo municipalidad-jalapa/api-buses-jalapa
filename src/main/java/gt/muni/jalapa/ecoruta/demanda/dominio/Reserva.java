@@ -20,7 +20,15 @@ import lombok.ToString;
 import java.time.Instant;
 
 /**
- * Registro de un pasajero esperando en una parada.
+ * Registro de un pasajero esperando en una parada ({@code registros_espera}).
+ *
+ * <p>SCRUM-306 crea la reserva en estado {@link EstadoReserva#ACTIVA}. HU-135
+ * la renueva, HU-124 la cancela y HU-57 registra si el pasajero logro subir.
+ *
+ * <p>HU-76 permite que el conductor marque una parada como atendida y conserva
+ * informacion adicional de auditoria.
+ *
+ * <p>La parada se mapea como relacion y no como un {@code Long} suelto.
  */
 @Entity
 @Table(name = "registros_espera")
@@ -56,38 +64,66 @@ public class Reserva {
     private Instant expiraEn;
 
     /**
-     * Momento en que el conductor marco
-     * que el pasajero ya abordo.
+     * HU-57.
+     * Respuesta de abordaje.
+     * null mientras nadie responde.
      */
-    @Column(name = "abordado_en")
-    private Instant abordadoEn;
+    @Column(name = "subio")
+    private Boolean subio;
 
     /**
-     * Usuario del conductor que realizo
-     * la accion.
+     * HU-57.
+     * Quien registro la respuesta de abordaje:
+     * pasajero o conductor.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "abordaje_fuente", length = 20)
+    private FuenteAbordaje abordajeFuente;
+
+    /**
+     * HU-57.
+     * Momento de la ultima respuesta de abordaje.
+     */
+    @Column(name = "abordaje_en")
+    private Instant abordajeEn;
+
+    /**
+     * HU-76.
+     * Usuario del conductor que confirmo
+     * que el pasajero abordo.
      */
     @Column(name = "abordado_por", length = 50)
     private String abordadoPor;
 
     /**
-     * Declaracion realizada por el pasajero.
+     * HU-76.
+     * Conserva la declaracion del pasajero cuando
+     * indica que no logro abordar.
      *
-     * Se guarda separada del estado de la reserva
-     * porque la confirmacion del conductor tiene
-     * prioridad.
+     * Esta informacion no se elimina aunque luego
+     * el conductor confirme que si abordo.
      */
     @Column(
             name = "pasajero_declaro_no_abordo",
             nullable = false
     )
-    private boolean pasajeroDeclaroNoAbordo;
+    private boolean pasajeroDeclaroNoAbordo = false;
 
     /**
+     * HU-76.
      * Momento en que el pasajero indico
-     * que no abordo el bus.
+     * que no abordo.
      */
     @Column(name = "declaracion_no_abordo_en")
     private Instant declaracionNoAbordoEn;
+
+    /**
+     * HU-124.
+     * Momento en que el pasajero cancelo manualmente
+     * su reserva.
+     */
+    @Column(name = "cancelado_en")
+    private Instant canceladoEn;
 
     public Reserva(
             String dispositivoId,
@@ -105,29 +141,97 @@ public class Reserva {
     }
 
     /**
-     * HU-76.
-     *
-     * La declaracion del pasajero se conserva
-     * independientemente del estado final.
+     * Atajo para quien solo necesita
+     * el identificador de la parada.
      */
-    public void declararNoAbordo(Instant momento) {
-        this.pasajeroDeclaroNoAbordo = true;
-        this.declaracionNoAbordoEn = momento;
+    public Long getParadaId() {
+        return parada == null ? null : parada.getId();
+    }
+
+    /**
+     * HU-135.
+     * Vigente = estado renovable y fecha
+     * de expiracion aun en el futuro.
+     */
+    public boolean estaVigente(Instant ahora) {
+        return EstadoReserva.RENOVABLES.contains(estado)
+                && expiraEn.isAfter(ahora);
+    }
+
+    /**
+     * HU-135.
+     * Extiende la vigencia y conserva
+     * el mismo identificador.
+     */
+    public void renovar(Instant nuevoExpiraEn) {
+        this.expiraEn = nuevoExpiraEn;
+        this.estado = EstadoReserva.RENOVADA;
+    }
+
+    /**
+     * HU-135.
+     * Marca la reserva como expirada.
+     */
+    public void expirar() {
+        this.estado = EstadoReserva.EXPIRADA;
+    }
+
+    /**
+     * HU-124.
+     * Cancela manualmente la reserva
+     * y conserva la fecha de cancelacion.
+     */
+    public void cancelar(Instant ahora) {
+        this.estado = EstadoReserva.CANCELADA;
+        this.canceladoEn = ahora;
+    }
+
+    /**
+     * Comprueba si la reserva pertenece
+     * al dispositivo indicado.
+     */
+    public boolean perteneceA(String dispositivoId) {
+        return this.dispositivoId.equals(dispositivoId);
     }
 
     /**
      * HU-76.
      *
+     * El pasajero declara que no logro abordar.
+     *
+     * La declaracion se conserva por separado
+     * para que no se pierda si posteriormente
+     * el conductor confirma el abordaje.
+     */
+    public void declararNoAbordo(Instant momento) {
+        this.pasajeroDeclaroNoAbordo = true;
+        this.declaracionNoAbordoEn = momento;
+
+        this.subio = false;
+        this.abordajeFuente = FuenteAbordaje.PASAJERO;
+        this.abordajeEn = momento;
+    }
+
+    /**
+     * HU-76.
+     *
+     * El conductor confirma que el pasajero abordo.
      * La confirmacion del conductor tiene prioridad.
-     * La reserva pasa a ABORDO, pero NO se elimina
-     * la declaracion previa del pasajero.
+     *
+     * Si anteriormente el pasajero habia indicado
+     * que no abordo, esa declaracion se conserva
+     * para auditoria.
      */
     public void marcarAbordo(
             String conductor,
             Instant momento
     ) {
         this.estado = EstadoReserva.ABORDO;
+
+        this.subio = true;
+        this.abordajeFuente = FuenteAbordaje.CONDUCTOR;
+        this.abordajeEn = momento;
+
         this.abordadoPor = conductor;
-        this.abordadoEn = momento;
     }
 }

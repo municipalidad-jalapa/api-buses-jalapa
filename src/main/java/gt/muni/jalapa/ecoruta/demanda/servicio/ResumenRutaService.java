@@ -49,9 +49,9 @@ public class ResumenRutaService {
             conteosCompletos.put(paradaId, conteos.getOrDefault(paradaId, 0L));
         }
 
-        // Piloto con un solo bus y sin relacion Ruta-Vehiculo todavia: la ultima
-        // posicion conocida en general es la unica fuente integrada en develop.
-        PosicionActualResponse posicion = telemetria.posicionVigente(null).orElse(null);
+        // Un bus por ruta (V12): la posicion es la del bus de esta ruta, nunca la
+        // del ultimo bus que reporto en la flota.
+        PosicionActualResponse posicion = telemetria.posicionVigentePorRuta(rutaId).orElse(null);
 
         return new ResumenRutaCompuesto(ruta, posicion, conteosCompletos);
     }

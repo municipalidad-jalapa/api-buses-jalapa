@@ -23,7 +23,7 @@ public record DetalleReservaResponse(
                 reserva.getParada().getId(),
                 reserva.getEstado(),
                 reserva.getExpiraEn(),
-                reserva.getAbordadoEn(),
+                reserva.getAbordajeEn(),
                 reserva.isPasajeroDeclaroNoAbordo(),
                 reserva.getDeclaracionNoAbordoEn()
         );

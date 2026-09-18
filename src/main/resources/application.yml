@@ -14,12 +14,27 @@ spring:
 
 ecoruta:
   jwt:
+    # Firma del JWT propio del backend (no es el idToken de Firebase).
     secret: ${JWT_SECRET:cambiar-en-produccion-minimo-32-caracteres!!}
-    duracion-minutos: 480
+    # Jornada laboral del conductor: 8 h por defecto, configurable 8-12 h.
+    duracion-minutos: ${JWT_DURACION_MINUTOS:480}
+  firebase:
+    # Credenciales del SDK Admin. Una de las dos basta; ninguna va en el codigo.
+    credentials-path: ${FIREBASE_CREDENTIALS_PATH:}
+    credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
+    # Si se define, el idToken ademas debe pertenecer a este proyecto.
+    project-id: ${FIREBASE_PROJECT_ID:}
   demanda:
     umbral-salida: 10
-    ttl-minutos: 20
+    # Vigencia de una reserva desde que se crea o se renueva (SCRUM-307, HU-135).
+    ttl-minutos: 5
+    # Cada cuanto la tarea programada barre las reservas vencidas.
+    barrido-segundos: 60
     geocerca-metros: 150
+  notificaciones:
+    # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
+    radio-aproximacion-metros: ${NOTIF_RADIO_APROXIMACION_METROS:250}
+    radio-llegada-metros: ${NOTIF_RADIO_LLEGADA_METROS:40}
   telemetria:
     # Tolerancia contra relojes desfasados del equipo a bordo (SCRUM-138).
     ventana-horas: 12

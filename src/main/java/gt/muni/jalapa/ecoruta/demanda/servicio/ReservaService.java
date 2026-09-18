@@ -12,30 +12,36 @@ import gt.muni.jalapa.ecoruta.demanda.web.dto.DetalleReservaResponse;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.ReservaResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Servicio de reservas de espera en parada.
+ * Ciclo de vida de la reserva de espera en parada.
+ *
+ * SCRUM-306 crea la reserva.
+ * HU-135 permite renovarla y expirar las vencidas.
+ * HU-124 permite cancelarla.
+ * HU-76 permite consultar su estado y registrar
+ * la declaración del pasajero cuando considera
+ * que no logró abordar.
  */
 @Service
 @RequiredArgsConstructor
 public class ReservaService {
 
     /**
-     * Solo estos estados bloquean una reserva nueva.
-     * ABORDO no es vigente.
+     * Solo ACTIVA y RENOVADA cuentan
+     * como reservas vigentes.
+     *
+     * ABORDO no ocupa el cupo.
      */
     static final Set<EstadoReserva> ESTADOS_VIGENTES =
-            EnumSet.of(
-                    EstadoReserva.ACTIVA,
-                    EstadoReserva.RENOVADA
-            );
+            EstadoReserva.RENOVABLES;
 
     private static final String INDICE_VIGENTE =
             "uq_registro_activo_por_dispositivo";
@@ -69,7 +75,7 @@ public class ReservaService {
                 demanda.geocercaMetros()
         )) {
             throw new ReglaDeNegocioException(
-                    "Debes acercarte mas a la parada para registrar que estas esperando."
+                    "Debes acercarte más a la parada para registrar que estás esperando."
             );
         }
 
@@ -93,7 +99,11 @@ public class ReservaService {
         );
 
         try {
-
+            /*
+             * saveAndFlush fuerza el INSERT inmediatamente.
+             * El índice parcial es la última protección
+             * frente a solicitudes concurrentes.
+             */
             Reserva guardada =
                     reservas.saveAndFlush(reserva);
 
@@ -112,14 +122,122 @@ public class ReservaService {
     }
 
     /**
+     * HU-135.
+     *
+     * Extiende la vigencia de una reserva.
+     * Conserva el mismo identificador
+     * y pasa a estado RENOVADA.
+     */
+    @Transactional
+    public ReservaResponse renovar(
+            Long reservaId,
+            String dispositivoId
+    ) {
+
+        Reserva reserva = reservas
+                .findById(reservaId)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Reserva",
+                                reservaId
+                        )
+                );
+
+        if (!reserva.perteneceA(dispositivoId)) {
+            throw new AccessDeniedException(
+                    "Esta reserva no pertenece a este dispositivo."
+            );
+        }
+
+        Instant ahora = Instant.now(reloj);
+
+        if (!reserva.estaVigente(ahora)) {
+            throw new ReglaDeNegocioException(
+                    "Esta reserva ya venció o no está activa."
+            );
+        }
+
+        reserva.renovar(
+                ahora.plus(demanda.ttl())
+        );
+
+        return ReservaResponse.de(reserva);
+    }
+
+    /**
+     * HU-124.
+     *
+     * El pasajero cancela manualmente su reserva.
+     *
+     * La reserva no se elimina de la base de datos:
+     * cambia a CANCELADA y conserva cuándo ocurrió.
+     */
+    @Transactional
+    public void cancelar(
+            Long reservaId,
+            String dispositivoId
+    ) {
+
+        Reserva reserva = reservas
+                .findById(reservaId)
+                .orElseThrow(() ->
+                        new RecursoNoEncontradoException(
+                                "Reserva",
+                                reservaId
+                        )
+                );
+
+        if (!reserva.perteneceA(dispositivoId)) {
+            throw new AccessDeniedException(
+                    "Esta reserva no pertenece a este dispositivo."
+            );
+        }
+
+        if (reserva.getEstado()
+                == EstadoReserva.CANCELADA) {
+
+            throw new ReglaDeNegocioException(
+                    "Esta reserva ya estaba cancelada."
+            );
+        }
+
+        Instant ahora = Instant.now(reloj);
+
+        if (!reserva.estaVigente(ahora)) {
+            throw new ReglaDeNegocioException(
+                    "Esta reserva ya venció o no está activa."
+            );
+        }
+
+        reserva.cancelar(ahora);
+    }
+
+    /**
+     * HU-135.
+     *
+     * Marca como EXPIRADA toda reserva
+     * ACTIVA o RENOVADA cuya vigencia ya terminó.
+     *
+     * Este método es idempotente.
+     */
+    @Transactional
+    public int expirarVencidas() {
+
+        return reservas.marcarExpiradas(
+                EstadoReserva.RENOVABLES,
+                Instant.now(reloj)
+        );
+    }
+
+    /**
      * HU-76.
      *
-     * Permite que el pasajero consulte su reserva
-     * utilizando el id de la reserva y el id de
-     * su dispositivo.
+     * Permite al pasajero consultar su reserva
+     * utilizando el identificador de la reserva
+     * y su identificador de dispositivo.
      *
-     * De esta forma puede ver cuando el conductor
-     * ya marco su reserva como ABORDO.
+     * De esta forma puede detectar cuando
+     * el conductor ya la marcó como ABORDO.
      */
     @Transactional(readOnly = true)
     public DetalleReservaResponse consultar(
@@ -139,14 +257,13 @@ public class ReservaService {
     /**
      * HU-76.
      *
-     * El pasajero indica que considera que no abordo.
+     * El pasajero indica que considera
+     * que NO logró abordar.
      *
-     * Esta declaracion se guarda por separado y
-     * no reemplaza el estado oficial de la reserva.
-     *
-     * Si posteriormente el conductor marca el
-     * abordaje, el estado pasa a ABORDO pero esta
-     * declaracion permanece guardada.
+     * La declaración queda guardada de forma
+     * independiente para que no se pierda si
+     * posteriormente el conductor confirma
+     * que sí abordó.
      */
     @Transactional
     public DetalleReservaResponse declararNoAbordo(
@@ -161,13 +278,13 @@ public class ReservaService {
                 );
 
         /*
-         * Evitamos reemplazar la fecha original si
-         * el pasajero envia la misma declaracion
-         * varias veces.
+         * Si ya hizo la declaración anteriormente,
+         * conservamos la fecha original.
          */
         if (!reserva.isPasajeroDeclaroNoAbordo()) {
 
-            Instant ahora = Instant.now(reloj);
+            Instant ahora =
+                    Instant.now(reloj);
 
             reserva.declararNoAbordo(ahora);
         }
@@ -176,11 +293,14 @@ public class ReservaService {
     }
 
     /**
-     * Busca una reserva asegurando que pertenece
-     * al dispositivo indicado.
+     * HU-76.
      *
-     * Si el id existe pero pertenece a otro
-     * dispositivo, tambien devolvemos 404.
+     * Busca una reserva asegurando que
+     * pertenece al dispositivo solicitado.
+     *
+     * Para esta operación devolvemos 404
+     * tanto si no existe como si pertenece
+     * a otro dispositivo.
      */
     private Reserva buscarReservaDelDispositivo(
             Long reservaId,
@@ -200,6 +320,11 @@ public class ReservaService {
                 );
     }
 
+    /**
+     * Detecta la violación del índice que impide
+     * tener más de una reserva vigente
+     * por dispositivo.
+     */
     private static boolean esViolacionDeReservaVigente(
             DataIntegrityViolationException ex
     ) {

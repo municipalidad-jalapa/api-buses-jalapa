@@ -69,7 +69,7 @@ public class PasosDeCredencialDelEquipo {
     /** Va en otro bus: un vehiculo no admite dos equipos activos a la vez. */
     @Dado("otro equipo {string} con credencial vigente")
     public void otro_equipo_con_credencial_vigente(String etiqueta) {
-        Long otroBus = vehiculos.save(new Vehiculo("BUS-02", "P-222DDD")).getId();
+        Long otroBus = vehiculos.save(new Vehiculo("BUS-PRUEBA", "P-222DDD")).getId();
         contexto.registrarEquipo(equipoService.emitir(otroBus, etiqueta));
     }
 

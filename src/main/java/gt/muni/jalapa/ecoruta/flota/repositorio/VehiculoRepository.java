@@ -13,4 +13,7 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
     boolean existsByPlaca(String placa);
 
     List<Vehiculo> findAllByOrderByIdentificadorAsc();
+
+    /** El bus activo de una ruta. Hay a lo sumo uno (uq_vehiculo_activo_por_ruta). */
+    Optional<Vehiculo> findFirstByRutaIdAndActivoTrue(Long rutaId);
 }

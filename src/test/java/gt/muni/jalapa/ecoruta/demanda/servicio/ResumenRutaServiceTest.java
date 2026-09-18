@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -69,7 +70,7 @@ class ResumenRutaServiceTest {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(List.of(1L, 2L, 3L, 4L)))
                 .thenReturn(Map.of(1L, 2L, 3L, 1L));
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.of(posicionEjemplo));
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.of(posicionEjemplo));
 
         ResumenRutaCompuesto resumen = servicio.componer(1L);
 
@@ -87,7 +88,7 @@ class ResumenRutaServiceTest {
     void tolera_que_el_bus_no_tenga_posicion() {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(any())).thenReturn(Map.of());
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         ResumenRutaCompuesto resumen = servicio.componer(1L);
 
@@ -105,7 +106,7 @@ class ResumenRutaServiceTest {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(List.of(1L, 2L, 3L, 4L)))
                 .thenReturn(Map.of(1L, 2L, 3L, 1L));
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         ResumenRutaCompuesto resumen = servicio.componer(1L);
 
@@ -132,7 +133,7 @@ class ResumenRutaServiceTest {
     void consulta_demanda_una_sola_vez_para_todas_las_paradas() {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(any())).thenReturn(Map.of());
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         servicio.componer(1L);
 
@@ -146,11 +147,12 @@ class ResumenRutaServiceTest {
     void consulta_telemetria_una_sola_vez() {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(any())).thenReturn(Map.of());
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         servicio.componer(1L);
 
-        verify(telemetria).posicionVigente(eq(null));
+        // La posicion es la del bus de la ruta pedida, no la ultima de la flota.
+        verify(telemetria).posicionVigentePorRuta(1L);
     }
 
     // --- resumir(): el mismo dato ya mapeado al DTO del contrato REST (SCRUM-284) ---
@@ -159,7 +161,7 @@ class ResumenRutaServiceTest {
     void resumir_mapea_la_ruta_con_sus_paradas_en_orden() {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(any())).thenReturn(Map.of());
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         ResumenRutaResponse dto = servicio.resumir(1L);
 
@@ -174,7 +176,7 @@ class ResumenRutaServiceTest {
     void resumir_incluye_la_posicion_cuando_el_bus_ya_reporto() {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(any())).thenReturn(Map.of());
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.of(posicionEjemplo));
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.of(posicionEjemplo));
 
         ResumenRutaResponse dto = servicio.resumir(1L);
 
@@ -189,7 +191,7 @@ class ResumenRutaServiceTest {
     void resumir_entrega_la_respuesta_aunque_el_bus_no_haya_reportado_posicion() {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(any())).thenReturn(Map.of());
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         ResumenRutaResponse dto = servicio.resumir(1L);
 
@@ -203,7 +205,7 @@ class ResumenRutaServiceTest {
         when(catalogo.buscar(1L)).thenReturn(rutaEjemplo);
         when(demanda.contarReservasActivasPorParada(List.of(1L, 2L, 3L, 4L)))
                 .thenReturn(Map.of(1L, 2L, 3L, 1L));
-        when(telemetria.posicionVigente(null)).thenReturn(Optional.empty());
+        when(telemetria.posicionVigentePorRuta(anyLong())).thenReturn(Optional.empty());
 
         ResumenRutaResponse dto = servicio.resumir(1L);
 

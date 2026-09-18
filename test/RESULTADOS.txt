@@ -1,0 +1,169 @@
+================================================================================
+ RESULTADOS DE PRUEBAS  -  HU Desarrollo-135
+ Vigencia de cinco minutos con renovacion y expiracion
+================================================================================
+ Fecha de ejecucion : 2026-08-31 23:01 - 23:05 (America/Guatemala)
+ Ejecutado por      : mvn test  +  prueba manual con curl
+ Entorno
+   - JDK            : Eclipse Temurin 21.0.7  (JAVA_HOME apuntado a JDK 21)
+   - Maven          : 3.9.11
+   - SO             : Windows 11
+   - Base de datos  : PostGIS 17-3.5 en contenedor (Testcontainers / docker compose)
+   - Rama git       : main   (cambios de la HU aun sin commitear)
+================================================================================
+
+
+================================================================================
+ A) SUITE AUTOMATICA COMPLETA   ->   mvn test
+================================================================================
+
+[INFO] Running gt.muni.jalapa.ecoruta.catalogo.ConsultarRutasIT
+[INFO] Tests run: 7,  Failures: 0, Errors: 0, Skipped: 0   -- ConsultarRutasIT
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.dominio.ReservaTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaTest              (NUEVA - HU-135)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.ReservaVigenciaIT
+[INFO] Tests run: 9,  Failures: 0, Errors: 0, Skipped: 0   -- ReservaVigenciaIT        (NUEVA - HU-135)
+[INFO] Running gt.muni.jalapa.ecoruta.demanda.servicio.DemandaServiceTest
+[INFO] Tests run: 8,  Failures: 0, Errors: 0, Skipped: 0   -- DemandaServiceTest       (NUEVA - HU-135)
+[INFO] Running gt.muni.jalapa.ecoruta.EsquemaValidaTest
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- EsquemaValidaTest        (valida esquema + V7)
+[INFO] Running gt.muni.jalapa.ecoruta.flota.CambioDeEquipoConservaHistorialIT
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- CambioDeEquipoConservaHistorialIT
+[INFO] Running gt.muni.jalapa.ecoruta.flota.EsquemaFlotaTest
+[INFO] Tests run: 5,  Failures: 0, Errors: 0, Skipped: 0   -- EsquemaFlotaTest
+[INFO] Running gt.muni.jalapa.ecoruta.flota.seguridad.TokenDeEquipoTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0   -- TokenDeEquipoTest
+[INFO] Running gt.muni.jalapa.ecoruta.flota.servicio.CredencialesTest
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0   -- CredencialesTest
+[INFO] Running gt.muni.jalapa.ecoruta.flota.web.AdminDeEquiposIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- AdminDeEquiposIT
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.CorsIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- CorsIT
+[INFO] Running gt.muni.jalapa.ecoruta.seguridad.SecretoNoSeFiltraIT
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- SecretoNoSeFiltraIT
+[INFO] Running gt.muni.jalapa.ecoruta.telemetria.DifusorDePosicionesTest
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- DifusorDePosicionesTest
+[INFO] Running gt.muni.jalapa.ecoruta.telemetria.IngestaConCredencialDeEquipoIT
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0   -- IngestaConCredencialDeEquipoIT
+[INFO] Running gt.muni.jalapa.ecoruta.telemetria.StreamDePosicionesIT
+[INFO] Tests run: 8,  Failures: 0, Errors: 0, Skipped: 0   -- StreamDePosicionesIT
+[INFO] Running gt.muni.jalapa.ecoruta.aceptacion.PruebasDeAceptacionTest
+[INFO] Tests run: 26, Failures: 0, Errors: 0, Skipped: 0   -- PruebasDeAceptacionTest (Gherkin)
+
+[INFO] Results:
+[INFO] Tests run: 136, Failures: 0, Errors: 0, Skipped: 0
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+
+RESUMEN A:  136 pruebas ejecutadas / 136 OK / 0 fallos / 0 errores.
+            Ninguna prueba preexistente se rompio con los cambios de la HU-135.
+
+
+================================================================================
+ B) DETALLE DE LAS PRUEBAS NUEVAS DE LA HU-135
+================================================================================
+
+--- ReservaTest  (dominio puro, sin Spring ni Docker) --------------------------  6/6 OK
+  [OK] una_reserva_activa_con_expiracion_futura_esta_vigente
+  [OK] una_reserva_cuya_expiracion_ya_paso_no_esta_vigente
+  [OK] una_reserva_que_no_esta_en_estado_renovable_no_esta_vigente_aunque_no_haya_expirado
+  [OK] renovar_extiende_la_expiracion_y_deja_la_reserva_renovada
+  [OK] expirar_pasa_la_reserva_a_expirada
+  [OK] los_conjuntos_de_estados_reflejan_el_indice_parcial
+
+--- DemandaServiceTest  (servicio con mocks, sin Docker) -----------------------  8/8 OK
+  [OK] crear_fija_la_expiracion_cinco_minutos_despues_y_deja_la_reserva_activa      -> criterio 1
+  [OK] crear_falla_con_404_si_la_parada_no_existe
+  [OK] crear_falla_con_422_si_el_dispositivo_ya_tiene_una_reserva_que_ocupa_cupo
+  [OK] renovar_una_reserva_vigente_la_extiende_otros_cinco_minutos_y_la_deja_renovada -> criterio 2
+  [OK] renovar_una_reserva_inexistente_falla_con_404
+  [OK] renovar_una_reserva_ya_expirada_falla_con_422                                 -> criterio 3
+  [OK] renovar_una_reserva_que_no_esta_activa_falla_con_422                          -> criterio 3
+  [OK] expirar_vencidas_delega_el_barrido_masivo_sobre_los_estados_renovables        -> criterio 4
+
+--- ReservaVigenciaIT  (integracion: MockMvc + PostGIS real via Testcontainers) -  9/9 OK
+  [OK] al_crearse_la_reserva_expira_cinco_minutos_despues                           -> criterio 1
+  [OK] renovar_una_reserva_vigente_extiende_la_expiracion_y_responde_200            -> criterio 2
+  [OK] renovar_una_reserva_ya_expirada_responde_422                                 -> criterio 3
+  [OK] renovar_una_reserva_que_no_esta_activa_responde_422                          -> criterio 3
+  [OK] la_tarea_programada_marca_expirada_toda_reserva_vencida                      -> criterio 4
+  [OK] una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva              -> criterio 5
+  [OK] un_dispositivo_con_reserva_vigente_no_puede_crear_otra
+  [OK] renovar_una_reserva_inexistente_responde_404
+  [OK] crear_una_reserva_para_una_parada_que_no_existe_responde_404
+
+--- EsquemaValidaTest  (arranque con Flyway V7 + ddl-auto=validate) ------------  4/4 OK
+  [OK] el_contexto_arranca_con_el_esquema_de_flyway_sobre_postgis
+  [OK] flyway_aplico_todas_las_migraciones_sin_fallar          (incluye V7)
+  [OK] las_tablas_del_esquema_inicial_existen
+  [OK] la_ubicacion_de_las_posiciones_es_geometry_point_4326
+
+
+================================================================================
+ C) PRUEBA MANUAL END-TO-END  (app real + Postgres real)
+================================================================================
+ App lanzada con:  -Decoruta.demanda.vigencia-minutos=1  -Decoruta.demanda.barrido-segundos=5
+ (5 minutos reales de vigencia se comprueban en A/B; aqui se baja a 1 min para
+  poder observar el vencimiento y la tarea programada sin esperar tanto)
+
+### Fecha: Mon Aug 31 23:03:47 HAC 2026
+
+--- 1. POST /api/v1/reservas  (crear)  -> se espera 201 con expiraEn a +1min, estado ACTIVA
+{"id":1,"dispositivoId":"dev-manual","paradaId":1,"estado":"ACTIVA","creadoEn":"2026-09-01T05:03:47.471234Z","expiraEn":"2026-09-01T05:04:47.485231400Z"}
+HTTP 201                                                                     [OK] criterio 1
+
+--- 2. POST /api/v1/reservas/1/renovacion  (vigente)  -> 200, estado RENOVADA, mismo id, nuevo expiraEn
+{"id":1,"dispositivoId":"dev-manual","paradaId":1,"estado":"RENOVADA","creadoEn":"2026-09-01T05:03:47.471234Z","expiraEn":"2026-09-01T05:04:47.725448800Z"}
+HTTP 200                                                                     [OK] criterio 2  (mismo id=1, estado RENOVADA, expiraEn mayor)
+
+--- 3. POST /api/v1/reservas  mismo dispositivo  -> 422 (ya tiene una vigente)
+{"timestamp":"2026-09-01T05:03:47.914120700Z","status":422,"error":"Unprocessable Entity","message":"El dispositivo ya tiene una reserva vigente en una parada.","path":"/api/v1/reservas"}
+HTTP 422                                                                     [OK]
+
+--- 4. POST /api/v1/reservas/999999/renovacion  -> 404
+{"timestamp":"2026-09-01T05:03:48.086732200Z","status":404,"error":"Not Found","message":"Reserva con id 999999 no existe","path":"/api/v1/reservas/999999/renovacion"}
+HTTP 404                                                                     [OK]
+
+--- 5. POST /api/v1/reservas  con paradaId inexistente  -> 404
+{"timestamp":"2026-09-01T05:03:48.266386700Z","status":404,"error":"Not Found","message":"Parada con id 424242 no existe","path":"/api/v1/reservas"}
+HTTP 404                                                                     [OK]
+
+--- 6. POST /api/v1/reservas  body sin dispositivoId  -> 400
+{"timestamp":"2026-09-01T05:03:48.436976500Z","status":400,"error":"Bad Request","message":"dispositivoId: el dispositivo es obligatorio","path":"/api/v1/reservas"}
+HTTP 400                                                                     [OK] (validacion de entrada)
+
+### Esperando 75s a que venza la reserva (vigencia=1min) y actue la tarea programada (cada 5s)...
+
+--- 7. Estado en BD de la reserva 1 (la marca la tarea @Scheduled, sin intervencion)
+   id | dispositivo_id | estado   | vencida
+    1 | dev-manual     | EXPIRADA | t                                       [OK] criterio 4
+
+--- 8. POST /api/v1/reservas/1/renovacion  (ya EXPIRADA)  -> 422
+{"timestamp":"2026-09-01T05:05:04.249582100Z","status":422,"error":"Unprocessable Entity","message":"La reserva 1 ya expiro o no esta activa; no se puede renovar.","path":"/api/v1/reservas/1/renovacion"}
+HTTP 422                                                                     [OK] criterio 3
+
+--- 9. POST /api/v1/reservas  mismo dispositivo dev-manual  -> 201 (una EXPIRADA no bloquea)
+{"id":2,"dispositivoId":"dev-manual","paradaId":1,"estado":"ACTIVA","creadoEn":"2026-09-01T05:05:04.417088Z","expiraEn":"2026-09-01T05:06:04.419028300Z"}
+HTTP 201                                                                     [OK] criterio 5
+
+--- 10. Filas del dispositivo dev-manual en BD (1 EXPIRADA + 1 ACTIVA)
+    1 | EXPIRADA
+    2 | ACTIVA                                                               [OK] la EXPIRADA no cuenta como activa
+
+--- 11. Log de la tarea programada (Spring Scheduling)
+2026-08-31T23:04:47.732-06:00  INFO --- [   scheduling-1] g.m.j.e.demanda.servicio.DemandaService : Reservas expiradas por vencimiento: 1
+                                                                            [OK] corrio sola, hilo scheduling-1
+
+RESUMEN C:  11/11 pasos con el resultado esperado.
+
+
+================================================================================
+ VEREDICTO
+================================================================================
+  - Suite automatica  : 136/136 OK  (incluye 27 pruebas nuevas de la HU-135)
+  - Prueba manual E2E  : 11/11 pasos OK
+  - Los 5 criterios de aceptacion + el contrato (200/422/404) quedan cubiertos
+    tanto por pruebas automaticas como por la verificacion manual contra la app real.
+  - Ninguna prueba preexistente se rompio.
+================================================================================

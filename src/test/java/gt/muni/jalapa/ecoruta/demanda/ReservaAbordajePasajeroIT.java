@@ -148,7 +148,7 @@ class ReservaAbordajePasajeroIT extends IntegracionPostgisTest {
                            AND estado = 'ABORDO'
                            AND pasajero_declaro_no_abordo = TRUE
                            AND declaracion_no_abordo_en IS NOT NULL
-                           AND abordado_en IS NOT NULL
+                           AND abordaje_en IS NOT NULL
                            AND abordado_por = 'conductor1'
                         """,
                         Long.class,

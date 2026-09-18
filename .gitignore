@@ -8,3 +8,4 @@ google-services.json
 .env
 # Config local del IDE (rutas de maquina)
 .vscode/
+tools/fcm-token/local-config.js

@@ -13,6 +13,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -38,6 +40,12 @@ public class DifusorDePosiciones {
      */
     private final List<SseEmitter> suscriptores = new CopyOnWriteArrayList<>();
 
+    /**
+     * La ruta que sigue cada suscriptor. Sin entrada = recibe toda la flota.
+     * Con dos rutas en operacion, el pasajero de una no debe ver el bus de la otra.
+     */
+    private final Map<SseEmitter, Long> rutaDe = new ConcurrentHashMap<>();
+
     /** Alimenta el campo id: de cada evento, base para el Last-Event-ID de SCRUM-280. */
     private final AtomicLong secuencia = new AtomicLong();
 
@@ -50,12 +58,20 @@ public class DifusorDePosiciones {
      * se termina difundiendo a conexiones muertas.
      */
     public SseEmitter suscribir() {
+        return suscribir(null);
+    }
+
+    /** Registra un suscriptor que solo recibe las posiciones del bus de {@code rutaId}. */
+    public SseEmitter suscribir(Long rutaId) {
         SseEmitter emisor = new SseEmitter(propiedades.sseTimeout().toMillis());
 
         emisor.onCompletion(() -> quitar(emisor, "cerrada por el cliente"));
         emisor.onTimeout(() -> quitar(emisor, "expiro el timeout"));
         emisor.onError(error -> quitar(emisor, "error: " + error.getMessage()));
 
+        if (rutaId != null) {
+            rutaDe.put(emisor, rutaId);
+        }
         suscriptores.add(emisor);
         log.debug("Suscriptor nuevo al stream de posiciones. Activos: {}", suscriptores.size());
         return emisor;
@@ -87,7 +103,12 @@ public class DifusorDePosiciones {
         SseEmitter.SseEventBuilder evento = evento(aviso.posicion());
         // Cada envio va aislado: un suscriptor con la conexion rota no puede
         // tumbar el reparto a los demas ni propagar la excepcion a la ingesta.
+        Long rutaDelBus = aviso.posicion().rutaId();
         suscriptores.forEach(emisor -> {
+            Long rutaQueSigue = rutaDe.get(emisor);
+            if (rutaQueSigue != null && !rutaQueSigue.equals(rutaDelBus)) {
+                return;
+            }
             try {
                 emisor.send(evento);
             } catch (IOException | IllegalStateException e) {
@@ -136,6 +157,7 @@ public class DifusorDePosiciones {
     }
 
     private void quitar(SseEmitter emisor, String motivo) {
+        rutaDe.remove(emisor);
         if (suscriptores.remove(emisor)) {
             log.debug("Suscriptor fuera del stream ({}). Activos: {}", motivo, suscriptores.size());
         }
