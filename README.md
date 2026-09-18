@@ -98,6 +98,49 @@ mvn spring-boot:run
 | `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_ADMIN` — cambia el equipo del bus |
 | `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_ADMIN` |
 | `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_ADMIN` |
+| `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
+
+## Integración con Traccar (GPS real)
+
+El GPS del bus (103A/B) reporta a un servidor **Traccar**, y Traccar reenvía cada posición a
+`POST /api/v1/integraciones/traccar/posiciones` (SCRUM-24). El backend la registra con el
+mismo servicio de telemetría que usa el equipo a bordo: alimenta la posición vigente, el stream
+en tiempo real y los avisos. El endpoint `POST /api/v1/telemetria/posiciones` no cambia.
+
+**Las dos credenciales no se intercambian.** `Authorization: Bearer eq_…` autentica al equipo a
+bordo en la telemetría; `X-Traccar-Token` autentica al servicio Traccar en esta integración.
+Cada una solo abre su propia ruta.
+
+1. Definir el secreto en el backend (mínimo 32 caracteres; sin él la integración responde 401 a
+   todo):
+
+   ```bash
+   TRACCAR_TOKEN=<secreto-largo>
+   # Unidad de position.speed: NUDOS (la de Traccar, por defecto), KMH o MS
+   TRACCAR_UNIDAD_VELOCIDAD=NUDOS
+   ```
+
+2. Configurar el reenvío en `traccar.xml`:
+
+   ```xml
+   <entry key='forward.enable'>true</entry>
+   <entry key='forward.url'>https://<api>/api/v1/integraciones/traccar/posiciones</entry>
+   <entry key='forward.json'>true</entry>
+   <entry key='forward.header'>X-Traccar-Token: <secreto-largo></entry>
+   ```
+
+3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el equipo del bus:
+
+   ```sql
+   INSERT INTO dispositivos_externos (identificador, equipo_id)
+   VALUES ('860000000000001', <id del equipo ACTIVO del bus>);
+   ```
+
+Respuestas: `202 {"recibidas", "aceptadas", "descartadas"}` — un 202 no implica que todas se
+guardaron: se descartan las lecturas fuera de la ventana de 12 h y los reenvíos repetidos (se
+deduplican por `position.id`). `400` cuerpo mal formado, `401` token ausente o inválido, `422`
+dispositivo sin equipo asociado (o con el equipo revocado o sin vehículo), o datos inválidos; en
+ese caso no se registra nada del reenvío.
 
 ## Provisionar un equipo a bordo
 

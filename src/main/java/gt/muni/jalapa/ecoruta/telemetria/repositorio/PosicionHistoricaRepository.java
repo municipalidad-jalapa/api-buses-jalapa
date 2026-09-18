@@ -19,4 +19,7 @@ public interface PosicionHistoricaRepository extends JpaRepository<PosicionHisto
     Optional<PosicionHistorica> findFirstByVehiculoIdOrderByRegistradoEnDescIdDesc(Long vehiculoId);
 
     long countByVehiculoId(Long vehiculoId);
+
+    /** SCRUM-24: deduplicacion de reenvios por clave de origen. */
+    boolean existsByClaveOrigen(String claveOrigen);
 }
