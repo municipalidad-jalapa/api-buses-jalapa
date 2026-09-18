@@ -88,17 +88,19 @@ public class ReservaController {
     @Operation(summary = "Cancela una reserva vigente",
             description = """
                     Publico, pero solo el dispositivo que la creo puede cancelarla
-                    (HU-124): se identifica con la cabecera X-Dispositivo-Id.
+                    (HU-124 / SCRUM-172): se identifica con la cabecera X-Dispositivo-Id.
 
                     La reserva no se borra: pasa a CANCELADA y guarda cuando se
-                    cancelo, para que quede la traza de la demanda que se solto.""")
+                    cancelo, para que quede la traza de la demanda que se solto.
+                    Una reserva en ABORDO no se puede cancelar.""")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Reserva cancelada"),
             @ApiResponse(responseCode = "403", description = "La reserva es de otro dispositivo",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "404", description = "No existe una reserva con ese id",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
-            @ApiResponse(responseCode = "422", description = "Ya estaba cancelada o no esta vigente",
+            @ApiResponse(responseCode = "422",
+                    description = "Ya estaba cancelada, abordada, expirada o no esta vigente",
                     content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     @DeleteMapping("/{id}")

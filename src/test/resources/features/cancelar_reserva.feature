@@ -1,20 +1,19 @@
- # language: es
-@SCRUM-276 @HU-124 @backend
-Característica: Cancelar reserva
+# language: es
+@SCRUM-172 @HU-77 @SCRUM-276 @HU-124 @backend
+Característica: Cancelar mi registro
 
-  Como pasajero
-  quiero cancelar una reserva que ya no necesito
-  para liberar mi lugar y evitar una parada innecesaria del bus
+  Como pasajero que ya no va a viajar
+  quiero quitar mi registro de la parada
+  para no inflar el conteo de personas esperando
 
   @criterio-1
-  Escenario: Cancelar una reserva activa
-    Dado que existe una reserva activa del dispositivo "dispositivo-uno"
-    Entonces el conteo de reservas activas en la parada es 1
-    Cuando el dispositivo "dispositivo-uno" cancela su reserva
+  Escenario: Cancelar con un toque una reserva activa
+    Dado que existe una reserva activa de mi dispositivo
+    Y el resumen muestra una persona esperando en la parada
+    Cuando cancelo mi reserva
     Entonces la respuesta tiene codigo 204
-    Y la reserva queda en estado "CANCELADA"
-    Y la reserva sigue almacenada y tiene fecha de cancelacion
-    Y el conteo de reservas activas en la parada es 0
+    Y la reserva queda cancelada con fecha de cancelacion
+    Y el resumen muestra cero personas esperando en la parada
 
   @criterio-2
   Escenario: Cancelar una reserva inexistente
@@ -49,3 +48,11 @@ Característica: Cancelar reserva
     Dado que existe una reserva expirada del dispositivo "dispositivo-expirado"
     Cuando el dispositivo "dispositivo-expirado" cancela su reserva
     Entonces la respuesta tiene codigo 422
+
+  @criterio-7
+  Escenario: No cancelar una reserva ya marcada como abordada
+    Dado que mi reserva ya esta marcada como abordada
+    Cuando intento cancelar mi reserva
+    Entonces la respuesta tiene codigo 422
+    Y la reserva continua marcada como abordada
+    Y no se registra una fecha de cancelacion
