@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta.seguridad;
 
 import gt.muni.jalapa.ecoruta.flota.seguridad.EquipoAuthFilter;
+import gt.muni.jalapa.ecoruta.identidad.seguridad.AdminJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.identidad.seguridad.ConductorJwtAuthFilter;
 import gt.muni.jalapa.ecoruta.seguridad.bootstrap.AdminBootstrapFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -34,6 +35,7 @@ public class SecurityConfig {
             HttpSecurity http,
             EquipoAuthFilter equipoAuthFilter,
             ConductorJwtAuthFilter conductorJwtAuthFilter,
+            AdminJwtAuthFilter adminJwtAuthFilter,
             AdminBootstrapFilter adminBootstrapFilter,
             ApiErrorAuthenticationEntryPoint entryPoint,
             ApiErrorAccessDeniedHandler accessDenied,
@@ -212,6 +214,18 @@ public class SecurityConfig {
                         .permitAll()
 
                         /*
+                         * AUTENTICACIÓN DEL PANEL MUNICIPAL (SCRUM-173)
+                         *
+                         * Mismo mecanismo que el conductor: idToken de
+                         * Firebase a cambio del JWT de administrador.
+                         */
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/auth/admin"
+                        )
+                        .permitAll()
+
+                        /*
                          * HU-76.
                          *
                          * El conductor marca una parada
@@ -285,6 +299,14 @@ public class SecurityConfig {
                  */
                 .addFilterBefore(
                         conductorJwtAuthFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+
+                /*
+                 * Autenticación JWT del administrador municipal (SCRUM-173).
+                 */
+                .addFilterBefore(
+                        adminJwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
 
@@ -371,6 +393,24 @@ public class SecurityConfig {
     ) {
 
         FilterRegistrationBean<EquipoAuthFilter> registro =
+                new FilterRegistrationBean<>(filtro);
+
+        registro.setEnabled(false);
+
+        return registro;
+    }
+
+    /**
+     * AdminJwtAuthFilter solamente debe ejecutarse
+     * dentro de la cadena de Spring Security (SCRUM-173).
+     */
+    @Bean
+    public FilterRegistrationBean<AdminJwtAuthFilter>
+    noRegistrarAdminJwtAuthFilter(
+            AdminJwtAuthFilter filtro
+    ) {
+
+        FilterRegistrationBean<AdminJwtAuthFilter> registro =
                 new FilterRegistrationBean<>(filtro);
 
         registro.setEnabled(false);

@@ -98,7 +98,44 @@ mvn spring-boot:run
 | `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_ADMIN` — cambia el equipo del bus |
 | `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_ADMIN` |
 | `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_ADMIN` |
+| `POST` | `/api/v1/auth/admin` | público — idToken de Firebase → JWT de administrador (SCRUM-173) |
+| `POST` | `/api/v1/admin/sesion/renovacion` | `ROLE_ADMIN` — renueva la sesión mientras hay actividad |
+| `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
 | `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
+
+## Cuenta de administrador del panel municipal
+
+El panel web municipal (SCRUM-173) usa el mismo mecanismo que el conductor: el navegador inicia
+sesión en Firebase, envía el idToken a `POST /api/v1/auth/admin` y recibe un JWT propio del
+backend con rol `admin`. **No hay contraseñas en el repositorio ni en la base**: la contraseña
+vive solo en Firebase.
+
+Crear la primera cuenta:
+
+1. En la consola de Firebase del proyecto, *Authentication → Users → Add user*, con el correo
+   institucional. Copiar el **User UID**.
+2. Arrancar el backend con ese uid:
+
+   ```bash
+   ECORUTA_ADMIN_FIREBASE_UID=<uid> ECORUTA_ADMIN_USUARIO=jefe-transporte
+   ```
+
+   Al arrancar se crea la cuenta local con rol `ADMIN` si no existe (es idempotente; después
+   la variable se puede quitar).
+
+Cuentas adicionales, sin reiniciar:
+
+```sql
+INSERT INTO usuarios (username, rol, activo, firebase_uid)
+VALUES ('otra-persona', 'ADMIN', TRUE, '<uid de Firebase>');
+```
+
+Para quitar el acceso: `UPDATE usuarios SET activo = FALSE WHERE firebase_uid = '<uid>';`.
+
+- Una cuenta de conductor, una inexistente o una inactiva recibe **403** al intentar entrar.
+- La sesión se cierra tras `PANEL_ADMIN_INACTIVIDAD_MINUTOS` (30 por defecto) sin actividad:
+  el panel la renueva mientras se usa y, si no, el token vence y la API responde 401.
+- El rol de administrador no está atado a ninguna ruta: ve el servicio completo.
 
 ## Integración con Traccar (GPS real)
 
