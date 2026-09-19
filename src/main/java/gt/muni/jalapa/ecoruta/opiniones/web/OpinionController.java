@@ -9,6 +9,7 @@ import gt.muni.jalapa.ecoruta.opiniones.web.dto.OpinionesDtos.AtendidaResponse;
 import gt.muni.jalapa.ecoruta.opiniones.web.dto.OpinionesDtos.CrearOpinionRequest;
 import gt.muni.jalapa.ecoruta.opiniones.web.dto.OpinionesDtos.OpinionCreadaResponse;
 import gt.muni.jalapa.ecoruta.opiniones.web.dto.OpinionesDtos.PaginaDeOpiniones;
+import gt.muni.jalapa.ecoruta.pasajeros.seguridad.PasajeroJwtAuthFilter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -62,8 +63,19 @@ public class OpinionController {
     @PostMapping
     public ResponseEntity<OpinionCreadaResponse> registrar(
             @RequestHeader(value = "X-Dispositivo-Id", required = false) String dispositivoId,
-            @RequestBody CrearOpinionRequest peticion) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(servicio.registrar(dispositivoId, peticion));
+            @RequestBody CrearOpinionRequest peticion,
+            Authentication autenticado) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(servicio.registrar(dispositivoId, pasajeroDe(autenticado), peticion));
+    }
+
+    /** Con sesion de pasajero la opinion queda tambien en su cuenta (bloque B). */
+    private static Long pasajeroDe(Authentication autenticado) {
+        if (autenticado == null || autenticado.getAuthorities().stream()
+                .noneMatch(a -> PasajeroJwtAuthFilter.ROL.equals(a.getAuthority()))) {
+            return null;
+        }
+        return Long.valueOf(autenticado.getName());
     }
 
     @Operation(summary = "Lista las opiniones para el panel municipal",

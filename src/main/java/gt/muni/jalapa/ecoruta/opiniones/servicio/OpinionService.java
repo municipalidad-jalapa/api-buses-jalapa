@@ -52,11 +52,14 @@ public class OpinionService {
     private final Clock reloj;
 
     /**
-     * Registra una opinion anonima, atribuida al identificador del navegador.
-     * El vehiculo lo resuelve el servidor: el que tiene asignada la ruta ahora.
+     * Registra una opinion, atribuida al identificador del navegador y, si hay
+     * sesion de pasajero, tambien a su cuenta. El vehiculo lo resuelve el
+     * servidor: el que tiene asignada la ruta ahora.
+     *
+     * @param pasajeroId cuenta del pasajero; null si opina como invitado
      */
     @Transactional
-    public OpinionCreadaResponse registrar(String dispositivoId, CrearOpinionRequest peticion) {
+    public OpinionCreadaResponse registrar(String dispositivoId, Long pasajeroId, CrearOpinionRequest peticion) {
         if (!StringUtils.hasText(dispositivoId) || dispositivoId.length() > 64) {
             throw new ReglaDeNegocioException("Falta el identificador del dispositivo (X-Dispositivo-Id).");
         }
@@ -95,6 +98,7 @@ public class OpinionService {
                 .map(Vehiculo::getId).orElse(null));
         opinion.setReservaId(peticion.reservaId());
         opinion.setDispositivoId(dispositivoId);
+        opinion.setPasajeroId(pasajeroId);
         opinion.setTexto(texto);
         opinion.setEstrellas(estrellas);
         Opinion guardada = opiniones.save(opinion);

@@ -77,6 +77,9 @@ ecoruta:
       token: ${TRACCAR_TOKEN:}
       # Unidad de position.speed en el reenvio: NUDOS (lo que usa Traccar), KMH o MS.
       unidad-velocidad: ${TRACCAR_UNIDAD_VELOCIDAD:NUDOS}
+  pasajero:
+    # SCRUM-26, bloque B. Duracion de la sesion opcional del pasajero (Google).
+    sesion-dias: 30
   opiniones:
     # SCRUM-26, bloque A. Como mucho N opiniones por navegador en la ventana; luego 429.
     limite-envios: 5

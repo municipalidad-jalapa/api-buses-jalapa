@@ -54,6 +54,10 @@ public class Opinion {
     @Column(name = "dispositivo_id", nullable = false, length = 64)
     private String dispositivoId;
 
+    /** Cuenta del pasajero si opino con sesion (bloque B); null si fue como invitado. */
+    @Column(name = "pasajero_id")
+    private Long pasajeroId;
+
     /** Tal como lo escribio la persona. Se neutraliza al devolverlo. */
     @Column(name = "texto")
     private String texto;
