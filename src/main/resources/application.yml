@@ -77,6 +77,12 @@ ecoruta:
       token: ${TRACCAR_TOKEN:}
       # Unidad de position.speed en el reenvio: NUDOS (lo que usa Traccar), KMH o MS.
       unidad-velocidad: ${TRACCAR_UNIDAD_VELOCIDAD:NUDOS}
+  opiniones:
+    # SCRUM-26, bloque A. Como mucho N opiniones por navegador en la ventana; luego 429.
+    limite-envios: 5
+    ventana-minutos: 10
+    # Largo maximo del comentario; la pantalla muestra el mismo contador.
+    texto-maximo: 500
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
