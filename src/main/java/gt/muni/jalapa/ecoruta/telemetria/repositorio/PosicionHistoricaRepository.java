@@ -27,4 +27,7 @@ public interface PosicionHistoricaRepository extends JpaRepository<PosicionHisto
     /** Tramo reciente del vehiculo, de la mas nueva a la mas vieja (SCRUM-166). */
     List<PosicionHistorica> findByVehiculoIdAndRegistradoEnGreaterThanEqualOrderByRegistradoEnDescIdDesc(
             Long vehiculoId, Instant desde, Pageable pagina);
+
+    /** SCRUM-24: deduplicacion de reenvios por clave de origen. */
+    boolean existsByClaveOrigen(String claveOrigen);
 }

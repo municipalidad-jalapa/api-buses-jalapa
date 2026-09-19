@@ -24,11 +24,16 @@ import org.testcontainers.utility.DockerImageName;
 // El token de admin se declara aqui y no en cada clase para que toda la suite
 // comparta un solo contexto de Spring: una propiedad distinta obligaria a
 // levantar otro, y arrancar el contexto es lo caro de estas pruebas.
-@TestPropertySource(properties = "ecoruta.admin.bootstrap-token=" + IntegracionPostgisTest.ADMIN)
+@TestPropertySource(properties = {
+        "ecoruta.admin.bootstrap-token=" + IntegracionPostgisTest.ADMIN,
+        "ecoruta.integraciones.traccar.token=" + IntegracionPostgisTest.TRACCAR})
 public abstract class IntegracionPostgisTest {
 
     /** Mecanismo provisional de SCRUM-142 - TODO(SCRUM-134). */
     public static final String ADMIN = "token-de-pruebas-con-mas-de-32-caracteres";
+
+    /** Secreto de la integracion con Traccar en las pruebas (SCRUM-24). */
+    public static final String TRACCAR = "traccar-de-pruebas-con-mas-de-32-caracteres";
 
     /**
      * Contenedor SINGLETON: se arranca una sola vez para toda la suite y lo apaga

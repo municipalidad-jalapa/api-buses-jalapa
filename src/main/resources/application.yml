@@ -70,6 +70,13 @@ ecoruta:
     # recta por el factor.
     desvio-metros: 60
     factor-desvio: 1.3
+  integraciones:
+    traccar:
+      # SCRUM-24. Secreto que Traccar envia en X-Traccar-Token (forward.header).
+      # Vacio = la integracion rechaza todo con 401. Minimo 32 caracteres.
+      token: ${TRACCAR_TOKEN:}
+      # Unidad de position.speed en el reenvio: NUDOS (lo que usa Traccar), KMH o MS.
+      unidad-velocidad: ${TRACCAR_UNIDAD_VELOCIDAD:NUDOS}
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
