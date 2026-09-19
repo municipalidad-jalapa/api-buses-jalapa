@@ -1330,6 +1330,55 @@
           ]
         },
         {
+          "name": "Exportar datos del servicio (.xlsx)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Admin-Token",
+                "value": "{{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/exportaciones/servicio?desde=2026-09-01&hasta=2026-09-15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "exportaciones",
+                "servicio"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-09-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-09-15"
+                }
+              ]
+            },
+            "description": "HU Desarrollo-86. Descarga un .xlsx con tres hojas: Resumen, Demanda (por dia, ruta y parada) y Recorridos (por dia y bus).\n\nEl rango es por dias de Guatemala, inclusivo en ambos extremos, y como maximo 366 dias. No lleva datos que identifiquen a un pasajero: solo totales.\n\nUsa \"Send and Download\" para guardar el archivo. Errores: 400 (falta una fecha o formato distinto de AAAA-MM-DD), 401 (sin sesion), 403 (no es administrador), 422 (rango invertido o mayor al maximo)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('es una hoja de calculo .xlsx', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml.sheet'));",
+                  "pm.test('se descarga con el rango en el nombre', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('ecoruta-servicio_2026-09-01_a_2026-09-15.xlsx'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Estado de demanda (consulta suelta)",
           "request": {
             "method": "GET",

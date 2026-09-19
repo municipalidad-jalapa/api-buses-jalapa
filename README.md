@@ -101,6 +101,7 @@ mvn spring-boot:run
 | `POST` | `/api/v1/auth/admin` | público — idToken de Firebase → JWT de administrador (SCRUM-173) |
 | `POST` | `/api/v1/admin/sesion/renovacion` | `ROLE_ADMIN` — renueva la sesión mientras hay actividad |
 | `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
+| `GET` | `/api/v1/admin/exportaciones/servicio?desde=&hasta=` | `ROLE_ADMIN` — descarga `.xlsx` con demanda y recorridos (Desarrollo-86) |
 | `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
 
 ## Cuenta de administrador del panel municipal
@@ -136,6 +137,35 @@ Para quitar el acceso: `UPDATE usuarios SET activo = FALSE WHERE firebase_uid = 
 - La sesión se cierra tras `PANEL_ADMIN_INACTIVIDAD_MINUTOS` (30 por defecto) sin actividad:
   el panel la renueva mientras se usa y, si no, el token vence y la API responde 401.
 - El rol de administrador no está atado a ninguna ruta: ve el servicio completo.
+
+## Exportar los datos del servicio (Desarrollo-86)
+
+El administrador municipal descarga la demanda y los recorridos en una hoja de cálculo para sus
+informes propios:
+
+```bash
+curl -H "Authorization: Bearer $JWT_ADMIN" -o servicio.xlsx \
+     "localhost:8080/api/v1/admin/exportaciones/servicio?desde=2026-09-01&hasta=2026-09-15"
+```
+
+- **Rango de fechas:** `desde` y `hasta` (`AAAA-MM-DD`), inclusivos, en **días de Guatemala**
+  (`ecoruta.exportacion.zona-horaria`), no en UTC. `hasta=2026-09-15` incluye hasta las 23:59 de
+  ese día. Máximo `ecoruta.exportacion.rango-maximo-dias` (366) por descarga.
+- **Tres hojas:** `Resumen` (periodo, totales y cómo leer el archivo), `Demanda` (una fila por día,
+  ruta y parada: reservas creadas, abordaron, canceladas, expiradas, vigentes) y `Recorridos` (una
+  fila por día y bus, desde el GPS: lecturas, primera y última, distancia estimada, velocidad
+  promedio en movimiento, paradas atendidas). Fechas y números son de Excel, no texto.
+- **No expone datos de un pasajero.** Las consultas de `ExportacionRepository` son solo
+  agregaciones (`GROUP BY`): `dispositivo_id`, id de reserva, token de notificaciones y usuario del
+  conductor nunca se seleccionan, así que no llegan ni a la memoria del proceso. La prueba
+  `ExportacionServicioIT` busca el UUID de un dispositivo en **todas** las partes del `.xlsx`.
+- **La distancia es una estimación:** suma los tramos entre lecturas consecutivas y omite los
+  huecos de señal (más de `salto-maximo-segundos`, 300 por defecto); no es un odómetro.
+- **Errores:** `400` falta una fecha o formato inválido, `401` sin sesión, `403` no es
+  administrador, `422` rango invertido o mayor al máximo. Todos con el `ApiError` de siempre.
+- El navegador puede leer el nombre sugerido del archivo (`Content-Disposition`) porque CORS lo
+  expone. Como pide el JWT en `Authorization`, el panel lo descarga con `fetch` y un `Blob`, no con
+  un `<a href>`.
 
 ## Integración con Traccar (GPS real)
 

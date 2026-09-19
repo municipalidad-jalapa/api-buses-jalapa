@@ -26,6 +26,7 @@
     <firebase-admin.version>9.10.0</firebase-admin.version>
     <springdoc.version>2.7.0</springdoc.version>
     <cucumber.version>7.22.1</cucumber.version>
+    <poi.version>5.4.0</poi.version>
     <!-- Docker Engine 29 rechaza la API que usa docker-java de la 1.20.x -->
     <testcontainers.version>1.21.3</testcontainers.version>
   </properties>
@@ -116,6 +117,13 @@
       <artifactId>jjwt-jackson</artifactId>
       <version>${jjwt.version}</version>
       <scope>runtime</scope>
+    </dependency>
+
+    <!-- Exportacion del servicio a hoja de calculo .xlsx (HU Desarrollo-86) -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
     </dependency>
 
     <!-- OpenAPI / Swagger UI -->
