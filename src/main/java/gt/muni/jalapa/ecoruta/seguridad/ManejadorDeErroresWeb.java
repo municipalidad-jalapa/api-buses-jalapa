@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Complementa al GlobalExceptionHandler de SCRUM-114 sin tocar ese archivo, que
@@ -33,6 +34,24 @@ public class ManejadorDeErroresWeb {
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 "Cuerpo de la peticion malformado o ilegible",
+                peticion.getRequestURI()));
+    }
+
+    /**
+     * Identificador de ruta con formato invalido en la URL, p. ej.
+     * {@code /api/v1/rutas/abc/resumen}. Sin esto Spring responde 400 pero con el
+     * cuerpo generico de {@code /error}, no con ApiError (SCRUM-284).
+     *
+     * <p>Solo se nombra el parametro, nunca el valor recibido: iria tal cual a
+     * {@code ApiError.message}.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> identificadorInvalido(MethodArgumentTypeMismatchException excepcion,
+                                                          HttpServletRequest peticion) {
+        return ResponseEntity.badRequest().body(ApiError.of(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "El parametro '" + excepcion.getName() + "' tiene un formato invalido",
                 peticion.getRequestURI()));
     }
 }

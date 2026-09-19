@@ -1,5 +1,6 @@
 package gt.muni.jalapa.ecoruta;
 
+import gt.muni.jalapa.ecoruta.eta.servicio.EtaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,11 +24,16 @@ import org.testcontainers.utility.DockerImageName;
 // El token de admin se declara aqui y no en cada clase para que toda la suite
 // comparta un solo contexto de Spring: una propiedad distinta obligaria a
 // levantar otro, y arrancar el contexto es lo caro de estas pruebas.
-@TestPropertySource(properties = "ecoruta.admin.bootstrap-token=" + IntegracionPostgisTest.ADMIN)
+@TestPropertySource(properties = {
+        "ecoruta.admin.bootstrap-token=" + IntegracionPostgisTest.ADMIN,
+        "ecoruta.integraciones.traccar.token=" + IntegracionPostgisTest.TRACCAR})
 public abstract class IntegracionPostgisTest {
 
     /** Mecanismo provisional de SCRUM-142 - TODO(SCRUM-134). */
     public static final String ADMIN = "token-de-pruebas-con-mas-de-32-caracteres";
+
+    /** Secreto de la integracion con Traccar en las pruebas (SCRUM-24). */
+    public static final String TRACCAR = "traccar-de-pruebas-con-mas-de-32-caracteres";
 
     /**
      * Contenedor SINGLETON: se arranca una sola vez para toda la suite y lo apaga
@@ -60,14 +66,21 @@ public abstract class IntegracionPostgisTest {
      *
      * <p>El orden importa: las posiciones apuntan a equipos y los equipos a
      * vehiculos, asi que se borra de fuera hacia dentro para no violar las claves
-     * foraneas. El BUS-01 que siembra V5 se queda; los vehiculos que cree una
-     * prueba se van.
+     * foraneas. Los buses sembrados se quedan (BUS-01 de V5 y BUS-02 de V12, uno
+     * por ruta); los vehiculos que cree una prueba se van.
      */
     @BeforeEach
     protected void limpiarDatosDePrueba() {
+        jdbc.execute("TRUNCATE fallos_de_aviso RESTART IDENTITY CASCADE");
+        jdbc.execute("TRUNCATE dispositivos_notificacion");
         jdbc.execute("TRUNCATE posiciones_historicas RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE registros_espera RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE equipos RESTART IDENTITY CASCADE");
-        jdbc.update("DELETE FROM vehiculos WHERE identificador <> 'BUS-01'");
+        jdbc.update("DELETE FROM vehiculos WHERE identificador NOT IN ('BUS-01', 'BUS-02')");
+        // El ETA vive en memoria y el contexto se comparte entre clases (SCRUM-166).
+        etas.olvidarTodo();
     }
+
+    @Autowired
+    private EtaService etas;
 }

@@ -1,0 +1,156 @@
+================================================================================
+RESULTADOS DE PRUEBAS  -  api-buses-jalapa
+HU Desarrollo-123 / SCRUM-284  "Datos de arranque de la pantalla del pasajero"
+================================================================================
+
+Corrida:            2026-09-02  22:19 - 22:20 (-06:00)
+Comando:            mvn test
+Rama:               SCRUM-275-hu-desarrollo-123-datos-de-arranque-de-la-pantalla-del-pasajero-en-una-sola-llamada
+Commits cubiertos:  f46c5bb  feat: DTOs del resumen de ruta + mapeo en servicio
+                    c7423b5  feat: exponer GET /api/v1/rutas/{rutaId}/resumen
+                    fdf5205  test: unitarias + MockMvc del resumen
+                    40d3745  chore: dejar de versionar .vscode/settings.json
+
+Entorno:
+  - Java .............. Temurin 21.0.7 (JAVA_HOME = Eclipse Adoptium jdk-21.0.7.6)
+  - Maven ............. 3.9.11
+  - Docker ........... 29.6.2 (Docker Desktop)
+  - Testcontainers ... postgis/postgis:17-3.5  +  testcontainers/ryuk:0.12.0
+
+--------------------------------------------------------------------------------
+RESULTADO GLOBAL
+--------------------------------------------------------------------------------
+  Tests run: 143   Failures: 0   Errors: 0   Skipped: 0
+  BUILD SUCCESS
+  Tiempo total: 1 min 11 s
+
+  >>> TODAS LAS PRUEBAS PASARON <<<
+
+================================================================================
+1) PRUEBAS DEL RESUMEN DE RUTA  (foco de la HU)
+================================================================================
+
+--------------------------------------------------------------------------------
+ResumenRutaServiceTest   (unitaria, mocks de los 3 colaboradores)
+  Archivo: src/test/java/gt/muni/jalapa/ecoruta/demanda/servicio/ResumenRutaServiceTest.java
+  Tests run: 11   Failures: 0   Errors: 0   Skipped: 0   Tiempo: 0.759 s
+--------------------------------------------------------------------------------
+  [PASS] compone_ruta_posicion_y_reservas
+  [PASS] tolera_que_el_bus_no_tenga_posicion
+  [PASS] completa_con_cero_las_paradas_sin_reservas
+  [PASS] propaga_recurso_no_encontrado_si_la_ruta_no_existe
+  [PASS] consulta_demanda_una_sola_vez_para_todas_las_paradas
+  [PASS] consulta_telemetria_una_sola_vez
+  [PASS] resumir_mapea_la_ruta_con_sus_paradas_en_orden
+  [PASS] resumir_incluye_la_posicion_cuando_el_bus_ya_reporto
+  [PASS] resumir_entrega_la_respuesta_aunque_el_bus_no_haya_reportado_posicion   <- caso sin posicion
+  [PASS] resumir_lista_todas_las_paradas_con_su_conteo_incluidos_los_ceros
+  [PASS] resumir_propaga_recurso_no_encontrado_si_la_ruta_no_existe
+
+--------------------------------------------------------------------------------
+ResumenRutaIT   (integracion MockMvc + PostGIS real)
+  Archivo: src/test/java/gt/muni/jalapa/ecoruta/demanda/web/ResumenRutaIT.java
+  Tests run: 8   Failures: 0   Errors: 0   Skipped: 0   Tiempo: 1.717 s
+--------------------------------------------------------------------------------
+  [PASS] devuelve_200_con_ruta_posicion_y_reservas_en_una_sola_respuesta
+  [PASS] devuelve_200_con_la_posicion_vacia_cuando_el_bus_aun_no_ha_reportado
+  [PASS] cada_parada_aparece_con_conteo_cero_cuando_no_tiene_reservas
+  [PASS] el_conteo_por_parada_solo_suma_reservas_activa_y_renovada
+  [PASS] los_datos_de_la_ruta_coinciden_con_el_endpoint_individual        (vs GET /api/v1/rutas/1)
+  [PASS] la_posicion_coincide_con_el_endpoint_individual_de_telemetria    (vs GET /api/v1/telemetria/posicion)
+  [PASS] una_ruta_que_no_existe_responde_404_con_el_formato_ApiError
+  [PASS] un_rutaId_con_formato_invalido_responde_400_con_el_formato_ApiError
+
+--------------------------------------------------------------------------------
+Escenarios Cucumber   (componer_resumen_de_ruta.feature, dentro de PruebasDeAceptacionTest)
+  Steps: src/test/java/gt/muni/jalapa/ecoruta/aceptacion/PasosDeResumenRuta.java
+--------------------------------------------------------------------------------
+  [PASS] La ruta se obtiene con sus paradas en el orden del recorrido
+  [PASS] El resumen se puede componer aunque el bus aun no tenga posicion
+  [PASS] Solo las reservas vigentes se cuentan por parada
+  [PASS] Una parada sin reservas aparece con conteo cero
+  [PASS] No se puede componer el resumen de una ruta inexistente
+
+--------------------------------------------------------------------------------
+Repositorios que alimentan el resumen
+--------------------------------------------------------------------------------
+  RutaRepositoryResumenIT       Tests run: 3   Failures: 0   Errors: 0   [PASS]  (fetch join ruta+paradas, sin N+1)
+  ConsultaDemandaRepositoryIT   Tests run: 3   Failures: 0   Errors: 0   [PASS]  (conteo agrupado ACTIVA/RENOVADA)
+
+================================================================================
+2) SUITE COMPLETA  (regresion - nada roto por los cambios de la HU)
+================================================================================
+
+  CLASE                                                          TESTS  FAIL  ERR  SKIP  TIEMPO   RESULTADO
+  -----------------------------------------------------------------------------------------------------------
+  catalogo.ConsultarRutasIT                                        7     0     0    0    21.81s   PASS
+  catalogo.repositorio.RutaRepositoryResumenIT                     3     0     0    0     0.23s   PASS
+  demanda.repositorio.ConsultaDemandaRepositoryIT                  3     0     0    0     0.16s   PASS
+  demanda.servicio.ResumenRutaServiceTest                         11     0     0    0     0.76s   PASS
+  demanda.web.ResumenRutaIT                                        8     0     0    0     1.72s   PASS
+  EsquemaValidaTest                                                4     0     0    0     0.14s   PASS
+  flota.CambioDeEquipoConservaHistorialIT                          3     0     0    0     1.80s   PASS
+  flota.EsquemaFlotaTest                                           5     0     0    0     0.22s   PASS   (*)
+  flota.seguridad.TokenDeEquipoTest                               13     0     0    0     0.06s   PASS
+  flota.servicio.CredencialesTest                                 13     0     0    0    22.60s   PASS
+  flota.web.AdminDeEquiposIT                                       6     0     0    0     0.35s   PASS
+  seguridad.CorsIT                                                 6     0     0    0     3.02s   PASS
+  seguridad.SecretoNoSeFiltraIT                                    4     0     0    0     1.08s   PASS
+  telemetria.DifusorDePosicionesTest                               4     0     0    0     0.00s   PASS
+  telemetria.IngestaConCredencialDeEquipoIT                       14     0     0    0     3.40s   PASS
+  telemetria.StreamDePosicionesIT                                  8     0     0    0     1.64s   PASS
+  aceptacion.PruebasDeAceptacionTest (Cucumber, 31 escenarios)    31     0     0    0     6.71s   PASS
+  -----------------------------------------------------------------------------------------------------------
+  TOTAL                                                          143     0     0    0    ~71s     PASS
+
+  (*) flota.EsquemaFlotaTest imprime en consola:
+        ERROR ... duplicate key value violates unique constraint "uq_equipo_activo_por_vehiculo"
+      Es ESPERADO: la prueba verifica que la restriccion de la BD dispara. El test pasa.
+
+================================================================================
+CRITERIOS DE ACEPTACION  ->  PRUEBA QUE LOS CUBRE
+================================================================================
+
+  AC: una sola respuesta con ruta + paradas en orden + posicion + reservas
+      -> ResumenRutaIT.devuelve_200_con_ruta_posicion_y_reservas_en_una_sola_respuesta
+      -> ResumenRutaServiceTest.compone_ruta_posicion_y_reservas
+
+  AC: reservas activas por parada = estados ACTIVA o RENOVADA
+      -> ResumenRutaIT.el_conteo_por_parada_solo_suma_reservas_activa_y_renovada
+      -> Cucumber "Solo las reservas vigentes se cuentan por parada"
+      -> ConsultaDemandaRepositoryIT.cuenta_solo_activa_y_renovada_en_una_sola_parada
+
+  AC: si el bus no ha reportado, la respuesta va igual y posicion viene vacia
+      -> ResumenRutaIT.devuelve_200_con_la_posicion_vacia_cuando_el_bus_aun_no_ha_reportado
+      -> ResumenRutaServiceTest.resumir_entrega_la_respuesta_aunque_el_bus_no_haya_reportado_posicion
+      -> Cucumber "El resumen se puede componer aunque el bus aun no tenga posicion"
+
+  AC: parada sin reservas aparece con conteo cero
+      -> ResumenRutaIT.cada_parada_aparece_con_conteo_cero_cuando_no_tiene_reservas
+      -> ResumenRutaServiceTest.resumir_lista_todas_las_paradas_con_su_conteo_incluidos_los_ceros
+      -> Cucumber "Una parada sin reservas aparece con conteo cero"
+
+  AC: ruta inexistente -> recurso no encontrado (404)
+      -> ResumenRutaIT.una_ruta_que_no_existe_responde_404_con_el_formato_ApiError
+      -> ResumenRutaServiceTest.resumir_propaga_recurso_no_encontrado_si_la_ruta_no_existe
+      -> Cucumber "No se puede componer el resumen de una ruta inexistente"
+
+  AC: la info coincide con las consultas individuales existentes
+      -> ResumenRutaIT.los_datos_de_la_ruta_coinciden_con_el_endpoint_individual
+      -> ResumenRutaIT.la_posicion_coincide_con_el_endpoint_individual_de_telemetria
+
+  AC: una sola llamada, sin encadenar consultas
+      -> ResumenRutaServiceTest.consulta_demanda_una_sola_vez_para_todas_las_paradas
+      -> ResumenRutaServiceTest.consulta_telemetria_una_sola_vez
+
+  Contrato: rutaId con formato invalido -> 400 con cuerpo ApiError
+      -> ResumenRutaIT.un_rutaId_con_formato_invalido_responde_400_con_el_formato_ApiError
+
+================================================================================
+COMO REPRODUCIR
+================================================================================
+  Ver src/test/manual.md
+  Rapido (solo la HU):
+    mvn test -Dtest=ResumenRutaServiceTest,ResumenRutaIT
+    mvn test -Dtest=PruebasDeAceptacionTest -Dcucumber.filter.tags="@SCRUM-282 or @SCRUM-283"
+================================================================================

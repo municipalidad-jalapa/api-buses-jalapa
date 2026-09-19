@@ -25,6 +25,12 @@ services:
       DB_USER: ecoruta
       DB_PASSWORD: ecoruta
       JWT_SECRET: solo-para-desarrollo-local-no-usar-en-produccion
+      JWT_DURACION_MINUTOS: 480
+      # Firebase Admin (HU-Desarrollo-63). En local se inyectan por env, nunca
+      # se commitean el JSON ni la ruta de la cuenta de servicio.
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
+      FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
       CORS_ORIGENES: http://localhost:5173
       # PROVISIONAL de SCRUM-142 — TODO(SCRUM-134). Habilita ROLE_ADMIN por la
       # cabecera X-Admin-Token para poder provisionar equipos en local. En

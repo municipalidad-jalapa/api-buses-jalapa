@@ -24,6 +24,14 @@ public interface RutaRepository extends JpaRepository<Ruta, Long> {
             """)
     List<Ruta> buscarActivasConParadas();
 
+    /**
+     * Una ruta con sus paradas ya cargadas, en una sola lectura.
+     *
+     * <p>El join fetch evita N+1 al armar el resumen. El orden del recorrido lo
+     * fija {@code @OrderBy("orden ASC")} en la entidad; con join fetch Hibernate
+     * no garantiza el orden de la coleccion, asi que {@link
+     * gt.muni.jalapa.ecoruta.catalogo.web.dto.RutaResponse} reordena al mapear.
+     */
     @Query("SELECT r FROM Ruta r LEFT JOIN FETCH r.paradas WHERE r.id = :id")
     Optional<Ruta> buscarConParadas(Long id);
 }

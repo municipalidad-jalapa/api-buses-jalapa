@@ -28,11 +28,23 @@ public class ContextoDelEscenario {
     /** Conexiones SSE abiertas en el escenario (SCRUM-140). */
     private final List<MvcResult> streams = new ArrayList<>();
 
+    /** Estado de la solicitud de reserva (SCRUM-306). */
+    private Long paradaId;
+    private String dispositivoId;
+    private Double latitud;
+    private Double longitud;
+    private String cuerpoReservaPersonalizado;
+
     public void reiniciar() {
         equipos.clear();
         ultimaRespuesta = null;
         credencialCruda = null;
         streams.clear();
+        paradaId = null;
+        dispositivoId = null;
+        latitud = null;
+        longitud = null;
+        cuerpoReservaPersonalizado = null;
     }
 
     public void registrarStream(MvcResult stream) {
@@ -74,5 +86,42 @@ public class ContextoDelEscenario {
 
     public void guardarRespuesta(ResultActions respuesta) {
         this.ultimaRespuesta = respuesta;
+    }
+
+    public Long paradaId() {
+        return paradaId;
+    }
+
+    public void guardarParadaId(Long paradaId) {
+        this.paradaId = paradaId;
+    }
+
+    public String dispositivoId() {
+        return dispositivoId;
+    }
+
+    public void guardarDispositivoId(String dispositivoId) {
+        this.dispositivoId = dispositivoId;
+    }
+
+    public Double latitud() {
+        return latitud;
+    }
+
+    public Double longitud() {
+        return longitud;
+    }
+
+    public void guardarCoordenadas(Double latitud, Double longitud) {
+        this.latitud = latitud;
+        this.longitud = longitud;
+    }
+
+    public String cuerpoReservaPersonalizado() {
+        return cuerpoReservaPersonalizado;
+    }
+
+    public void guardarCuerpoReservaPersonalizado(String cuerpo) {
+        this.cuerpoReservaPersonalizado = cuerpo;
     }
 }

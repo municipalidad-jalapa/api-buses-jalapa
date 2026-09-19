@@ -24,6 +24,17 @@ Uso:
     python3 tools/simulador-gps.py --velocidad 120       # vuelta rapida, para demo
     python3 tools/simulador-gps.py --credencial eq_xx.yy # reusa un equipo ya creado
     python3 tools/simulador-gps.py --vueltas 1           # una vuelta y termina
+    python3 tools/simulador-gps.py --ruta 2              # recorre la ruta 2 con su bus
+
+Cada ruta tiene su propio bus (V12). Con --ruta el simulador recorre esa ruta y,
+si tiene que aprovisionar un equipo, lo monta en el bus asignado a esa ruta. Para
+simular dos rutas a la vez, corre dos simuladores, uno por ruta, cada uno con la
+credencial de su propio equipo.
+
+En cada parada el bus se detiene EN la parada (no unos metros despues) y espera
+--espera-parada segundos. Si en esa parada hay reservas activas espera mas
+(--espera-con-reserva), igual que el bus real que se detiene a subir gente: asi
+se ven en la demo los avisos de llegada y la pregunta de abordaje.
 
 Solo biblioteca estandar: se ejecuta en cualquier maquina del equipo sin instalar
 nada. Se corta con Ctrl-C.
@@ -82,8 +93,8 @@ class Recorrido:
             objetivo = (pa["latitud"], pa["longitud"])
             i = min(range(len(self.puntos)),
                     key=lambda j: metros(objetivo, self.puntos[j]))
-            self.paradas.append((self.acumulado[i], pa["nombre"]))
-        self.paradas.sort()
+            self.paradas.append((self.acumulado[i], pa["nombre"], pa["id"], objetivo))
+        self.paradas.sort(key=lambda x: x[0])
 
     def en(self, distancia):
         """(lat, lon) a `distancia` metros del inicio, interpolando entre vertices.
@@ -101,21 +112,22 @@ class Recorrido:
         return self.puntos[-1]
 
     def parada_en(self, desde, hasta):
-        """Nombre de la parada que queda en (desde, hasta], si alguna.
+        """La parada (metro, nombre, id, (lat, lon)) en (desde, hasta], si alguna.
 
         El tramo puede dar la vuelta al circuito (desde > hasta al cerrar la
         vuelta). Sin contemplarlo, la parada del cierre --el Parque Central, que
         esta en el metro 0-- no se anunciaria nunca.
         """
-        for metro, nombre in self.paradas:
+        for parada in self.paradas:
+            metro = parada[0]
             dentro = (desde < metro <= hasta) if desde <= hasta \
                 else (metro > desde or metro <= hasta)
             if dentro:
-                return nombre
+                return parada
         return None
 
 
-def aprovisionar(api, token_admin):
+def aprovisionar(api, token_admin, ruta_id=None):
     """Crea un equipo a bordo y devuelve su credencial.
 
     La credencial solo se muestra al crearla: en la base queda su hash bcrypt.
@@ -131,7 +143,12 @@ def aprovisionar(api, token_admin):
     if not vehiculos:
         sys.exit("No hay vehiculos dados de alta. Crea uno en /api/v1/admin/vehiculos.")
 
-    vehiculo = vehiculos[0]
+    # El equipo va montado en el bus de la ruta que se va a recorrer: si fuera en
+    # el bus de otra ruta, sus posiciones apareceran en la ruta equivocada.
+    de_la_ruta = [v for v in vehiculos if ruta_id is not None and v.get("rutaId") == ruta_id]
+    if ruta_id is not None and not de_la_ruta:
+        sys.exit(f"Ningun vehiculo tiene asignada la ruta {ruta_id}.")
+    vehiculo = de_la_ruta[0] if de_la_ruta else vehiculos[0]
     alta = peticion(f"{api}/api/v1/admin/vehiculos/{vehiculo['id']}/equipos",
                     metodo="POST",
                     cuerpo={"etiqueta": "Simulador de recorrido (desarrollo)"},
@@ -154,6 +171,10 @@ def main():
                    help="segundos entre reportes (por defecto: 2)")
     p.add_argument("--espera-parada", type=float, default=5.0,
                    help="segundos detenido en cada parada (por defecto: 5)")
+    p.add_argument("--espera-con-reserva", type=float, default=20.0,
+                   help="segundos detenido si la parada tiene reservas activas (por defecto: 20)")
+    p.add_argument("--ruta", type=int, default=None,
+                   help="id de la ruta a recorrer (por defecto: la primera activa)")
     p.add_argument("--vueltas", type=int, default=0,
                    help="numero de vueltas; 0 = sin fin (por defecto: 0)")
     args = p.parse_args()
@@ -163,13 +184,20 @@ def main():
     rutas = peticion(f"{api}/api/v1/rutas")
     if not rutas:
         sys.exit("No hay rutas activas.")
-    ruta = rutas[0]
+    if args.ruta is None:
+        ruta = rutas[0]
+    else:
+        ruta = next((r for r in rutas if r["id"] == args.ruta), None)
+        if ruta is None:
+            sys.exit(f"No hay ruta activa con id {args.ruta}. "
+                     f"Disponibles: {', '.join(str(r['id']) for r in rutas)}.")
     if not ruta.get("trazado"):
         sys.exit(f"La ruta '{ruta['nombre']}' no tiene trazado cargado. "
                  "Aplica V6__circuito_de_ejemplo.sql.")
 
     recorrido = Recorrido(ruta["trazado"], ruta["paradas"])
-    credencial = args.credencial or aprovisionar(api, os.environ.get("ECORUTA_ADMIN_TOKEN"))
+    credencial = args.credencial or aprovisionar(api, os.environ.get("ECORUTA_ADMIN_TOKEN"),
+                                                 ruta["id"])
 
     vuelta_min = (recorrido.largo / 1000) / args.velocidad * 60
     print(f"Ruta      : {ruta['nombre']}")
@@ -184,26 +212,11 @@ def main():
     metros_por_tic = args.velocidad * 1000 / 3600 * args.intervalo
     avance = 0.0
     vueltas = 0
-    enviadas = 0
-    fallos = 0
+    contadores = {"enviadas": 0, "fallos": 0}
 
-    while seguir["si"] and (args.vueltas == 0 or vueltas < args.vueltas):
-        anterior = avance
-        avance += metros_por_tic
-        if avance >= recorrido.largo:
-            avance -= recorrido.largo
-            vueltas += 1
-            print(f"  -- vuelta {vueltas} completada --")
-
-        lat, lon = recorrido.en(avance)
+    def reportar(lat, lon, velocidad):
+        """Manda una posicion. Devuelve False si hay que abortar."""
         ahora = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-        parada = recorrido.parada_en(anterior % recorrido.largo,
-                                     avance % recorrido.largo)
-        # En parada el bus esta detenido: reportar 30 km/h ahi seria mentir a la
-        # pantalla del pasajero, que muestra la velocidad tal cual llega.
-        velocidad = 0.0 if parada else args.velocidad
-
         try:
             peticion(f"{api}/api/v1/telemetria/posiciones", metodo="POST",
                      cuerpo={"posiciones": [{
@@ -213,30 +226,65 @@ def main():
                          "timestamp": ahora,
                      }]},
                      cabeceras={"Authorization": f"Bearer {credencial}"})
-            enviadas += 1
-            fallos = 0
+            contadores["enviadas"] += 1
+            contadores["fallos"] = 0
         except urllib.error.HTTPError as e:
-            fallos += 1
+            contadores["fallos"] += 1
             print(f"  ! HTTP {e.code} al reportar: {e.read().decode()[:160]}")
             if e.code in (401, 403):
                 sys.exit("Credencial rechazada o revocada. Aprovisiona otro equipo.")
-            if fallos >= 5:
-                sys.exit("Cinco fallos seguidos: se aborta.")
         except urllib.error.URLError as e:
-            fallos += 1
+            contadores["fallos"] += 1
             print(f"  ! Sin respuesta de {api}: {e.reason}")
-            if fallos >= 5:
-                sys.exit("Cinco fallos seguidos: se aborta.")
+        if contadores["fallos"] >= 5:
+            sys.exit("Cinco fallos seguidos: se aborta.")
 
-        km = (avance % recorrido.largo) / 1000
+    def reservas_en(parada_id):
+        """Reservas activas en la parada, del resumen de la ruta. 0 si no se sabe."""
+        try:
+            resumen = peticion(f"{api}/api/v1/rutas/{ruta['id']}/resumen")
+            for fila in resumen["reservasActivas"]["porParada"]:
+                if fila["paradaId"] == parada_id:
+                    return int(fila["reservasActivas"])
+        except (urllib.error.URLError, KeyError, TypeError, ValueError):
+            pass
+        return 0
+
+    while seguir["si"] and (args.vueltas == 0 or vueltas < args.vueltas):
+        anterior = avance
+        avance += metros_por_tic
+        if avance >= recorrido.largo:
+            avance -= recorrido.largo
+            vueltas += 1
+            print(f"  -- vuelta {vueltas} completada --")
+
+        parada = recorrido.parada_en(anterior % recorrido.largo,
+                                     avance % recorrido.largo)
+
         if parada:
-            print(f"  {km:5.2f} km  {lat:.6f}, {lon:.6f}  -- parada: {parada}")
-            time.sleep(args.espera_parada)
-        else:
-            print(f"  {km:5.2f} km  {lat:.6f}, {lon:.6f}  {velocidad:.0f} km/h")
-            time.sleep(args.intervalo)
+            metro, nombre, parada_id, (lat, lon) = parada
+            # El bus se detiene EN la parada, no en el punto del tic, que puede
+            # quedar decenas de metros despues y fuera del radio de llegada.
+            avance = metro
+            reservas = reservas_en(parada_id)
+            espera = args.espera_con_reserva if reservas else args.espera_parada
+            extra = f", {reservas} esperando" if reservas else ""
+            print(f"  {metro/1000:5.2f} km  {lat:.6f}, {lon:.6f}  -- parada: {nombre}{extra} ({espera:.0f} s)")
+            # Mientras espera sigue reportando: detenido, a 0 km/h. Sin esto la
+            # posicion envejeceria justo cuando el pasajero esta mirando.
+            fin_espera = time.monotonic() + espera
+            while seguir["si"] and time.monotonic() < fin_espera:
+                reportar(lat, lon, 0.0)
+                time.sleep(min(args.intervalo, max(0.0, fin_espera - time.monotonic())))
+            continue
 
-    print(f"\nDetenido. {enviadas} posiciones reportadas, {vueltas} vueltas.")
+        lat, lon = recorrido.en(avance)
+        reportar(lat, lon, args.velocidad)
+        km = (avance % recorrido.largo) / 1000
+        print(f"  {km:5.2f} km  {lat:.6f}, {lon:.6f}  {args.velocidad:.0f} km/h")
+        time.sleep(args.intervalo)
+
+    print(f"\nDetenido. {contadores['enviadas']} posiciones reportadas, {vueltas} vueltas.")
 
 
 if __name__ == "__main__":
