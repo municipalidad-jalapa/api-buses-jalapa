@@ -47,6 +47,39 @@ ecoruta:
     sse-timeout-minutos: 30
     latido-segundos: 25
     reconexion-segundos: 3
+  eta:
+    # SCRUM-166 (HU-71). Calculo propio sobre el trazado, sin servicios externos.
+    # PROVISIONAL: 20 km/h hasta tener la velocidad promedio del estudio de campo.
+    velocidad-respaldo-kmh: ${ETA_VELOCIDAD_RESPALDO_KMH:20}
+    # Lecturas mas lentas son el bus detenido: no representan el avance.
+    velocidad-minima-kmh: 5
+    # Tramo reciente: hasta N lecturas dentro de la ventana previa a la ultima.
+    muestras-velocidad: 5
+    ventana-velocidad-minutos: 3
+    # Posicion mas vieja que esto: el ETA se marca como no disponible.
+    antiguedad-maxima-segundos: ${ETA_ANTIGUEDAD_MAXIMA_SEGUNDOS:120}
+    # Limite de frecuencia del recalculo al llegar posiciones.
+    intervalo-minimo-recalculo-segundos: 10
+    # Espera en cada parada intermedia; mas si tiene reservas activas. PROVISIONAL:
+    # mismos valores que el simulador hasta medirlos en campo.
+    espera-parada-segundos: 5
+    espera-con-reserva-segundos: 20
+    # A esta distancia o menos el bus esta "en la parada".
+    radio-parada-metros: 40
+    # Detenido fuera de parada mas de esto (averia, fin de turno): sin estimacion.
+    detenido-maximo-minutos: 5
+    # A mas de esto del trazado el bus esta en desvio y el ETA se recalcula por
+    # el camino de reincorporacion; la vuelta por calles se estima como la linea
+    # recta por el factor.
+    desvio-metros: 60
+    factor-desvio: 1.3
+  integraciones:
+    traccar:
+      # SCRUM-24. Secreto que Traccar envia en X-Traccar-Token (forward.header).
+      # Vacio = la integracion rechaza todo con 401. Minimo 32 caracteres.
+      token: ${TRACCAR_TOKEN:}
+      # Unidad de position.speed en el reenvio: NUDOS (lo que usa Traccar), KMH o MS.
+      unidad-velocidad: ${TRACCAR_UNIDAD_VELOCIDAD:NUDOS}
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
@@ -63,6 +96,15 @@ ecoruta:
     por-ip-ventana-segundos: 60
     por-dispositivo-capacidad: 60
     por-dispositivo-ventana-segundos: 60
+  panel-admin:
+    # SCRUM-173. Sin actividad durante este plazo, la sesion del panel se cierra.
+    inactividad-minutos: ${PANEL_ADMIN_INACTIVIDAD_MINUTOS:30}
+    # Una posicion mas vieja se muestra como "sin datos recientes".
+    datos-recientes-segundos: 120
+    # Primera cuenta de administrador: uid de Firebase. Vacio = no se crea.
+    # La contrasena vive solo en Firebase; nunca en el repositorio.
+    firebase-uid-inicial: ${ECORUTA_ADMIN_FIREBASE_UID:}
+    usuario-inicial: ${ECORUTA_ADMIN_USUARIO:admin}
   admin:
     # PROVISIONAL de SCRUM-142 - TODO(SCRUM-134). Concede ROLE_ADMIN por la
     # cabecera X-Admin-Token mientras no exista la autenticacion de personas con
