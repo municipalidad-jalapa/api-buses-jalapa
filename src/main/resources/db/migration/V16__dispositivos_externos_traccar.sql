@@ -1,9 +1,7 @@
 -- SCRUM-24 (HU Desarrollo-144): el GPS real reporta a Traccar y Traccar
 -- reenvia cada posicion a la API.
 --
--- Numerada V15 a proposito: V13 y V14 ya estan tomadas por ramas abiertas
--- (SCRUM-136 y HU-72/73). Deben mergearse antes que esta, o Flyway rechaza
--- las migraciones que queden por debajo de la ultima aplicada.
+-- V16: develop ya ocupa hasta V15 (V15__declaracion_pasajero_no_abordo).
 
 -- Que equipo corresponde a cada dispositivo externo. El identificador es el
 -- uniqueId del dispositivo en Traccar (normalmente el IMEI). Un dispositivo

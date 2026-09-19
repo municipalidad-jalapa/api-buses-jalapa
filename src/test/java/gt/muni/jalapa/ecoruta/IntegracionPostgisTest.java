@@ -1,5 +1,6 @@
 package gt.muni.jalapa.ecoruta;
 
+import gt.muni.jalapa.ecoruta.eta.servicio.EtaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -76,5 +77,10 @@ public abstract class IntegracionPostgisTest {
         jdbc.execute("TRUNCATE registros_espera RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE equipos RESTART IDENTITY CASCADE");
         jdbc.update("DELETE FROM vehiculos WHERE identificador NOT IN ('BUS-01', 'BUS-02')");
+        // El ETA vive en memoria y el contexto se comparte entre clases (SCRUM-166).
+        etas.olvidarTodo();
     }
+
+    @Autowired
+    private EtaService etas;
 }
