@@ -23,6 +23,7 @@
     <lombok.version>1.18.44</lombok.version>
     <hibernate-spatial.version>6.6.4.Final</hibernate-spatial.version>
     <jjwt.version>0.12.6</jjwt.version>
+    <firebase-admin.version>9.10.0</firebase-admin.version>
     <springdoc.version>2.7.0</springdoc.version>
     <cucumber.version>7.22.1</cucumber.version>
     <!-- Docker Engine 29 rechaza la API que usa docker-java de la 1.20.x -->
@@ -88,6 +89,14 @@
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+
+    <!-- Firebase Admin: verifica el idToken del conductor. Las credenciales
+         NUNCA van aqui; llegan por ecoruta.firebase.* / variables de entorno. -->
+    <dependency>
+      <groupId>com.google.firebase</groupId>
+      <artifactId>firebase-admin</artifactId>
+      <version>${firebase-admin.version}</version>
     </dependency>
 
     <!-- JWT -->
@@ -210,6 +219,12 @@
                y el daemon responde 400, con lo que Testcontainers no encuentra Docker. -->
           <systemPropertyVariables>
             <api.version>1.44</api.version>
+            <!-- La ByteBuddy que trae Mockito no reconoce los class files de los JDK
+                 mas nuevos que 21, y sin esto no puede mockear clases concretas:
+                 ResumenRutaServiceTest cae entera con "Mockito cannot mock this
+                 class". El CI usa Temurin 21 y no lo necesita, pero el equipo
+                 compila en local con JDK 24+. -->
+            <net.bytebuddy.experimental>true</net.bytebuddy.experimental>
           </systemPropertyVariables>
           <!-- El pipeline corre "mvn test", no "mvn verify", asi que no hay
                failsafe: las pruebas *IT tienen que correr aqui o no corren nunca.

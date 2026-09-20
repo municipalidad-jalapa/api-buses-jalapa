@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
@@ -16,8 +18,65 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
      * Hay ya una reserva del dispositivo en alguno de los estados que ocupan el
      * cupo. Se consulta antes de crear para responder un 422 legible en vez de
      * dejar que reviente {@code uq_reserva_vigente_por_dispositivo}.
+     *
+     * Vigente = ACTIVA o RENOVADA.
+     * ABORDO no cuenta.
      */
     boolean existsByDispositivoIdAndEstadoIn(String dispositivoId, Collection<EstadoReserva> estados);
+
+    /**
+     * Cuenta las reservas del dispositivo
+     * que se encuentran en alguno de los
+     * estados indicados.
+     */
+    long countByDispositivoIdAndEstadoIn(
+            String dispositivoId,
+            Collection<EstadoReserva> estados
+    );
+
+    /**
+     * HU Desarrollo-95.
+     *
+     * ¿El dispositivo creó alguna reserva después de {@code desde},
+     * sin importar su estado actual?
+     *
+     * A diferencia de {@link #existsByDispositivoIdAndEstadoIn}, cuenta
+     * también las ya canceladas o expiradas: es justo lo que un bucle
+     * crear-cancelar necesita para no quedar atrapado nunca por el
+     * índice de "una vigente por dispositivo".
+     */
+    boolean existsByDispositivoIdAndCreadoEnAfter(
+            String dispositivoId,
+            Instant desde
+    );
+
+    /**
+     * HU-76.
+     *
+     * Obtiene las reservas que siguen pendientes
+     * en una parada determinada.
+     *
+     * El servicio envía ACTIVA y RENOVADA,
+     * por lo que CANCELADA, EXPIRADA y ABORDO
+     * no aparecen.
+     */
+    List<Reserva> findByParada_IdAndEstadoIn(
+            Long paradaId,
+            Collection<EstadoReserva> estados
+    );
+
+    /**
+     * Busca una reserva verificando también
+     * el dispositivo que la creó.
+     *
+     * Utilizado por las operaciones donde el
+     * pasajero solamente puede modificar
+     * sus propias reservas.
+     */
+    Optional<Reserva> findByIdAndDispositivoId(
+            Long id,
+            String dispositivoId
+    );
 
     /**
      * Pasa a EXPIRADA toda reserva vigente cuya fecha de expiracion ya paso. Es

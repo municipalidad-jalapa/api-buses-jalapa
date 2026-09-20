@@ -13,13 +13,17 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void devuelve_las_rutas_activas_con_sus_paradas() throws Exception {
-        // V6 siembra la ruta de ejemplo: un circuito con ocho paradas.
+        // V6 siembra la ruta de ejemplo (ocho paradas) y V12 la ruta de prueba a
+        // la Metroplaza (cinco paradas).
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
                 .andExpect(jsonPath("$[0].nombre").value("Ruta de ejemplo - Centro de Jalapa"))
                 .andExpect(jsonPath("$[0].activa").value(true))
-                .andExpect(jsonPath("$[0].paradas", org.hamcrest.Matchers.hasSize(8)));
+                .andExpect(jsonPath("$[0].paradas", org.hamcrest.Matchers.hasSize(8)))
+                .andExpect(jsonPath("$[1].nombre").value("Ruta de prueba - Parque Central a Metroplaza"))
+                .andExpect(jsonPath("$[1].paradas", org.hamcrest.Matchers.hasSize(5)))
+                .andExpect(jsonPath("$[1].paradas[4].nombre").value("Metroplaza"));
     }
 
     @Test
@@ -45,9 +49,9 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
         // contra el valor crudo de la base, no solo contra el DTO, porque a
         // nivel de DTO pasaria igual si escritura y lectura invirtieran a la vez.
         Double latEnBase = jdbc.queryForObject(
-                "SELECT ST_Y(ubicacion) FROM paradas WHERE orden = 1", Double.class);
+                "SELECT ST_Y(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = 1", Double.class);
         Double lonEnBase = jdbc.queryForObject(
-                "SELECT ST_X(ubicacion) FROM paradas WHERE orden = 1", Double.class);
+                "SELECT ST_X(ubicacion) FROM paradas WHERE orden = 1 AND ruta_id = 1", Double.class);
 
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(jsonPath("$[0].paradas[0].latitud").value(latEnBase))
@@ -60,13 +64,14 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void una_ruta_inactiva_no_aparece_en_el_listado() throws Exception {
-        jdbc.update("UPDATE rutas SET activa = false WHERE id = 1");
+        // Todas: con la ruta de prueba de V12 hay mas de una.
+        jdbc.update("UPDATE rutas SET activa = false");
         try {
             mockMvc.perform(get("/api/v1/rutas"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
         } finally {
-            jdbc.update("UPDATE rutas SET activa = true WHERE id = 1");
+            jdbc.update("UPDATE rutas SET activa = true");
         }
     }
 

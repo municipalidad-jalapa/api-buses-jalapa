@@ -1,0 +1,78 @@
+name: Build y despliegue
+
+# Reemplaza a los jobs docker-build-push, deploy-qa y deploy-production.
+
+on:
+  push:
+    branches: [develop, main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  imagen-qa:
+    if: github.ref == 'refs/heads/develop'
+    uses: municipalidad-jalapa/pipeline-templates/.github/workflows/docker-build-push.yml@main
+    with:
+      image-name: backend-api-buses
+      environment: qa
+    secrets: inherit
+
+  desplegar-qa:
+    needs: imagen-qa
+    runs-on: ubuntu-22.04
+    environment: qa
+    concurrency:
+      group: backend-desplegar-qa
+      cancel-in-progress: false
+    steps:
+      - name: Login en Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: rg-buses-jalapa
+          cluster-name: aks-buses-dev
+      - name: Actualizar imagen del Deployment
+        run: |
+          kubectl set image deployment/backend-api-buses \
+            backend-api-buses=${{ vars.ACR_LOGIN_SERVER }}/backend-api-buses:${GITHUB_SHA::8} -n qa
+          kubectl rollout status deployment/backend-api-buses -n qa --timeout=120s
+
+  imagen-produccion:
+    if: github.ref == 'refs/heads/main'
+    uses: municipalidad-jalapa/pipeline-templates/.github/workflows/docker-build-push.yml@main
+    with:
+      image-name: backend-api-buses
+      environment: production
+    secrets: inherit
+
+  desplegar-produccion:
+    needs: imagen-produccion
+    runs-on: ubuntu-22.04
+    # El environment production tiene revisores requeridos: equivale al
+    # `when: manual` que tenia este job en GitLab.
+    environment: production
+    concurrency:
+      group: backend-desplegar-produccion
+      cancel-in-progress: false
+    steps:
+      - name: Login en Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: rg-buses-jalapa
+          cluster-name: aks-buses-prod
+      - name: Actualizar imagen del Deployment
+        run: |
+          kubectl set image deployment/backend-api-buses \
+            backend-api-buses=${{ vars.ACR_LOGIN_SERVER }}/backend-api-buses:${GITHUB_SHA::8} -n production
+          kubectl rollout status deployment/backend-api-buses -n production --timeout=120s

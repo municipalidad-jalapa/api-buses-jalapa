@@ -1,10 +1,12 @@
 package gt.muni.jalapa.ecoruta.demanda.servicio;
 
+import gt.muni.jalapa.ecoruta.catalogo.dominio.Parada;
 import gt.muni.jalapa.ecoruta.catalogo.repositorio.ParadaRepository;
 import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
 import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva;
 import gt.muni.jalapa.ecoruta.demanda.dominio.Reserva;
+import gt.muni.jalapa.ecoruta.demanda.repositorio.ConsultaDemandaRepository;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ReservaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Ciclo de vida de una reserva de lugar en la parada (Desarrollo-135): creacion
@@ -22,6 +27,8 @@ import java.time.Instant;
  * al crear como al renovar. Se usa {@link Instant#now()} y no un {@code Clock}
  * inyectado porque el resto del proyecto hace lo mismo; las pruebas mueven el
  * tiempo tocando {@code expira_en} en la base.
+ *
+ * <p>Consulta de demanda vigente por parada (SCRUM-275).
  */
 @Service
 @RequiredArgsConstructor
@@ -31,6 +38,7 @@ public class DemandaService {
     private final ReservaRepository reservas;
     private final ParadaRepository paradas;
     private final DemandaProperties propiedades;
+    private final ConsultaDemandaRepository consulta;
 
     /**
      * Crea una reserva ACTIVA que expira {@code vigenciaMinutos} despues.
@@ -41,16 +49,18 @@ public class DemandaService {
      */
     @Transactional
     public Reserva crear(String dispositivoId, Long paradaId) {
-        if (!paradas.existsById(paradaId)) {
-            throw new RecursoNoEncontradoException("Parada", paradaId);
-        }
-        if (reservas.existsByDispositivoIdAndEstadoIn(dispositivoId, EstadoReserva.OCUPAN_CUPO)) {
+        // Se busca el objeto Parada completo para pasarlo a la Reserva
+        Parada parada = paradas.findById(paradaId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Parada", paradaId));
+
+        // Se utilizan los estados explícitos en lugar de OCUPAN_CUPO
+        if (reservas.existsByDispositivoIdAndEstadoIn(dispositivoId, List.of(EstadoReserva.ACTIVA, EstadoReserva.RENOVADA))) {
             throw new ReglaDeNegocioException(
                     "El dispositivo ya tiene una reserva vigente en una parada.");
         }
         Instant ahora = Instant.now();
         Reserva reserva = reservas.save(
-                new Reserva(dispositivoId, paradaId, ahora.plus(propiedades.vigencia())));
+                new Reserva(dispositivoId, parada, ahora.plus(propiedades.vigencia())));
         log.info("Reserva {} creada para la parada {}; expira {}",
                 reserva.getId(), paradaId, reserva.getExpiraEn());
         return reserva;
@@ -88,10 +98,16 @@ public class DemandaService {
      */
     @Transactional
     public int expirarVencidas() {
-        int cuantas = reservas.marcarExpiradas(EstadoReserva.RENOVABLES, Instant.now());
+        // Se reemplaza RENOVABLES por la lista directa para evitar problemas de compilacion
+        int cuantas = reservas.marcarExpiradas(List.of(EstadoReserva.ACTIVA, EstadoReserva.RENOVADA), Instant.now());
         if (cuantas > 0) {
             log.info("Reservas expiradas por vencimiento: {}", cuantas);
         }
         return cuantas;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, Long> contarReservasActivasPorParada(Collection<Long> paradaIds) {
+        return consulta.contarReservasActivasPorParada(paradaIds);
     }
 }

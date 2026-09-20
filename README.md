@@ -98,6 +98,86 @@ mvn spring-boot:run
 | `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_ADMIN` — cambia el equipo del bus |
 | `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_ADMIN` |
 | `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_ADMIN` |
+| `POST` | `/api/v1/auth/admin` | público — idToken de Firebase → JWT de administrador (SCRUM-173) |
+| `POST` | `/api/v1/admin/sesion/renovacion` | `ROLE_ADMIN` — renueva la sesión mientras hay actividad |
+| `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
+| `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
+
+## Cuenta de administrador del panel municipal
+
+El panel web municipal (SCRUM-173) usa el mismo mecanismo que el conductor: el navegador inicia
+sesión en Firebase, envía el idToken a `POST /api/v1/auth/admin` y recibe un JWT propio del
+backend con rol `admin`. **No hay contraseñas en el repositorio ni en la base**: la contraseña
+vive solo en Firebase.
+
+Crear la primera cuenta:
+
+1. En la consola de Firebase del proyecto, *Authentication → Users → Add user*, con el correo
+   institucional. Copiar el **User UID**.
+2. Arrancar el backend con ese uid:
+
+   ```bash
+   ECORUTA_ADMIN_FIREBASE_UID=<uid> ECORUTA_ADMIN_USUARIO=jefe-transporte
+   ```
+
+   Al arrancar se crea la cuenta local con rol `ADMIN` si no existe (es idempotente; después
+   la variable se puede quitar).
+
+Cuentas adicionales, sin reiniciar:
+
+```sql
+INSERT INTO usuarios (username, rol, activo, firebase_uid)
+VALUES ('otra-persona', 'ADMIN', TRUE, '<uid de Firebase>');
+```
+
+Para quitar el acceso: `UPDATE usuarios SET activo = FALSE WHERE firebase_uid = '<uid>';`.
+
+- Una cuenta de conductor, una inexistente o una inactiva recibe **403** al intentar entrar.
+- La sesión se cierra tras `PANEL_ADMIN_INACTIVIDAD_MINUTOS` (30 por defecto) sin actividad:
+  el panel la renueva mientras se usa y, si no, el token vence y la API responde 401.
+- El rol de administrador no está atado a ninguna ruta: ve el servicio completo.
+
+## Integración con Traccar (GPS real)
+
+El GPS del bus (103A/B) reporta a un servidor **Traccar**, y Traccar reenvía cada posición a
+`POST /api/v1/integraciones/traccar/posiciones` (SCRUM-24). El backend la registra con el
+mismo servicio de telemetría que usa el equipo a bordo: alimenta la posición vigente, el stream
+en tiempo real y los avisos. El endpoint `POST /api/v1/telemetria/posiciones` no cambia.
+
+**Las dos credenciales no se intercambian.** `Authorization: Bearer eq_…` autentica al equipo a
+bordo en la telemetría; `X-Traccar-Token` autentica al servicio Traccar en esta integración.
+Cada una solo abre su propia ruta.
+
+1. Definir el secreto en el backend (mínimo 32 caracteres; sin él la integración responde 401 a
+   todo):
+
+   ```bash
+   TRACCAR_TOKEN=<secreto-largo>
+   # Unidad de position.speed: NUDOS (la de Traccar, por defecto), KMH o MS
+   TRACCAR_UNIDAD_VELOCIDAD=NUDOS
+   ```
+
+2. Configurar el reenvío en `traccar.xml`:
+
+   ```xml
+   <entry key='forward.enable'>true</entry>
+   <entry key='forward.url'>https://<api>/api/v1/integraciones/traccar/posiciones</entry>
+   <entry key='forward.json'>true</entry>
+   <entry key='forward.header'>X-Traccar-Token: <secreto-largo></entry>
+   ```
+
+3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el equipo del bus:
+
+   ```sql
+   INSERT INTO dispositivos_externos (identificador, equipo_id)
+   VALUES ('860000000000001', <id del equipo ACTIVO del bus>);
+   ```
+
+Respuestas: `202 {"recibidas", "aceptadas", "descartadas"}` — un 202 no implica que todas se
+guardaron: se descartan las lecturas fuera de la ventana de 12 h y los reenvíos repetidos (se
+deduplican por `position.id`). `400` cuerpo mal formado, `401` token ausente o inválido, `422`
+dispositivo sin equipo asociado (o con el equipo revocado o sin vehículo), o datos inválidos; en
+ese caso no se registra nada del reenvío.
 
 ## Provisionar un equipo a bordo
 
