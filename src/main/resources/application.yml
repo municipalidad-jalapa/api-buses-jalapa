@@ -30,8 +30,9 @@ ecoruta:
     vigencia-minutos: 5
     # Cada cuanto la tarea programada barre las reservas vencidas.
     barrido-segundos: 60
-    geocerca-metros: 150
-    # Tiempo minimo entre dos reservas creadas por el mismo dispositivo (anti-abuso).
+    geocerca-metros: ${DEMANDA_GEOCERCA_METROS:150}
+    # Tiempo minimo entre dos reservas creadas por el mismo dispositivo, cuente
+    # o no como vigente la anterior (HU Desarrollo-95, anti-abuso de conteo).
     ritmo-minimo-segundos: 5
   notificaciones:
     # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
