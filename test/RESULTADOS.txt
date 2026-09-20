@@ -2,8 +2,8 @@
  RESULTADOS DE PRUEBAS  -  HU Desarrollo-95
  Endurecer la seguridad de la API (D4 + O4)
 ================================================================================
- Fecha de ejecucion : 2026-09-18, 00:37 - 01:15 (America/Guatemala)
- Ejecutado por      : mvn test (tres corridas)  +  prueba manual con curl,
+ Fecha de ejecucion : 2026-09-18, 00:37 - 01:15 y 2026-09-20, 16:30 - 16:45 (America/Guatemala)
+ Ejecutado por      : mvn test (cuatro corridas)  +  prueba manual con curl,
                        ambas contra la app real y ambas fases
  Entorno
    - JDK            : Oracle JDK 22 (build 22+36-2370)  [el pom.xml pide 21+;
@@ -21,7 +21,8 @@ HU (le faltaba HU-76, "marcado de abordaje / atencion de parada", ya integrada
 en develop). Las corridas A y B de abajo son de ANTES de notarlo. Al conectar
 el repositorio con GitHub se detecto el desfase, se trajo develop completo y
 se volvieron a aplicar los cambios de esta HU sobre esa base correcta (ver
-C mas abajo para el detalle y el conteo final real: 298/298).
+D mas abajo). El 19/09 QA rechazo la HU por un endpoint sin limite;
+la correccion y la corrida final (390/390) estan en E.
 
 
 ================================================================================
@@ -332,12 +333,92 @@ RESUMEN D:  298/298 OK -- los 292 de las corridas A/B (30 nuevos de esta HU)
 
 
 ================================================================================
+ E) RECHAZO DE QA (19/09) Y CORRECCION
+================================================================================
+
+QA probo la rama contra la API real (docker compose, valores por defecto) y
+acepto los criterios 2, 3 y 4 y el criterio 1 por IP y por dispositivo, pero
+rechazo la HU por UN defecto:
+
+  POST /api/v1/auth/admin (login del panel municipal, SCRUM-173) es publico
+  en SecurityConfig pero no estaba en RateLimitFilter.RUTAS_PROTEGIDAS. Con la
+  IP agotada respondia 400 (llegaba al controlador) en vez de 429. Cada
+  peticion valida un idToken contra Firebase: sin limite permite probar
+  tokens en masa y saturar el servicio.
+
+Causa de fondo: las rutas publicas se mantienen en dos listas a mano
+(SecurityConfig y RateLimitFilter) y nada avisaba al desincronizarse. El
+endpoint llego con SCRUM-173, integrado en develop DESPUES de que se diseno
+el filtro, y la lista del filtro no se actualizo.
+
+Correccion:
+  1. RateLimitFilter: se agrega POST /api/v1/auth/admin a RUTAS_PROTEGIDAS.
+  2. RateLimitPorIpIT: dos casos nuevos que reproducen el escenario de QA.
+  3. RutasPublicasProtegidasIT (NUEVA): guarda de sincronizacion. No compara
+     dos listas: recorre los endpoints REALES de los controladores
+     (RequestMappingHandlerMapping), pregunta a la autorizacion REAL de Spring
+     Security (AuthorizationFilter de la cadena que atiende cada ruta) si un
+     anonimo pasa, y falla nombrando el endpoint si alguno publico de /api/**
+     no esta en el filtro. Tambien atrapa rutas declaradas a nivel de metodo,
+     como la de auth/admin, que un recorrido por @RequestMapping de clase no
+     ve. Trae una guarda contra el "pasar en vacio".
+  4. Manual: trazabilidad + prueba-manual.sh (fase ip) con el escenario de QA.
+
+Verificacion de que las pruebas nuevas cubren el defecto (sin la correccion):
+  - RutasPublicasProtegidasIT  -> FALLA:
+        Expecting empty but was:
+        ["POST /api/v1/auth/admin  (AuthAdminController#iniciarSesion)"]
+    (y ese fue el UNICO endpoint publico sin limite: los demas estan cubiertos)
+  - RateLimitPorIpIT (2 casos nuevos) -> FALLAN con el sintoma exacto de QA:
+        Status expected:<429> but was:<400>
+  Con la correccion: todo en verde.
+
+[INFO] Tests run: 1,  Failures: 0, Errors: 0, Skipped: 0   -- RutasPublicasProtegidasIT   (NUEVA)
+[INFO] Tests run: 7,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitPorIpIT            (5 previos + 2 nuevos)
+[INFO] Tests run: 3,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitPorDispositivoIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- RateLimitFilterTest
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- LimitadorDeVentanaFijaTest
+[INFO] Tests run: 4,  Failures: 0, Errors: 0, Skipped: 0   -- SecurityHeadersIT
+[INFO] Tests run: 6,  Failures: 0, Errors: 0, Skipped: 0   -- CorsIT
+[INFO] Tests run: 9,  Failures: 0, Errors: 0, Skipped: 0   -- AuthAdminIT                  (SCRUM-173, de develop)
+[INFO] Tests run: 13, Failures: 0, Errors: 0, Skipped: 0   -- RecepcionTraccarIT           (SCRUM-24, de develop)
+[INFO] Results:
+[INFO] Tests run: 390, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+
+Prueba manual, fase ip, con los pasos nuevos (app real + Postgres real, puerto
+8081, por-ip-capacidad=5), 2026-09-20 16:42:
+
+    [OK] intento 1..5 dentro del cupo -> HTTP 200
+    [OK] intento 6, ya sin cupo -> HTTP 429
+    [OK] POST /api/v1/auth/admin con la IP agotada -> HTTP 429      (antes: 400)
+    [OK] POST /api/v1/auth/conductor con la IP agotada -> HTTP 429
+    [OK] 6 peticiones a /actuator/health, todas 200 pese al limite de IP agotado
+    ### resumen fase=ip: 0 fallo(s)  -> TODO OK
+
+La fase "resto" (cabeceras, CORS, dispositivo, ritmo) NO se repitio a mano:
+esta correccion no toca ninguno de esos caminos, y QA ya la verifico contra la
+API real el 19/09. Los 390 automaticos si la cubren.
+
+Fuera de alcance (revisado, no es un hueco): POST /api/v1/integraciones/traccar/
+posiciones no es publico de pasajero; tiene cadena de seguridad propia
+(TraccarSecurityConfig) y exige rol INTEGRACION_TRACCAR con token compartido,
+igual que la ingesta del equipo a bordo. RutasPublicasProtegidasIT lo confirma:
+no lo cuenta como publico.
+
+RESUMEN E:  390/390 OK = los 298 de la seccion D + 89 que llegaron con develop
+            (Traccar, ETA, panel municipal...) + 3 nuevas de esta correccion
+            (2 en RateLimitPorIpIT + RutasPublicasProtegidasIT).
+
+
+================================================================================
  VEREDICTO
 ================================================================================
-  - Suite automatica  : 298/298 OK  (30 pruebas nuevas de esta HU + ajustes sin
-    caso nuevo en 3 archivos preexistentes de HU-95, mas la reconciliacion con
-    HU-76 que ya estaba integrada en develop -- ver seccion D)
-  - Prueba manual E2E  : 24/24 verificaciones OK, en dos fases contra la app real
+  - Suite automatica  : 390/390 OK  (33 pruebas nuevas de esta HU + ajustes sin
+    caso nuevo en 3 archivos preexistentes; el resto llego con develop -- ver
+    secciones D y E)
+  - Prueba manual E2E  : 24/24 (18/09) + fase ip repetida con el escenario de QA
+    el 20/09 (9/9), contra la app real
   - Los 4 criterios de aceptacion quedan cubiertos por pruebas automaticas Y por
     verificacion manual contra la app real:
       1) Limite de peticiones por dispositivo y por IP en endpoints publicos
@@ -346,5 +427,8 @@ RESUMEN D:  298/298 OK -- los 292 de las corridas A/B (30 nuevos de esta HU)
       4) Un dispositivo no puede registrar demanda a un ritmo imposible
   - Un ajuste necesario a una prueba preexistente (ReservaVigenciaIT, HU-135),
     documentado y sin perdida de cobertura del criterio original.
+  - QA 19/09: rechazo por POST /api/v1/auth/admin sin limite. Corregido, cubierto
+    con pruebas que fallan sin la correccion, y con una guarda que impide que
+    otra ruta publica vuelva a quedar fuera (seccion E).
   - Ninguna otra prueba preexistente se rompio, ni de esta HU ni de HU-76.
 ================================================================================

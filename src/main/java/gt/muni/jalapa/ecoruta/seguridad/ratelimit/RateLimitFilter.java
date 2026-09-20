@@ -26,7 +26,9 @@ import java.util.List;
  * las mismas que {@code SecurityConfig} deja en {@code permitAll()}. Se
  * mantienen separadas a proposito — agregar una ruta aqui no la hace publica
  * (eso lo decide SecurityConfig) — asi que si SecurityConfig abre una ruta
- * publica nueva, esta lista tiene que actualizarse a mano.
+ * publica nueva, esta lista tiene que actualizarse a mano. Si se olvida,
+ * {@code RutasPublicasProtegidasIT} falla nombrando el endpoint que falta
+ * (asi se le escapo a QA {@code POST /api/v1/auth/admin}).
  *
  * <p>Corre antes de la autenticacion (ver el orden en {@code SecurityConfig}):
  * una peticion que ya viene mal de ritmo no necesita gastar trabajo de
@@ -54,7 +56,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             new RutaProtegida("POST", "/api/v1/reservas/*/declaracion-no-abordo"),
             new RutaProtegida("POST", "/api/v1/reservas/*/abordaje"),
             new RutaProtegida("POST", "/api/v1/dispositivos/notificaciones"),
-            new RutaProtegida("POST", "/api/v1/auth/conductor"));
+            new RutaProtegida("POST", "/api/v1/auth/conductor"),
+            // SCRUM-173: login del panel municipal. Cada peticion valida un
+            // idToken contra Firebase: sin limite permite probar tokens en masa.
+            new RutaProtegida("POST", "/api/v1/auth/admin"));
 
     private final AntPathMatcher patrones = new AntPathMatcher();
     private final RateLimitProperties propiedades;
@@ -112,7 +117,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         porDispositivo.limpiar();
     }
 
-    private boolean esRutaProtegida(HttpServletRequest peticion) {
+    /** Visible para RutasPublicasProtegidasIT, que la contrasta con la autorizacion real. */
+    boolean esRutaProtegida(HttpServletRequest peticion) {
         String metodo = peticion.getMethod();
         String ruta = peticion.getRequestURI();
         return RUTAS_PROTEGIDAS.stream().anyMatch(
