@@ -72,7 +72,7 @@ public class ReservaService {
                 parada.getId(),
                 peticion.latitud(),
                 peticion.longitud(),
-                demanda.getGeocercaMetros()
+                demanda.geocercaMetros()
         )) {
             throw new ReglaDeNegocioException(
                     "Debes acercarte más a la parada para registrar que estás esperando."
@@ -100,7 +100,7 @@ public class ReservaService {
          */
         if (reservas.existsByDispositivoIdAndCreadoEnAfter(
                 peticion.dispositivoId(),
-                ahora.minus(demanda.getRitmoMinimo())
+                ahora.minus(demanda.ritmoMinimo())
         )) {
             throw new ReglaDeNegocioException(
                     "Este dispositivo está registrando demanda a un ritmo que no es posible "
@@ -113,7 +113,7 @@ public class ReservaService {
                 parada,
                 EstadoReserva.ACTIVA,
                 ahora,
-                ahora.plus(demanda.getVigenciaMinutos())
+                ahora.plus(demanda.vigencia())
         );
 
         try {
@@ -176,7 +176,7 @@ public class ReservaService {
         }
 
         reserva.renovar(
-                ahora.plus(demanda.getVigenciaMinutos())
+                ahora.plus(demanda.vigencia())
         );
 
         return ReservaResponse.de(reserva);
