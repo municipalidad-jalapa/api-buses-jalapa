@@ -1,10 +1,12 @@
 package gt.muni.jalapa.ecoruta.demanda.servicio;
 
+import gt.muni.jalapa.ecoruta.catalogo.dominio.Parada;
 import gt.muni.jalapa.ecoruta.catalogo.repositorio.ParadaRepository;
 import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
 import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva;
 import gt.muni.jalapa.ecoruta.demanda.dominio.Reserva;
+import gt.muni.jalapa.ecoruta.demanda.repositorio.ConsultaDemandaRepository;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ReservaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,17 +37,19 @@ class DemandaServiceTest {
     private ReservaRepository reservas;
     @Mock
     private ParadaRepository paradas;
+    @Mock
+    private ConsultaDemandaRepository consulta;
 
     private DemandaService servicio;
 
     @BeforeEach
     void init() {
-        servicio = new DemandaService(reservas, paradas, new DemandaProperties(5, 60));
+        servicio = new DemandaService(reservas, paradas, new DemandaProperties(5, 60, 10, 150, 5), consulta);
     }
 
     @Test
     void crear_fija_la_expiracion_cinco_minutos_despues_y_deja_la_reserva_activa() {
-        when(paradas.existsById(1L)).thenReturn(true);
+        when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(reservas.existsByDispositivoIdAndEstadoIn(eq("disp"), any())).thenReturn(false);
         when(reservas.save(any(Reserva.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -59,7 +64,7 @@ class DemandaServiceTest {
 
     @Test
     void crear_falla_con_404_si_la_parada_no_existe() {
-        when(paradas.existsById(99L)).thenReturn(false);
+        when(paradas.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> servicio.crear("disp", 99L))
                 .isInstanceOf(RecursoNoEncontradoException.class);
@@ -68,8 +73,8 @@ class DemandaServiceTest {
 
     @Test
     void crear_falla_con_422_si_el_dispositivo_ya_tiene_una_reserva_que_ocupa_cupo() {
-        when(paradas.existsById(1L)).thenReturn(true);
-        when(reservas.existsByDispositivoIdAndEstadoIn("disp", EstadoReserva.OCUPAN_CUPO)).thenReturn(true);
+        when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
+        when(reservas.existsByDispositivoIdAndEstadoIn("disp", List.of(EstadoReserva.ACTIVA, EstadoReserva.RENOVADA))).thenReturn(true);
 
         assertThatThrownBy(() -> servicio.crear("disp", 1L))
                 .isInstanceOf(ReglaDeNegocioException.class);
@@ -78,7 +83,7 @@ class DemandaServiceTest {
 
     @Test
     void renovar_una_reserva_vigente_la_extiende_otros_cinco_minutos_y_la_deja_renovada() {
-        Reserva reserva = new Reserva("disp", 1L, Instant.now().plusSeconds(30));
+        Reserva reserva = new Reserva("disp", parada(1L), Instant.now().plusSeconds(30));
         when(reservas.findById(7L)).thenReturn(Optional.of(reserva));
 
         Instant antes = Instant.now();
@@ -98,7 +103,7 @@ class DemandaServiceTest {
 
     @Test
     void renovar_una_reserva_ya_expirada_falla_con_422() {
-        Reserva expirada = new Reserva("disp", 1L, Instant.now().minusSeconds(1));
+        Reserva expirada = new Reserva("disp", parada(1L), Instant.now().minusSeconds(1));
         when(reservas.findById(7L)).thenReturn(Optional.of(expirada));
 
         assertThatThrownBy(() -> servicio.renovar(7L))
@@ -108,7 +113,7 @@ class DemandaServiceTest {
 
     @Test
     void renovar_una_reserva_que_no_esta_activa_falla_con_422() {
-        Reserva cancelada = new Reserva("disp", 1L, Instant.now().plusSeconds(120));
+        Reserva cancelada = new Reserva("disp", parada(1L), Instant.now().plusSeconds(120));
         cancelada.setEstado(EstadoReserva.CANCELADA);
         when(reservas.findById(7L)).thenReturn(Optional.of(cancelada));
 
@@ -124,7 +129,13 @@ class DemandaServiceTest {
 
         assertThat(cuantas).isEqualTo(3);
         ArgumentCaptor<Instant> ahora = ArgumentCaptor.forClass(Instant.class);
-        verify(reservas).marcarExpiradas(eq(EstadoReserva.RENOVABLES), ahora.capture());
+        verify(reservas).marcarExpiradas(eq(List.of(EstadoReserva.ACTIVA, EstadoReserva.RENOVADA)), ahora.capture());
         assertThat(ahora.getValue()).isBetween(Instant.now().minusSeconds(60), Instant.now().plusSeconds(1));
+    }
+
+    private static Parada parada(Long id) {
+        Parada parada = new Parada();
+        parada.setId(id);
+        return parada;
     }
 }
