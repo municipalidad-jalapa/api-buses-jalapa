@@ -119,6 +119,12 @@ management:
         # prometheus: metricas para SCRUM-151 (HU-56, disponibilidad/latencia/5xx).
         include: health,info,metrics,prometheus
 
+logging:
+  # SCRUM-19 (observabilidad): id de correlacion en cada linea de log
+  # (ver CorrelationIdFilter), para seguir una posicion de ingesta a difusion.
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+
 server:
   port: 8080
   # ADR-009: produccion corre detras de un proxy inverso (mismo host, misma red
