@@ -37,8 +37,8 @@ import org.springframework.web.bind.annotation.RestController;
  * la declaracion de que el pasajero no abordo.</p>
  */
 @Tag(
-        name = "Demanda",
-        description = "Reservas de espera en parada"
+        name = "Demanda — reservas",
+        description = "Reserva de lugar en la parada con vigencia y renovacion"
 )
 @RestController
 @RequestMapping("/api/v1/reservas")
@@ -48,16 +48,16 @@ public class ReservaController {
     private final ReservaService reservaService;
 
     /**
-     * SCRUM-306 / HU-134.
+     * SCRUM-306 / HU-134 / Desarrollo-135.
      * Crear una reserva.
      */
     @Operation(
             summary = "Indica que el pasajero esta esperando en una parada",
             description = """
-                    Publico: el pasajero es anonimo.
-
-                    Crea una reserva en estado ACTIVA asociada al dispositivo
-                    y a la parada.
+                    Publico: el pasajero es anonimo, se identifica con el id de su
+                    dispositivo. La reserva nace ACTIVA y expira a los pocos minutos;
+                    ese instante viaja en expiraEn. Una reserva EXPIRADA del mismo
+                    dispositivo no impide crear otra.
 
                     El dispositivo debe estar dentro de la geocerca configurada
                     y no puede tener otra reserva vigente.
@@ -123,6 +123,7 @@ public class ReservaController {
 
                     La reserva conserva su identificador,
                     extiende su vigencia y pasa a RENOVADA.
+                    Si ya expiro o no esta activa responde 422.
                     """
     )
     @ApiResponses({
@@ -164,11 +165,7 @@ public class ReservaController {
             @RequestHeader("X-Dispositivo-Id")
             String dispositivoId
     ) {
-
-        return reservaService.renovar(
-                id,
-                dispositivoId
-        );
+        return reservaService.renovar(id, dispositivoId);
     }
 
     /**

@@ -12,30 +12,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface ReservaRepository
-        extends JpaRepository<Reserva, Long> {
+public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     /**
-     * Una sola consulta:
-     * ¿el dispositivo ya tiene una reserva vigente?
+     * Hay ya una reserva del dispositivo en alguno de los estados que ocupan el
+     * cupo. Se consulta antes de crear para responder un 422 legible en vez de
+     * dejar que reviente {@code uq_registro_activo_por_dispositivo}.
      *
      * Vigente = ACTIVA o RENOVADA.
      * ABORDO no cuenta.
      */
-    @Query("""
-            SELECT CASE WHEN COUNT(r) > 0
-                   THEN TRUE ELSE FALSE END
-              FROM Reserva r
-             WHERE r.dispositivoId = :dispositivoId
-               AND r.estado IN :estados
-            """)
-    boolean existeVigentePorDispositivo(
-            @Param("dispositivoId")
-            String dispositivoId,
-
-            @Param("estados")
-            Collection<EstadoReserva> estados
-    );
+    boolean existsByDispositivoIdAndEstadoIn(String dispositivoId, Collection<EstadoReserva> estados);
 
     /**
      * Cuenta las reservas del dispositivo
@@ -45,6 +32,22 @@ public interface ReservaRepository
     long countByDispositivoIdAndEstadoIn(
             String dispositivoId,
             Collection<EstadoReserva> estados
+    );
+
+    /**
+     * HU Desarrollo-95.
+     *
+     * ¿El dispositivo creó alguna reserva después de {@code desde},
+     * sin importar su estado actual?
+     *
+     * A diferencia de {@link #existsByDispositivoIdAndEstadoIn}, cuenta
+     * también las ya canceladas o expiradas: es justo lo que un bucle
+     * crear-cancelar necesita para no quedar atrapado nunca por el
+     * índice de "una vigente por dispositivo".
+     */
+    boolean existsByDispositivoIdAndCreadoEnAfter(
+            String dispositivoId,
+            Instant desde
     );
 
     /**
@@ -76,27 +79,19 @@ public interface ReservaRepository
     );
 
     /**
-     * HU-135.
+     * Pasa a EXPIRADA toda reserva vigente cuya fecha de expiracion ya paso. Es
+     * un UPDATE masivo: lo corre la tarea programada sin cargar entidades.
      *
-     * Pasa a EXPIRADA toda reserva vigente
-     * cuya fecha de expiración ya pasó.
-     *
-     * Es una actualización masiva para evitar
-     * cargar las entidades una por una.
+     * <p>{@code clearAutomatically} vacia el contexto de persistencia despues,
+     * para que nadie siga viendo el estado viejo de una fila recien tocada.
      */
     @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Reserva r
-               SET r.estado =
-                   gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva.EXPIRADA
+               SET r.estado = gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva.EXPIRADA
              WHERE r.estado IN :estados
                AND r.expiraEn <= :ahora
             """)
-    int marcarExpiradas(
-            @Param("estados")
-            Collection<EstadoReserva> estados,
-
-            @Param("ahora")
-            Instant ahora
-    );
+    int marcarExpiradas(@Param("estados") Collection<EstadoReserva> estados,
+                        @Param("ahora") Instant ahora);
 }

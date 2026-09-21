@@ -79,7 +79,7 @@ public class ReservaService {
             );
         }
 
-        if (reservas.existeVigentePorDispositivo(
+        if (reservas.existsByDispositivoIdAndEstadoIn(
                 peticion.dispositivoId(),
                 ESTADOS_VIGENTES
         )) {
@@ -90,12 +90,30 @@ public class ReservaService {
 
         Instant ahora = Instant.now(reloj);
 
+        /*
+         * HU Desarrollo-95.
+         *
+         * El chequeo de arriba solo bloquea mientras haya una reserva
+         * vigente. Sin este, cancelar y volver a crear de inmediato deja
+         * crecer el conteo historico de demanda a un ritmo que ninguna
+         * persona real puede sostener.
+         */
+        if (reservas.existsByDispositivoIdAndCreadoEnAfter(
+                peticion.dispositivoId(),
+                ahora.minus(demanda.ritmoMinimo())
+        )) {
+            throw new ReglaDeNegocioException(
+                    "Este dispositivo está registrando demanda a un ritmo que no es posible "
+                            + "para una persona. Espera unos segundos e intenta de nuevo."
+            );
+        }
+
         Reserva reserva = new Reserva(
                 peticion.dispositivoId(),
                 parada,
                 EstadoReserva.ACTIVA,
                 ahora,
-                ahora.plus(demanda.ttl())
+                ahora.plus(demanda.vigencia())
         );
 
         try {
@@ -158,7 +176,7 @@ public class ReservaService {
         }
 
         reserva.renovar(
-                ahora.plus(demanda.ttl())
+                ahora.plus(demanda.vigencia())
         );
 
         return ReservaResponse.de(reserva);

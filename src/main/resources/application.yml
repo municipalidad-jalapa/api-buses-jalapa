@@ -26,11 +26,14 @@ ecoruta:
     project-id: ${FIREBASE_PROJECT_ID:}
   demanda:
     umbral-salida: 10
-    # Vigencia de una reserva desde que se crea o se renueva (SCRUM-307, HU-135).
-    ttl-minutos: 5
+    # Desarrollo-135 / SCRUM-307: la reserva dura estos minutos desde que se crea.
+    vigencia-minutos: 5
     # Cada cuanto la tarea programada barre las reservas vencidas.
     barrido-segundos: 60
-    geocerca-metros: 150
+    geocerca-metros: ${DEMANDA_GEOCERCA_METROS:150}
+    # Tiempo minimo entre dos reservas creadas por el mismo dispositivo, cuente
+    # o no como vigente la anterior (HU Desarrollo-95, anti-abuso de conteo).
+    ritmo-minimo-segundos: 5
   notificaciones:
     # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
     radio-aproximacion-metros: ${NOTIF_RADIO_APROXIMACION_METROS:250}
@@ -89,6 +92,19 @@ ecoruta:
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
+  rate-limit:
+    # HU Desarrollo-95: limite de peticiones por IP y por dispositivo en los
+    # endpoints publicos. Los valores por defecto son generosos a proposito:
+    # en Guatemala es comun que muchos telefonos compartan una sola IP publica
+    # por NAT de operador movil, y el stream SSE reconecta solo cada pocos
+    # segundos si hay cortes de red (ADR-008). El limite por IP es un respaldo
+    # contra un flood, no la defensa principal: esa la da el limite por
+    # dispositivo, que si identifica a cada telefono.
+    habilitado: true
+    por-ip-capacidad: 300
+    por-ip-ventana-segundos: 60
+    por-dispositivo-capacidad: 60
+    por-dispositivo-ventana-segundos: 60
   panel-admin:
     # SCRUM-173. Sin actividad durante este plazo, la sesion del panel se cierra.
     inactividad-minutos: ${PANEL_ADMIN_INACTIVIDAD_MINUTOS:30}
@@ -112,8 +128,22 @@ management:
         # prometheus: metricas para SCRUM-151 (HU-56, disponibilidad/latencia/5xx).
         include: health,info,metrics,prometheus
 
+logging:
+  # SCRUM-19 (observabilidad): id de correlacion en cada linea de log
+  # (ver CorrelationIdFilter), para seguir una posicion de ingesta a difusion.
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+
 server:
   port: 8080
+  # ADR-009: produccion corre detras de un proxy inverso (mismo host, misma red
+  # docker) que termina TLS. "native" hace que el contenedor (Tomcat) resuelva
+  # la IP real del cliente desde X-Forwarded-For y el esquema real desde
+  # X-Forwarded-Proto -- confia solo en saltos desde redes privadas por
+  # defecto, que es exactamente donde vive el proxy en este despliegue. Sin
+  # esto, el limite de peticiones por IP (HU Desarrollo-95) cuenta a todo
+  # internet como una sola IP: la del proxy.
+  forward-headers-strategy: native
 
 # NUNCA activar spring.mvc.log-request-details: imprime todos los headers,
 # incluido Authorization, que es donde viaja el secreto del equipo a bordo.
