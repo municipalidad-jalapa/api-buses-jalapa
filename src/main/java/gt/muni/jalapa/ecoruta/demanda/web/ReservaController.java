@@ -1,7 +1,7 @@
 package gt.muni.jalapa.ecoruta.demanda.web;
 
 import gt.muni.jalapa.ecoruta.common.ApiError;
-import gt.muni.jalapa.ecoruta.demanda.servicio.DemandaService;
+import gt.muni.jalapa.ecoruta.demanda.servicio.ReservaService;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.CrearReservaRequest;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.DeclararNoAbordoRequest;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.DetalleReservaResponse;
@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReservaController {
 
-    private final DemandaService demandaService;
+    private final ReservaService reservaService;
 
     /**
      * SCRUM-306 / HU-134 / Desarrollo-135.
@@ -106,7 +106,7 @@ public class ReservaController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
-                        ReservaResponse.de(demandaService.crear(peticion.dispositivoId(), peticion.paradaId()))
+                        reservaService.crear(peticion)
                 );
     }
 
@@ -162,26 +162,61 @@ public class ReservaController {
     @PostMapping("/{id}/renovacion")
     public ReservaResponse renovar(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Dispositivo-Id", required = false)
+            @RequestHeader("X-Dispositivo-Id")
             String dispositivoId
     ) {
-        return ReservaResponse.de(demandaService.renovar(id));
+        return reservaService.renovar(id, dispositivoId);
     }
 
-    // =========================================================================
-    // NOTA PARA MARLON:
-    // Los metodos de cancelar, consultar y declararNoAbordo requieren metodos en
-    // DemandaService que actualmente no existen en tu rama.
-    // Para que el codigo compile temporalmente, he comentado estas funciones.
-    // Deberas implementar esos metodos en DemandaService para descomentarlos.
-    // =========================================================================
+    }
 
-    /*
+    /**
+     * HU-124.
+     * Cancelar una reserva.
+     */
     @Operation(
             summary = "Cancela una reserva vigente",
-            description = "Solo el dispositivo que creo la reserva puede cancelarla."
+            description = """
+                    Solo el dispositivo que creo la reserva puede cancelarla.
+
+                    La reserva no se elimina.
+                    Pasa al estado CANCELADA y conserva la fecha
+                    en que ocurrio la cancelacion.
+                    """
     )
-    @ApiResponses({ ... })
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Reserva cancelada"
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "La reserva pertenece a otro dispositivo",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ApiError.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No existe una reserva con ese id",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ApiError.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "422",
+                    description = "La reserva ya estaba cancelada o no esta vigente",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ApiError.class
+                            )
+                    )
+            )
+    })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelar(
@@ -189,27 +224,82 @@ public class ReservaController {
             @RequestHeader("X-Dispositivo-Id")
             String dispositivoId
     ) {
-        demandaService.cancelar(id, dispositivoId);
+
+        reservaService.cancelar(
+                id,
+                dispositivoId
+        );
     }
 
+    /**
+     * HU-76.
+     *
+     * Permite que el pasajero consulte
+     * el estado actual de su reserva.
+     *
+     * Esto permite detectar cuando el conductor
+     * ya marco la reserva como ABORDO.
+     */
     @Operation(
             summary = "Consulta el estado de una reserva"
     )
-    @ApiResponses({ ... })
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Reserva encontrada"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "La reserva no existe o no pertenece al dispositivo",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ApiError.class
+                            )
+                    )
+            )
+    })
     @GetMapping("/{reservaId}")
     public ResponseEntity<DetalleReservaResponse> consultar(
             @PathVariable Long reservaId,
             @RequestParam String dispositivoId
     ) {
+
         return ResponseEntity.ok(
-                demandaService.consultar(reservaId, dispositivoId)
+                reservaService.consultar(
+                        reservaId,
+                        dispositivoId
+                )
         );
     }
 
+    /**
+     * HU-76.
+     *
+     * El pasajero declara que considera
+     * que no logro abordar.
+     *
+     * Si posteriormente el conductor confirma
+     * que si abordo, la declaracion se conserva
+     * para auditoria.
+     */
     @Operation(
             summary = "El pasajero declara que no abordo"
     )
-    @ApiResponses({ ... })
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Declaracion registrada"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "La reserva no existe o no pertenece al dispositivo",
+                    content = @Content(
+                            schema = @Schema(
+                                    implementation = ApiError.class
+                            )
+                    )
+            )
+    })
     @PostMapping("/{reservaId}/declaracion-no-abordo")
     public ResponseEntity<DetalleReservaResponse> declararNoAbordo(
             @PathVariable Long reservaId,
@@ -217,9 +307,12 @@ public class ReservaController {
             @RequestBody
             DeclararNoAbordoRequest peticion
     ) {
+
         return ResponseEntity.ok(
-                demandaService.declararNoAbordo(reservaId, peticion.dispositivoId())
+                reservaService.declararNoAbordo(
+                        reservaId,
+                        peticion.dispositivoId()
+                )
         );
     }
-    */
 }
