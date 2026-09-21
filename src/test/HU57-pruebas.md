@@ -33,6 +33,6 @@ Radios: aproximación 250 m, llegada 40 m. Parada de referencia: Parque Central 
 - `AvisoDeAproximacionIT` — 9 pruebas de integración (API + GPS + avisos).
 - `AbordajeServiceTest` — 3 pruebas unitarias de abordaje.
 
-Demo manual (sin app ni tableta): `tools/simulador-gps.py` sobre el mismo `POST /api/v1/telemetria/posiciones`.
+Demo manual (sin app ni tableta): `SimuladorGps` (`src/test/java/gt/muni/jalapa/ecoruta/herramientas/SimuladorGps.java`) sobre el mismo `POST /api/v1/telemetria/posiciones`.
 
 No se valida que el push se vea en el navegador (exige HTTPS y el front).

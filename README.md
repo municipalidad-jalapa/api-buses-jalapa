@@ -254,14 +254,15 @@ reales de las calles. Si la ruta cambia en la base, el simulador cambia con ella
 
 ```bash
 export ECORUTA_ADMIN_TOKEN='solo-para-desarrollo-local-no-usar-en-produccion'
-python3 tools/simulador-gps.py
+java src/test/java/gt/muni/jalapa/ecoruta/herramientas/SimuladorGps.java
 ```
 
-Solo necesita Python 3, nada que instalar. En el primer arranque aprovisiona un equipo y imprime
+Solo necesita Java 21, nada que instalar. En el primer arranque aprovisiona un equipo y imprime
 su credencial; guardala y reusala con `--credencial` para no crear uno nuevo cada vez:
 
 ```bash
-python3 tools/simulador-gps.py --credencial eq_AokFXQjVmNSW.8y8tT23HaA4...
+java src/test/java/gt/muni/jalapa/ecoruta/herramientas/SimuladorGps.java \
+     --credencial eq_AokFXQjVmNSW.8y8tT23HaA4...
 ```
 
 ### Parar
@@ -269,7 +270,7 @@ python3 tools/simulador-gps.py --credencial eq_AokFXQjVmNSW.8y8tT23HaA4...
 `Ctrl-C` en su terminal. Si lo lanzaste en segundo plano:
 
 ```bash
-pkill -f simulador-gps.py
+pkill -f SimuladorGps.java
 ```
 
 Parar el simulador **no borra nada**: la ultima posicion se queda como vigente y el mapa la sigue
@@ -285,12 +286,24 @@ mostrando con su hora. Es el mismo comportamiento que con el bus apagado.
 | `--vueltas` | `0` | numero de vueltas; `0` es sin fin |
 | `--api` | `http://localhost:8080` | contra que backend reportar |
 | `--credencial` | — | equipo ya aprovisionado; si falta, crea uno |
+| `--modo` | `directo` | `directo` habla con la API; `traccar` manda el protocolo del rastreador por TCP |
+| `--protocolo` | `tk103` | `tk103` (puerto 5002) o `gps103` (puerto 5001); solo aplica en modo traccar |
+| `--imei` | `860000000000001` | uniqueId que Traccar registrara (y que hay que asociar en `dispositivos_externos`) |
 
 La vuelta completa son 5.17 km, asi que a 30 km/h dura unos 10 minutos y a 120 unos 2.5.
 
 ```bash
 # Una sola vuelta, rapida, para comprobar que la cadena entera funciona
-python3 tools/simulador-gps.py --velocidad 300 --intervalo 0.5 --vueltas 1
+java src/test/java/gt/muni/jalapa/ecoruta/herramientas/SimuladorGps.java \
+     --velocidad 300 --intervalo 0.5 --vueltas 1
+```
+
+Para hablar con Traccar (protocolo del rastreador, no con la API) usa `--modo traccar`.
+Por defecto es `tk103` en el puerto 5002; la serie GPS103 es `--protocolo gps103` (puerto 5001):
+
+```bash
+java src/test/java/gt/muni/jalapa/ecoruta/herramientas/SimuladorGps.java \
+     --modo traccar --traccar-host 127.0.0.1 --protocolo tk103 --imei 860000000000001
 ```
 
 ### La ruta que recorre
