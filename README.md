@@ -112,6 +112,7 @@ mvn spring-boot:run
 | `PATCH` | `/api/v1/superadmin/cuentas/{id}` | `ROLE_SUPERADMIN` — rol, ruta, uid o estado |
 | `POST` | `/api/v1/superadmin/cuentas/{id}/desactivacion` | `ROLE_SUPERADMIN` |
 | `GET` `POST` `PATCH` | `/api/v1/superadmin/rutas`, `/api/v1/superadmin/paradas` | `ROLE_SUPERADMIN` |
+| `POST` `GET` `DELETE` | `/api/v1/conductor/atrasos`, `/api/v1/conductor/atrasos/vigente` | `ROLE_CONDUCTOR` — aviso de demora (SCRUM-26) |
 
 ## Roles y permisos
 
@@ -140,6 +141,25 @@ ECORUTA_SUPERADMIN_FIREBASE_UID=<uid de Firebase>
 Sin esa variable la cuenta existe pero nadie puede iniciar sesión como SuperAdmin, que es el fallo
 correcto: cerrado. Desde ahí se crean las demás cuentas con `POST /api/v1/superadmin/cuentas`, cada
 una con su propio uid. El sistema no deja desactivar ni degradar al último SuperAdmin activo.
+
+## Aviso de atraso del piloto
+
+El piloto avisa que viene demorado desde su panel: motivo (**tráfico** o **incidente**) y demora
+estimada en minutos. No elige ruta — es la que tiene asignada su cuenta, así que no puede reportar
+un atraso en la ruta de otro.
+
+El aviso viaja al pasajero dentro del ETA, en el campo `atraso` de
+`GET /api/v1/rutas/{rutaId}/eta`, y la app lo muestra junto al tiempo estimado. **Los minutos y la
+demora no se suman**: el cálculo mide lo que viene haciendo el bus y el aviso dice lo que el piloto
+espera que pase. Mezclarlos daría un número que nadie midió.
+
+El aviso se retira solo al cumplirse la demora más unos minutos de margen, o antes si el piloto
+usa "Ya se normalizó". Nunca se borra la fila: queda el historial de lo que pasó en la ruta.
+
+**Marcar quién abordó** ya lo resolvió SCRUM-171 y aquí se reutiliza tal cual: el pasajero responde
+en `POST /api/v1/reservas/{id}/abordaje` y el piloto corrige en
+`POST /api/v1/conductor/reservas/{id}/abordaje`, donde **el dato del piloto prevalece**. Desde
+SCRUM-26 el piloto solo puede corregir reservas de su propia ruta.
 
 ## Red de calles de Jalapa (desvío por calles)
 
