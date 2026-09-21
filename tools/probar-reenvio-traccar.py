@@ -1,17 +1,4 @@
 #!/usr/bin/env python3
-"""Prueba el reenvio de Traccar contra la API (sin frontend).
-
-Lee la muestra real versionada y la manda a
-POST /api/v1/integraciones/traccar/posiciones.
-
-    python3 tools/probar-reenvio-traccar.py              # 202 si hay asociacion
-    python3 tools/probar-reenvio-traccar.py --caso 401
-    python3 tools/probar-reenvio-traccar.py --caso 400
-    python3 tools/probar-reenvio-traccar.py --caso 422-dispositivo
-    python3 tools/probar-reenvio-traccar.py --caso 422-coordenadas
-
-Variables: API_BASE (http://localhost:8080), TRACCAR_TOKEN.
-"""
 
 import argparse
 import json
@@ -56,7 +43,7 @@ def enviar(base, token, cuerpo):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument("--caso", default="202",
                         choices=["202", "401", "400", "422-dispositivo", "422-coordenadas"])
     args = parser.parse_args()

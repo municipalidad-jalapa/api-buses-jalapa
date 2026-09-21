@@ -36,7 +36,6 @@ services:
       # cabecera X-Admin-Token para poder provisionar equipos en local. En
       # produccion esta variable NO se define: sin ella nadie es admin.
       ECORUTA_ADMIN_TOKEN: solo-para-desarrollo-local-no-usar-en-produccion
-      # SCRUM-24. Sin este token la integracion responde 401 a todo.
       TRACCAR_TOKEN: solo-para-desarrollo-local-traccar-32chars
       TRACCAR_UNIDAD_VELOCIDAD: NUDOS
     ports:

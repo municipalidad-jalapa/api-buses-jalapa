@@ -19,18 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Recibe el reenvio de Traccar y lo registra como telemetria (SCRUM-24).
- *
- * <p>Todo o nada en la validacion: si un dato es invalido o un dispositivo no
- * esta asociado a un equipo activo con vehiculo, se responde 422 y no se
- * registra ninguna lectura del reenvio. Lo que si se descarta sin rechazar
- * (ventana de 12 h, reenvio repetido) lo decide la telemetria, igual que para
- * el equipo a bordo.
- *
- * <p>El registro llama directo a {@link TelemetriaService}: no hay un segundo
- * salto HTTP al propio backend.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -46,7 +34,6 @@ public class RecepcionTraccar {
                 .map(reenvio -> LecturaTraccar.de(reenvio, traccar.unidadVelocidad()))
                 .toList();
 
-        // Se resuelven todos los dispositivos antes de registrar nada.
         Map<String, Equipo> equipos = new LinkedHashMap<>();
         for (LecturaTraccar lectura : lecturas) {
             equipos.computeIfAbsent(lectura.dispositivo(), this::equipoDe);

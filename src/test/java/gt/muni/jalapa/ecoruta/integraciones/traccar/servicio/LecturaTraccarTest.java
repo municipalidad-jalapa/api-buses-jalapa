@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
-/** SCRUM-24: traduccion del reenvio de Traccar al modelo de telemetria. */
 class LecturaTraccarTest {
 
     private static final Instant T = Instant.parse("2026-09-17T15:00:00Z");
@@ -46,7 +45,7 @@ class LecturaTraccarTest {
                 new ReenvioTraccar(new Posicion(null, 3L, 14.63, -89.98, 0.0, null, T), DISPOSITIVO),
                 UnidadVelocidad.NUDOS);
 
-        assertThat(lectura.lectura().registradoEn()).isEqualTo(T);   // deviceTime como respaldo
+        assertThat(lectura.lectura().registradoEn()).isEqualTo(T);
         assertThat(lectura.lectura().claveOrigen()).isEqualTo("traccar:860000000000001:" + T.toEpochMilli());
     }
 

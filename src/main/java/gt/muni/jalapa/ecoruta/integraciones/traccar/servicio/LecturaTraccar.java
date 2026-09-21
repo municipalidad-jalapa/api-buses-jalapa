@@ -7,17 +7,8 @@ import gt.muni.jalapa.ecoruta.telemetria.servicio.LecturaEntrante;
 
 import java.time.Instant;
 
-/**
- * Un reenvio de Traccar ya validado y traducido al modelo de EcoRuta.
- *
- * @param dispositivo uniqueId del dispositivo en Traccar
- */
 public record LecturaTraccar(String dispositivo, LecturaEntrante lectura) {
 
-    /**
-     * Valida y traduce. Datos invalidos lanzan {@link ReglaDeNegocioException}
-     * (422): el reenvio entero se rechaza sin registrar nada.
-     */
     public static LecturaTraccar de(ReenvioTraccar reenvio, UnidadVelocidad unidad) {
         if (reenvio == null || reenvio.position() == null) {
             throw new ReglaDeNegocioException("El reenvio no trae la posicion.");
@@ -49,8 +40,6 @@ public record LecturaTraccar(String dispositivo, LecturaEntrante lectura) {
             throw new ReglaDeNegocioException("La posicion no trae fecha (fixTime).");
         }
 
-        // La captura real reenvia position.id=0 (todavia no persistida). Ese 0
-        // no identifica la lectura: se usa el uniqueId y la fecha.
         String clave = posicion.id() != null && posicion.id() > 0
                 ? "traccar:" + posicion.id()
                 : "traccar:" + dispositivo + ":" + fecha.toEpochMilli();

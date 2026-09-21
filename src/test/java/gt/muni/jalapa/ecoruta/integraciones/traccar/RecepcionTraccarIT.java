@@ -21,7 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** SCRUM-24 (HU Desarrollo-144): recibir en la API las posiciones que reenvia Traccar. */
 class RecepcionTraccarIT extends IntegracionPostgisTest {
 
     static final String RUTA = "/api/v1/integraciones/traccar/posiciones";
@@ -44,8 +43,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 SELECT ?, id FROM equipos WHERE vehiculo_id = ? AND estado = 'ACTIVO'
                 """, IMEI, bus);
     }
-
-    // --- criterio 1: credencial de integracion ---------------------------------
 
     @Test
     void sin_cabecera_o_con_un_token_distinto_responde_401() throws Exception {
@@ -76,8 +73,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- criterio 2: dispositivo -> equipo -> vehiculo -------------------------
-
     @Test
     void una_posicion_valida_se_registra_para_el_vehiculo_del_equipo_asociado() throws Exception {
         enviar(reenvio(501, IMEI, 10, Instant.now()))
@@ -105,8 +100,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 .andExpect(status().isUnprocessableEntity());
         assertThat(filas()).isZero();
     }
-
-    // --- criterio 3: validacion y unidades --------------------------------------
 
     @Test
     void latitud_fuera_de_rango_o_sin_fecha_responde_422() throws Exception {
@@ -167,8 +160,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         assertThat(kmh).isEqualTo(18.52, org.assertj.core.data.Offset.offset(0.001));
     }
 
-    // --- criterio 4: ventana de 12 h ---------------------------------------------
-
     @Test
     void una_lectura_fuera_de_la_ventana_de_doce_horas_se_descarta() throws Exception {
         enviar(reenvio(10, IMEI, 10, Instant.now().minus(Duration.ofHours(13))))
@@ -177,8 +168,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 .andExpect(jsonPath("$.descartadas").value(1));
         assertThat(filas()).isZero();
     }
-
-    // --- criterios 5 y 7: sin duplicados, respuesta resumida ---------------------
 
     @Test
     void un_reenvio_repetido_no_genera_una_posicion_duplicada() throws Exception {
@@ -197,10 +186,10 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         enviar(reenvio(100, IMEI, 10, Instant.now())).andExpect(status().isAccepted());
 
         enviar("[" + String.join(",",
-                        reenvio(100, IMEI, 10, Instant.now()),                              // repetida
-                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30)),            // nueva
-                        reenvio(102, IMEI, 10, Instant.now().minus(Duration.ofHours(20))), // fuera de ventana
-                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30))) + "]")     // repetida en el lote
+                        reenvio(100, IMEI, 10, Instant.now()),
+                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30)),
+                        reenvio(102, IMEI, 10, Instant.now().minus(Duration.ofHours(20))),
+                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30))) + "]")
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.recibidas").value(4))
                 .andExpect(jsonPath("$.aceptadas").value(1))
@@ -226,7 +215,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         return jdbc.queryForObject("SELECT count(*) FROM posiciones_historicas", Integer.class);
     }
 
-    /** Formato de reenvio de Traccar (forward.type=json). La velocidad va en nudos. */
     static String reenvio(long idPosicion, String uniqueId, double nudos, Instant fixTime) {
         return """
                 {"position":{"id":%d,"deviceId":3,"protocol":"gt06","latitude":14.6335,"longitude":-89.9885,
@@ -235,10 +223,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 .formatted(idPosicion, nudos, fixTime, fixTime, uniqueId);
     }
 
-    /**
-     * Parte de la captura real. Se actualizan uniqueId, coordenadas y fechas para
-     * el caso de prueba: la estructura anidada no se inventa.
-     */
     private static String muestraReal(String uniqueId, Instant cuando, double latitud, double longitud)
             throws Exception {
         String original = new String(

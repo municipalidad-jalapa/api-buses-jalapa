@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""Simula el GPS del bus recorriendo el trazado de la ruta 1.
-
-Sin esto, un solo ping deja el marcador quieto. Cada paso es un reenvio
-Traccar real (mismo JSON anidado) para que el mapa deslice el bus.
-
-    API_BASE=http://127.0.0.1:18080 TRACCAR_TOKEN=... python3 tools/recorrer-ruta-traccar.py
-"""
 
 from __future__ import annotations
 
@@ -25,7 +18,6 @@ PASO_S = 2.0
 
 
 def vertices_ruta() -> list[tuple[float, float]]:
-    """(lat, lon) del LineString sembrado (GeoJSON viene lon, lat)."""
     geo = json.loads(
         Path("/tmp/trazado-ruta1.json").read_text(encoding="utf-8")
         if Path("/tmp/trazado-ruta1.json").exists()
@@ -33,7 +25,6 @@ def vertices_ruta() -> list[tuple[float, float]]:
     )
     if geo and geo.get("coordinates"):
         return [(lat, lon) for lon, lat in geo["coordinates"]]
-    # Respaldo: Parque Central → Mercado (por si no hay dump).
     return [
         (14.634878, -89.981202),
         (14.63436, -89.98277),
@@ -63,7 +54,6 @@ def rumbo_grados(a: tuple[float, float], b: tuple[float, float]) -> float:
 
 
 def nudos(a: tuple[float, float], b: tuple[float, float], segundos: float) -> float:
-    # Haversine en km, luego nudos (1 kn = 1.852 km/h).
     r = 6371.0
     dphi = math.radians(b[0] - a[0])
     dlam = math.radians(b[1] - a[1])

@@ -11,9 +11,6 @@ import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * El DTO se construye sobre la captura real de Traccar, no sobre un JSON inventado.
- */
 class ReenvioTraccarDeserializacionTest {
 
     private static final ObjectMapper JSON = JsonMapper.builder()

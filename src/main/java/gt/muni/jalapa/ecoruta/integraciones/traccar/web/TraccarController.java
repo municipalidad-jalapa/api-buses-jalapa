@@ -63,7 +63,6 @@ public class TraccarController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(recepcion.recibir(leer(cuerpo)));
     }
 
-    /** Traccar manda un objeto por posicion; se acepta tambien un arreglo. */
     private List<ReenvioTraccar> leer(JsonNode cuerpo) {
         List<JsonNode> nodos = new ArrayList<>();
         if (cuerpo.isArray()) {
