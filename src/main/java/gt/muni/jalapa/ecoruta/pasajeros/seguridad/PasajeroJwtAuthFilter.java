@@ -34,6 +34,19 @@ public class PasajeroJwtAuthFilter extends OncePerRequestFilter {
 
     private final EmisorDeJwt emisor;
 
+    /**
+     * Id de la cuenta del pasajero autenticado, o null si quien pide entra
+     * como invitado o con otro rol. Lo usan los endpoints que funcionan con y
+     * sin cuenta (reservas, opiniones).
+     */
+    public static Long pasajeroDe(org.springframework.security.core.Authentication autenticado) {
+        if (autenticado == null || autenticado.getAuthorities().stream()
+                .noneMatch(permiso -> ROL.equals(permiso.getAuthority()))) {
+            return null;
+        }
+        return Long.valueOf(autenticado.getName());
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest peticion, HttpServletResponse respuesta,
                                     FilterChain cadena) throws ServletException, IOException {

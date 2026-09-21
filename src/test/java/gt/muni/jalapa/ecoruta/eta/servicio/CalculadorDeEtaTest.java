@@ -217,7 +217,7 @@ class CalculadorDeEtaTest {
 
     @Test
     void una_posicion_mas_vieja_que_el_umbral_se_considera_vieja() {
-        CalculadorDeEta calculador = new CalculadorDeEta(null, null, null, PROPIEDADES,
+        CalculadorDeEta calculador = new CalculadorDeEta(null, null, null, PROPIEDADES, null, null,
                 Clock.fixed(T0, ZoneOffset.UTC));
 
         assertThat(calculador.esVieja(T0.minusSeconds(120), T0)).isFalse();

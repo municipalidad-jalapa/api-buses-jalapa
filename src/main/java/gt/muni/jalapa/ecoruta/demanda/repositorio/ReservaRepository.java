@@ -79,6 +79,13 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     );
 
     /**
+     * SCRUM-26, bloque B.2. Reservas de una cuenta de pasajero, de la mas
+     * reciente a la mas antigua. Solo aparecen las que se vincularon a la
+     * cuenta; las anonimas de otro navegador no.
+     */
+    List<Reserva> findByPasajeroIdOrderByCreadoEnDesc(Long pasajeroId);
+
+    /**
      * Pasa a EXPIRADA toda reserva vigente cuya fecha de expiracion ya paso. Es
      * un UPDATE masivo: lo corre la tarea programada sin cargar entidades.
      *

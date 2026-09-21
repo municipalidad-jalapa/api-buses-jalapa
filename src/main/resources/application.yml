@@ -73,6 +73,16 @@ ecoruta:
     # recta por el factor.
     desvio-metros: 60
     factor-desvio: 1.3
+  red-de-calles:
+    # SCRUM-26, bloque C. Camino real por las calles de Jalapa (OpenStreetMap
+    # importado en la base, migraciones V19/V20) para estimar la vuelta al
+    # trazado cuando el bus se desvia. No consume ningun servicio externo.
+    # Con habilitada: false se vuelve a la estimacion por ecoruta.eta.factor-desvio.
+    habilitada: ${RED_DE_CALLES_HABILITADA:true}
+    # A mas de esta distancia no hay calle que enganchar: se estima por factor.
+    radio-nodo-metros: 150
+    # Puntos del trazado por delante que se prueban como reincorporacion.
+    candidatos: 12
   integraciones:
     traccar:
       # SCRUM-24. Secreto que Traccar envia en X-Traccar-Token (forward.header).

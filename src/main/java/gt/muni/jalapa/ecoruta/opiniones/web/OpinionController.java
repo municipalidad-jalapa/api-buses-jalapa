@@ -66,16 +66,7 @@ public class OpinionController {
             @RequestBody CrearOpinionRequest peticion,
             Authentication autenticado) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(servicio.registrar(dispositivoId, pasajeroDe(autenticado), peticion));
-    }
-
-    /** Con sesion de pasajero la opinion queda tambien en su cuenta (bloque B). */
-    private static Long pasajeroDe(Authentication autenticado) {
-        if (autenticado == null || autenticado.getAuthorities().stream()
-                .noneMatch(a -> PasajeroJwtAuthFilter.ROL.equals(a.getAuthority()))) {
-            return null;
-        }
-        return Long.valueOf(autenticado.getName());
+                .body(servicio.registrar(dispositivoId, PasajeroJwtAuthFilter.pasajeroDe(autenticado), peticion));
     }
 
     @Operation(summary = "Lista las opiniones para el panel municipal",

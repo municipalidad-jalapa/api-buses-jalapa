@@ -20,6 +20,19 @@ Característica: Sesión opcional del pasajero
     Cuando vincula el navegador "nav-bdd"
     Entonces se vincularon 0 reservas y 0 opinión
 
+  @B2-criterio-4
+  Escenario: Con cuenta, el pasajero ve y cancela sus reservas desde otro teléfono
+    Dado que el navegador "nav-bdd-ana" tiene una reserva vigente como invitado
+    Y que el navegador "nav-bdd-otro" tiene una reserva vigente como invitado
+    Y que la cuenta de Google "uid-bdd-ana" inició sesión como pasajero
+    Cuando vincula el navegador "nav-bdd-ana"
+    Y consulta sus reservas desde otro teléfono
+    Entonces solo aparece la reserva del navegador "nav-bdd-ana"
+    Cuando cancela desde otro teléfono la reserva del navegador "nav-bdd-ana"
+    Entonces la respuesta tiene codigo 204
+    Cuando cancela desde otro teléfono la reserva del navegador "nav-bdd-otro"
+    Entonces la respuesta tiene codigo 403
+
   @B2-criterio-5
   Escenario: El rol de pasajero no entra al panel del conductor
     Dado que la cuenta de Google "uid-bdd-ana" inició sesión como pasajero

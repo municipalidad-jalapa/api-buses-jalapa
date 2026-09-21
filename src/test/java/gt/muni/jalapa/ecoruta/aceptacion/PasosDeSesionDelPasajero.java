@@ -11,13 +11,13 @@ import io.cucumber.java.Before;
 import io.cucumber.java.es.Cuando;
 import io.cucumber.java.es.Dado;
 import io.cucumber.java.es.Entonces;
-import io.cucumber.java.es.Y;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
@@ -48,6 +48,7 @@ public class PasosDeSesionDelPasajero {
     private PasajeroProperties propiedades;
 
     private Sesion sesion;
+    private String misReservas;
     private Vinculacion vinculacion;
 
     @Before("@bloque-B")
@@ -92,6 +93,40 @@ public class PasosDeSesionDelPasajero {
     public void se_vincularon(int reservas, int opiniones) {
         assertThat(vinculacion.reservasVinculadas()).isEqualTo(reservas);
         assertThat(vinculacion.opinionesVinculadas()).isEqualTo(opiniones);
+    }
+
+    @Dado("que el navegador {string} tiene una reserva vigente como invitado")
+    public void reserva_vigente(String navegador) {
+        jdbc.update("""
+                INSERT INTO registros_espera (dispositivo_id, parada_id, estado, creado_en, expira_en)
+                VALUES (?, 1, 'ACTIVA', now(), now() + interval '5 minutes')
+                """, navegador);
+    }
+
+    /** Otro telefono = la misma cuenta, sin el identificador anonimo del navegador. */
+    @Cuando("consulta sus reservas desde otro teléfono")
+    public void consulta_sus_reservas() throws Exception {
+        misReservas = mockMvc.perform(get("/api/v1/reservas/mias")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + sesion.token()))
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    @Entonces("solo aparece la reserva del navegador {string}")
+    public void solo_aparece(String navegador) {
+        assertThat(misReservas).contains("\"id\":" + reservaDe(navegador));
+        assertThat(misReservas.split("\"id\":")).hasSize(2);
+    }
+
+    @Cuando("cancela desde otro teléfono la reserva del navegador {string}")
+    public void cancela_desde_otro_telefono(String navegador) throws Exception {
+        contexto.guardarRespuesta(mockMvc.perform(delete("/api/v1/reservas/" + reservaDe(navegador))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + sesion.token())));
+    }
+
+    private Long reservaDe(String navegador) {
+        return jdbc.queryForObject(
+                "SELECT id FROM registros_espera WHERE dispositivo_id = ? ORDER BY id DESC LIMIT 1",
+                Long.class, navegador);
     }
 
     @Cuando("el pasajero consulta el panel del conductor")

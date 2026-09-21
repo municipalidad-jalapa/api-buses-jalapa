@@ -144,6 +144,36 @@ class SesionPasajeroIT extends IntegracionPostgisTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void con_cuenta_la_reserva_vinculada_se_ve_y_se_cancela_desde_otro_telefono() throws Exception {
+        Long propia = reservaVigenteDe("nav-ana");
+        Long ajena = reservaVigenteDe("nav-otro");
+        String token = iniciar("tk-ana");
+        vincular(token, "nav-ana").andExpect(status().isOk());
+
+        // Otro telefono: no lleva el identificador del navegador original.
+        mockMvc.perform(get("/api/v1/reservas/" + propia).header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(propia));
+        mockMvc.perform(get("/api/v1/reservas/" + ajena).header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/v1/reservas/mias").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(propia));
+
+        mockMvc.perform(delete("/api/v1/reservas/" + propia).header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isNoContent());
+        assertThat(jdbc.queryForObject("SELECT estado FROM registros_espera WHERE id = ?", String.class, propia))
+                .isEqualTo("CANCELADA");
+    }
+
+    @Test
+    void sin_sesion_de_pasajero_no_hay_lista_de_reservas_propias() throws Exception {
+        mockMvc.perform(get("/api/v1/reservas/mias")).andExpect(status().isForbidden());
+    }
+
     private String iniciar(String idToken) throws Exception {
         String cuerpo = mockMvc.perform(post("/api/v1/sesion/pasajero").contentType(APPLICATION_JSON)
                         .content("{\"idToken\":\"" + idToken + "\"}"))
@@ -168,6 +198,13 @@ class SesionPasajeroIT extends IntegracionPostgisTest {
         return jdbc.queryForObject("""
                 INSERT INTO registros_espera (dispositivo_id, parada_id, estado, creado_en, expira_en)
                 VALUES (?, 1, 'CANCELADA', now(), now() + interval '5 minutes') RETURNING id
+                """, Long.class, dispositivo);
+    }
+
+    private Long reservaVigenteDe(String dispositivo) {
+        return jdbc.queryForObject("""
+                INSERT INTO registros_espera (dispositivo_id, parada_id, estado, creado_en, expira_en)
+                VALUES (?, 1, 'ACTIVA', now(), now() + interval '5 minutes') RETURNING id
                 """, Long.class, dispositivo);
     }
 

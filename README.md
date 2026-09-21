@@ -41,11 +41,12 @@ problema de tu configuración.
 
 | Herramienta | Versión | Para qué |
 |---|---|---|
-| **Docker Desktop** | Cualquiera reciente | Base de datos, backend y pruebas de integración |
+| **Docker Desktop** | Cualquiera reciente | Base de datos (PostGIS + pgRouting), backend y pruebas de integración |
 | **JDK** | 21 (LTS) | Compilar el backend |
 | **Maven** | 3.9+ | Build del backend |
 | **Node.js** | 20.19+ o 22.12+ | App web (Vite 7 no arranca con menos) |
 | **Git** | Cualquiera reciente | — |
+| **Python** | 3.10+ | Solo para regenerar la red de calles desde OpenStreetMap |
 
 Verificá todo de una vez:
 
@@ -102,6 +103,43 @@ mvn spring-boot:run
 | `POST` | `/api/v1/admin/sesion/renovacion` | `ROLE_ADMIN` — renueva la sesión mientras hay actividad |
 | `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
 | `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
+| `POST` | `/api/v1/opiniones` | público — queja, comentario o calificación (SCRUM-26) |
+| `GET` `PATCH` | `/api/v1/opiniones`, `/api/v1/opiniones/{id}/atendida` | `ROLE_ADMIN` — panel municipal |
+| `POST` | `/api/v1/sesion/pasajero` | público — idToken de Google → JWT de pasajero (SCRUM-26) |
+| `POST` | `/api/v1/sesion/pasajero/vincular` | **sesión de pasajero** — adopta lo hecho como invitado |
+| `GET` | `/api/v1/reservas/mias` | **sesión de pasajero** — sus reservas desde cualquier teléfono |
+
+## Red de calles de Jalapa (desvío por calles)
+
+Cuando el bus se sale del trazado, el ETA ya no estima la vuelta como una línea recta multiplicada
+por un factor: calcula el **camino más corto real por las calles**, respetando el sentido de las
+vías. Eso necesita dos cosas.
+
+**1. La base tiene que traer pgRouting.** La imagen es `pgrouting/pgrouting:17-3.5-3.8` (es la de
+PostGIS más la extensión) en `docker-compose.yml`, en Testcontainers y en el despliegue. Si la base
+de un entorno todavía no la tiene, la migración `V19` falla al crear la extensión.
+
+**2. Las calles viven en la base, no en un servicio externo.** En ejecución no se llama a OSRM, ni
+a Google, ni a Mapbox: solo se consulta `calles` con `pgr_dijkstra`. Los datos vienen de
+OpenStreetMap (© colaboradores de OpenStreetMap, ODbL) y los trae la migración generada
+`V20__red_de_calles_de_jalapa.sql`.
+
+Para regenerarla (por ejemplo, si OSM se actualizó o hay que ampliar el área):
+
+```bash
+python herramientas/importar_calles_osm.py
+# o con otro recuadro:
+python herramientas/importar_calles_osm.py --bbox 14.60,-90.03,14.68,-89.95
+```
+
+El script descarga las vías con la API de Overpass, las parte en los cruces (una arista entre cruce
+y cruce, como haría `osm2pgrouting`) y reescribe la migración. Al cambiarla hay que recrear la base
+local: `docker compose down -v && docker compose up -d db`.
+
+Si en algún entorno no conviene enrutar por calles, `ecoruta.red-de-calles.habilitada: false`
+(o `RED_DE_CALLES_HABILITADA=false`) vuelve a la estimación por factor sin tocar código. Lo mismo
+pasa solo, y queda en el log, cuando el bus está lejos de cualquier calle importada o no hay camino
+posible.
 
 ## Cuenta de administrador del panel municipal
 

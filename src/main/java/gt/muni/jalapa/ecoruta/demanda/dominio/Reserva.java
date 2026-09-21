@@ -53,6 +53,13 @@ public class Reserva {
     @ToString.Include
     private String dispositivoId;
 
+    /**
+     * SCRUM-26, bloque B. Cuenta del pasajero, si la reserva quedo vinculada a
+     * una. Opcional a proposito: el uso anonimo sigue funcionando sin cuenta.
+     */
+    @Column(name = "pasajero_id")
+    private Long pasajeroId;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "parada_id", nullable = false)
     private Parada parada;
@@ -203,6 +210,18 @@ public class Reserva {
      */
     public boolean perteneceA(String dispositivoId) {
         return this.dispositivoId.equals(dispositivoId);
+    }
+
+    /**
+     * SCRUM-26, bloque B.2. La reserva es de quien la creo desde este
+     * navegador o de la cuenta a la que quedo vinculada. Asi el pasajero con
+     * sesion sigue viendo y cancelando lo suyo desde otro telefono.
+     *
+     * @param pasajeroId cuenta autenticada; null si entra como invitado
+     */
+    public boolean perteneceA(String dispositivoId, Long pasajeroId) {
+        return perteneceA(dispositivoId)
+                || (pasajeroId != null && pasajeroId.equals(this.pasajeroId));
     }
 
     /**

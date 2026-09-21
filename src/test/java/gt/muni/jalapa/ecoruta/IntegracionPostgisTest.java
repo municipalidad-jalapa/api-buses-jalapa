@@ -47,7 +47,9 @@ public abstract class IntegracionPostgisTest {
     static final PostgreSQLContainer<?> POSTGIS = new PostgreSQLContainer<>(
             // Sin asCompatibleSubstituteFor, PostgreSQLContainer rechaza la imagen
             // por no llamarse "postgres".
-            DockerImageName.parse("postgis/postgis:17-3.5")
+            // SCRUM-26, bloque C: la imagen trae ademas pgRouting, que usa el
+            // enrutado del desvio por calles.
+            DockerImageName.parse("pgrouting/pgrouting:17-3.5-3.8")
                     .asCompatibleSubstituteFor("postgres"));
 
     static {
