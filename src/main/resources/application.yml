@@ -26,8 +26,8 @@ ecoruta:
     project-id: ${FIREBASE_PROJECT_ID:}
   demanda:
     umbral-salida: 10
-    # Vigencia de una reserva desde que se crea o se renueva (SCRUM-307, HU-135).
-    ttl-minutos: 5
+    # Desarrollo-135 / SCRUM-307: la reserva dura estos minutos desde que se crea.
+    vigencia-minutos: 5
     # Cada cuanto la tarea programada barre las reservas vencidas.
     barrido-segundos: 60
     geocerca-metros: ${DEMANDA_GEOCERCA_METROS:150}

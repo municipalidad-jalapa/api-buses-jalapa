@@ -79,7 +79,7 @@ public class ReservaService {
             );
         }
 
-        if (reservas.existeVigentePorDispositivo(
+        if (reservas.existsByDispositivoIdAndEstadoIn(
                 peticion.dispositivoId(),
                 ESTADOS_VIGENTES
         )) {
@@ -113,7 +113,7 @@ public class ReservaService {
                 parada,
                 EstadoReserva.ACTIVA,
                 ahora,
-                ahora.plus(demanda.ttl())
+                ahora.plus(demanda.vigencia())
         );
 
         try {
@@ -176,7 +176,7 @@ public class ReservaService {
         }
 
         reserva.renovar(
-                ahora.plus(demanda.ttl())
+                ahora.plus(demanda.vigencia())
         );
 
         return ReservaResponse.de(reserva);

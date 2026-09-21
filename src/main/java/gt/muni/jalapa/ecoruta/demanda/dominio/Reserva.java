@@ -22,6 +22,11 @@ import java.time.Instant;
 /**
  * Registro de un pasajero esperando en una parada ({@code registros_espera}).
  *
+ * <p>Nace {@link EstadoReserva#ACTIVA} con una vigencia de pocos minutos que
+ * viaja en {@link #expiraEn}. Renovarla la deja {@link EstadoReserva#RENOVADA}
+ * SIN cambiar su identificador; si la vigencia vence, la tarea programada la
+ * pasa a {@link EstadoReserva#EXPIRADA}.
+ *
  * <p>SCRUM-306 crea la reserva en estado {@link EstadoReserva#ACTIVA}. HU-135
  * la renueva, HU-124 la cancela y HU-57 registra si el pasajero logro subir.
  *
@@ -43,6 +48,7 @@ public class Reserva {
     @ToString.Include
     private Long id;
 
+    /** Identificador opaco del dispositivo del pasajero. No hay login. */
     @Column(name = "dispositivo_id", nullable = false, length = 36)
     @ToString.Include
     private String dispositivoId;
@@ -54,11 +60,12 @@ public class Reserva {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 20)
     @ToString.Include
-    private EstadoReserva estado;
+    private EstadoReserva estado = EstadoReserva.ACTIVA;
 
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
 
+    /** Momento en que la reserva deja de estar vigente. Lo fija el servicio. */
     @Column(name = "expira_en", nullable = false)
     @ToString.Include
     private Instant expiraEn;
@@ -138,6 +145,10 @@ public class Reserva {
         this.creadoEn = creadoEn;
         this.expiraEn = expiraEn;
         this.pasajeroDeclaroNoAbordo = false;
+    }
+
+    public Reserva(String dispositivoId, Parada parada, Instant expiraEn) {
+        this(dispositivoId, parada, EstadoReserva.ACTIVA, Instant.now(), expiraEn);
     }
 
     /**
