@@ -124,6 +124,10 @@ ecoruta:
     # La contrasena vive solo en Firebase; nunca en el repositorio.
     firebase-uid-inicial: ${ECORUTA_ADMIN_FIREBASE_UID:}
     usuario-inicial: ${ECORUTA_ADMIN_USUARIO:admin}
+    # SCRUM-26, bloque D. La cuenta de SuperAdmin la crea la migracion V21 sin
+    # identidad; con esta variable el arranque le enlaza su uid de Firebase.
+    # Vacio = nadie puede entrar como SuperAdmin en este entorno.
+    superadmin-firebase-uid: ${ECORUTA_SUPERADMIN_FIREBASE_UID:}
   admin:
     # PROVISIONAL de SCRUM-142 - TODO(SCRUM-134). Concede ROLE_ADMIN por la
     # cabecera X-Admin-Token mientras no exista la autenticacion de personas con

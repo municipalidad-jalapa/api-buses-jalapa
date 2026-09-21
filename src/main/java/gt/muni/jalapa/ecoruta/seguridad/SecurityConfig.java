@@ -205,7 +205,25 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/conductor/**").hasRole("CONDUCTOR")
 
                         /*
-                         * ADMINISTRACIÓN
+                         * SCRUM-26, bloque D. El pasajero con sesion tiene lo
+                         * suyo: sus reservas, desde cualquier telefono.
+                         */
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reservas/mias").permitAll()
+
+                        /*
+                         * ADMINISTRACIÓN DEL SISTEMA (SCRUM-26, bloque D)
+                         *
+                         * Solo el SuperAdmin crea, edita y desactiva cuentas y
+                         * administra rutas, paradas y vehiculos. La cuenta de
+                         * municipalidad mira el panel, pero no administra: en
+                         * estas rutas recibe 403.
+                         */
+                        .requestMatchers("/api/v1/superadmin/**").hasRole("SUPERADMIN")
+                        .requestMatchers("/api/v1/admin/vehiculos/**").hasRole("SUPERADMIN")
+                        .requestMatchers("/api/v1/admin/equipos/**").hasRole("SUPERADMIN")
+
+                        /*
+                         * PANEL MUNICIPAL (consulta)
                          */
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 

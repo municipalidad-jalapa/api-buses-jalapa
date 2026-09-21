@@ -95,10 +95,10 @@ mvn spring-boot:run
 | `POST` | `/api/v1/telemetria/posiciones` | **credencial de equipo** (`Authorization: Bearer eq_…`) |
 | `GET` | `/api/v1/telemetria/posicion` | público |
 | `GET` | `/api/v1/telemetria/stream` | público (SSE) |
-| `POST` `GET` | `/api/v1/admin/vehiculos` | `ROLE_ADMIN` |
-| `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_ADMIN` — cambia el equipo del bus |
-| `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_ADMIN` |
-| `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_ADMIN` |
+| `POST` `GET` | `/api/v1/admin/vehiculos` | `ROLE_SUPERADMIN` |
+| `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_SUPERADMIN` — cambia el equipo del bus |
+| `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_SUPERADMIN` |
+| `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_SUPERADMIN` |
 | `POST` | `/api/v1/auth/admin` | público — idToken de Firebase → JWT de administrador (SCRUM-173) |
 | `POST` | `/api/v1/admin/sesion/renovacion` | `ROLE_ADMIN` — renueva la sesión mientras hay actividad |
 | `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
@@ -108,6 +108,38 @@ mvn spring-boot:run
 | `POST` | `/api/v1/sesion/pasajero` | público — idToken de Google → JWT de pasajero (SCRUM-26) |
 | `POST` | `/api/v1/sesion/pasajero/vincular` | **sesión de pasajero** — adopta lo hecho como invitado |
 | `GET` | `/api/v1/reservas/mias` | **sesión de pasajero** — sus reservas desde cualquier teléfono |
+| `GET` `POST` | `/api/v1/superadmin/cuentas` | `ROLE_SUPERADMIN` — cuentas de operación (SCRUM-26) |
+| `PATCH` | `/api/v1/superadmin/cuentas/{id}` | `ROLE_SUPERADMIN` — rol, ruta, uid o estado |
+| `POST` | `/api/v1/superadmin/cuentas/{id}/desactivacion` | `ROLE_SUPERADMIN` |
+| `GET` `POST` `PATCH` | `/api/v1/superadmin/rutas`, `/api/v1/superadmin/paradas` | `ROLE_SUPERADMIN` |
+
+## Roles y permisos
+
+El sistema tiene **cuatro roles**. Tres son cuentas de operación y viven en `usuarios.rol`; el
+cuarto, el pasajero, no es una cuenta de operación: vive en `pasajeros` y su rol viaja en su propio
+JWT, así que puede no existir (modo invitado).
+
+| Rol | Quién es | Qué puede hacer |
+|---|---|---|
+| **Pasajero** | Quien usa la app, con cuenta de Google o como invitado | Mapa, ETA, reservar, opinar y ver lo suyo |
+| **Piloto** (`CONDUCTOR`) | El conductor del bus | Su panel y **solo su ruta asignada** (`usuarios.ruta_id`) |
+| **Municipalidad** (`ADMIN`) | Quien supervisa el servicio | Panel municipal y opiniones. **No** administra |
+| **SuperAdmin** (`SUPERADMIN`) | Quien administra el sistema | Todo lo anterior, más cuentas, rutas, paradas y vehículos |
+
+Cada endpoint declara qué roles lo pueden invocar en `SecurityConfig`; un rol que no corresponde
+recibe **403**, y eso está fijado con pruebas (`RolesYPermisosIT` y `roles_y_permisos.feature`).
+
+La cuenta inicial de SuperAdmin la crea la migración `V21` **sin identidad**: la contraseña y el uid
+viven en Firebase y no pueden quedar en el repositorio. Para que pueda entrar, al desplegar se
+define su uid:
+
+```bash
+ECORUTA_SUPERADMIN_FIREBASE_UID=<uid de Firebase>
+```
+
+Sin esa variable la cuenta existe pero nadie puede iniciar sesión como SuperAdmin, que es el fallo
+correcto: cerrado. Desde ahí se crean las demás cuentas con `POST /api/v1/superadmin/cuentas`, cada
+una con su propio uid. El sistema no deja desactivar ni degradar al último SuperAdmin activo.
 
 ## Red de calles de Jalapa (desvío por calles)
 
