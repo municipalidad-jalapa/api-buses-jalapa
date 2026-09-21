@@ -113,6 +113,7 @@ mvn spring-boot:run
 | `POST` | `/api/v1/superadmin/cuentas/{id}/desactivacion` | `ROLE_SUPERADMIN` |
 | `GET` `POST` `PATCH` | `/api/v1/superadmin/rutas`, `/api/v1/superadmin/paradas` | `ROLE_SUPERADMIN` |
 | `POST` `GET` `DELETE` | `/api/v1/conductor/atrasos`, `/api/v1/conductor/atrasos/vigente` | `ROLE_CONDUCTOR` — aviso de demora (SCRUM-26) |
+| `GET` | `/api/v1/admin/abordajes` | `ROLE_ADMIN` — pasajeros subidos por ruta, vehículo y periodo |
 
 ## Roles y permisos
 
@@ -141,6 +142,19 @@ ECORUTA_SUPERADMIN_FIREBASE_UID=<uid de Firebase>
 Sin esa variable la cuenta existe pero nadie puede iniciar sesión como SuperAdmin, que es el fallo
 correcto: cerrado. Desde ahí se crean las demás cuentas con `POST /api/v1/superadmin/cuentas`, cada
 una con su propio uid. El sistema no deja desactivar ni degradar al último SuperAdmin activo.
+
+## Métricas del panel municipal
+
+**Pasajeros subidos.** `GET /api/v1/admin/abordajes` cuenta los abordajes **que marcó el piloto**,
+desglosados por ruta, por vehículo y por periodo (`granularidad` = `dia`, `semana` o `mes`). Lo que
+respondió el pasajero no entra en el conteo: si se sumaran las dos fuentes, el número dejaría de ser
+comparable entre rutas. La pantalla lo dice, para que nadie lea la cifra como "cuánta gente viajó".
+
+**Tres valoraciones, no una.** Además de la calificación general del bloque A, la opinión acepta
+`calidad`, `limpieza` y `conduccion`, cada una de 1 a 5 y **todas opcionales**: el servicio puede ser
+puntual con la unidad sucia, o la unidad impecable y el piloto manejando mal. El panel promedia cada
+dimensión por separado, por ruta y por vehículo; una dimensión que nadie puntuó se muestra como
+**"sin datos"**, nunca como un cero que parezca mala nota.
 
 ## Aviso de atraso del piloto
 

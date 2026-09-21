@@ -65,6 +65,21 @@ public class Opinion {
     @Column(name = "estrellas")
     private Integer estrellas;
 
+    /**
+     * SCRUM-26, bloque F: tres valoraciones independientes, de 1 a 5, que la
+     * gente puntua por separado porque miden cosas distintas. Opcionales: una
+     * opinion puede traer solo texto, solo la calificacion general o cualquier
+     * combinacion.
+     */
+    @Column(name = "calidad")
+    private Integer calidad;
+
+    @Column(name = "limpieza")
+    private Integer limpieza;
+
+    @Column(name = "conduccion")
+    private Integer conduccion;
+
     @Column(name = "creada_en", nullable = false, insertable = false, updatable = false)
     @Generated(event = EventType.INSERT)
     private Instant creadaEn;

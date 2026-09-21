@@ -68,12 +68,16 @@ public class OpinionService {
         }
         String texto = StringUtils.hasText(peticion.texto()) ? peticion.texto().strip() : null;
         Integer estrellas = peticion.estrellas();
-        if (texto == null && estrellas == null) {
+        // SCRUM-26, bloque F: las tres valoraciones cuentan como contenido.
+        boolean hayValoracion = estrellas != null || peticion.calidad() != null
+                || peticion.limpieza() != null || peticion.conduccion() != null;
+        if (texto == null && !hayValoracion) {
             throw new ReglaDeNegocioException("Escribe un comentario o elige una calificacion.");
         }
-        if (estrellas != null && (estrellas < 1 || estrellas > 5)) {
-            throw new ReglaDeNegocioException("La calificacion va de 1 a 5 estrellas.");
-        }
+        validarEstrellas(estrellas, "La calificacion");
+        validarEstrellas(peticion.calidad(), "La calidad del servicio");
+        validarEstrellas(peticion.limpieza(), "La limpieza de la unidad");
+        validarEstrellas(peticion.conduccion(), "La conduccion del piloto");
         if (texto != null && texto.codePointCount(0, texto.length()) > propiedades.textoMaximo()) {
             throw new ReglaDeNegocioException(
                     "El comentario admite hasta %d caracteres.".formatted(propiedades.textoMaximo()));
@@ -101,8 +105,17 @@ public class OpinionService {
         opinion.setPasajeroId(pasajeroId);
         opinion.setTexto(texto);
         opinion.setEstrellas(estrellas);
+        opinion.setCalidad(peticion.calidad());
+        opinion.setLimpieza(peticion.limpieza());
+        opinion.setConduccion(peticion.conduccion());
         Opinion guardada = opiniones.save(opinion);
         return new OpinionCreadaResponse(guardada.getId(), guardada.getRutaId(), guardada.getVehiculoId());
+    }
+
+    private static void validarEstrellas(Integer valor, String que) {
+        if (valor != null && (valor < 1 || valor > 5)) {
+            throw new ReglaDeNegocioException("%s va de 1 a 5 estrellas.".formatted(que));
+        }
     }
 
     /** Filtros opcionales: null = sin filtrar por ese campo. */
@@ -126,7 +139,9 @@ public class OpinionService {
         conPagina.add((long) pagina * tamano);
         List<OpinionResponse> lista = jdbc.query("""
                         SELECT o.id, o.creada_en, o.tipo, o.ruta_id, r.nombre AS ruta, o.vehiculo_id,
-                               v.identificador AS vehiculo, o.estrellas, o.texto, o.atendida_en, o.atendida_por
+                               v.identificador AS vehiculo, o.estrellas,
+                               o.calidad, o.limpieza, o.conduccion,
+                               o.texto, o.atendida_en, o.atendida_por
                           FROM opiniones o
                           JOIN rutas r ON r.id = o.ruta_id
                           LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
@@ -185,18 +200,33 @@ public class OpinionService {
         return donde.toString();
     }
 
+    /**
+     * Promedios agrupados, con cada dimension por separado (bloque F). Una
+     * dimension que nadie puntuo sale en null: es "sin datos", no un cero.
+     */
     private List<Promedio> promedios(String id, String nombre, String union, String donde, List<Object> parametros) {
         return jdbc.query("SELECT " + id + " AS id, " + nombre + " AS nombre, "
-                        + "avg(o.estrellas) AS promedio, count(o.estrellas) AS calificadas, count(*) AS opiniones "
+                        + "avg(o.estrellas) AS promedio, avg(o.calidad) AS calidad, "
+                        + "avg(o.limpieza) AS limpieza, avg(o.conduccion) AS conduccion, "
+                        + "count(o.estrellas) AS calificadas, count(*) AS opiniones "
                         + "FROM opiniones o " + union + donde
                         + " GROUP BY " + id + ", " + nombre + " ORDER BY " + nombre,
-                (rs, i) -> {
-                    double promedio = rs.getDouble("promedio");
-                    return new Promedio(rs.getLong("id"), rs.getString("nombre"),
-                            rs.wasNull() ? null : Math.round(promedio * 10) / 10.0,
-                            rs.getLong("calificadas"), rs.getLong("opiniones"));
-                },
+                (rs, i) -> new Promedio(rs.getLong("id"), rs.getString("nombre"),
+                        redondear(rs, "promedio"), redondear(rs, "calidad"),
+                        redondear(rs, "limpieza"), redondear(rs, "conduccion"),
+                        rs.getLong("calificadas"), rs.getLong("opiniones")),
                 parametros.toArray());
+    }
+
+    /** Un decimal, o null si nadie puntuo. */
+    private static Double redondear(java.sql.ResultSet rs, String columna) throws java.sql.SQLException {
+        double valor = rs.getDouble(columna);
+        return rs.wasNull() ? null : Math.round(valor * 10) / 10.0;
+    }
+
+    private static Integer entero(java.sql.ResultSet rs, String columna) throws java.sql.SQLException {
+        int valor = rs.getInt(columna);
+        return rs.wasNull() ? null : valor;
     }
 
     /** El texto sale neutralizado: lo que la persona escribio se muestra, nunca se interpreta. */
@@ -216,6 +246,9 @@ public class OpinionService {
                 conVehiculo,
                 rs.getString("vehiculo"),
                 conEstrellas,
+                entero(rs, "calidad"),
+                entero(rs, "limpieza"),
+                entero(rs, "conduccion"),
                 texto == null ? null : HtmlUtils.htmlEscape(texto),
                 atendida == null ? null : atendida.toInstant(),
                 rs.getString("atendida_por") == null ? null : HtmlUtils.htmlEscape(rs.getString("atendida_por")));
