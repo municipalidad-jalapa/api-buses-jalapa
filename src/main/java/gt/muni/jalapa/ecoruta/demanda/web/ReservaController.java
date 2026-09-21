@@ -168,8 +168,6 @@ public class ReservaController {
         return reservaService.renovar(id, dispositivoId);
     }
 
-    }
-
     /**
      * HU-124.
      * Cancelar una reserva.
