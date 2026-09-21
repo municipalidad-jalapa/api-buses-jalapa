@@ -157,14 +157,16 @@ Cada una solo abre su propia ruta.
    TRACCAR_UNIDAD_VELOCIDAD=NUDOS
    ```
 
-2. Configurar el reenvío en `traccar.xml`:
+2. Configurar el reenvío en `traccar.xml` (Traccar 6.14+: `forward.type=json`; `forward.json=true` ya no aplica):
 
    ```xml
-   <entry key='forward.enable'>true</entry>
    <entry key='forward.url'>https://<api>/api/v1/integraciones/traccar/posiciones</entry>
-   <entry key='forward.json'>true</entry>
+   <entry key='forward.type'>json</entry>
    <entry key='forward.header'>X-Traccar-Token: <secreto-largo></entry>
    ```
+
+   El cuerpo real es `{ "position": {...}, "device": {...} }`. No es un objeto plano.
+   Detalle de campos y la muestra versionada: `docs/integraciones/traccar-formato-reenvio.md`.
 
 3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el equipo del bus:
 

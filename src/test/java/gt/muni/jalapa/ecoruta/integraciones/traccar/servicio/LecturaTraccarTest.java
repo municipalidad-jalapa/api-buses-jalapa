@@ -51,6 +51,15 @@ class LecturaTraccarTest {
     }
 
     @Test
+    void position_id_cero_de_la_captura_real_no_se_usa_como_identidad() {
+        LecturaTraccar lectura = LecturaTraccar.de(
+                new ReenvioTraccar(new Posicion(0L, 3L, 14.63, -89.98, 12.5, T, null), DISPOSITIVO),
+                UnidadVelocidad.NUDOS);
+
+        assertThat(lectura.lectura().claveOrigen()).isEqualTo("traccar:860000000000001:" + T.toEpochMilli());
+    }
+
+    @Test
     void rechaza_datos_invalidos_con_regla_de_negocio() {
         assertThatThrownBy(() -> de(new Posicion(1L, 3L, 91.0, -89.98, 0.0, T, null)))
                 .isInstanceOf(ReglaDeNegocioException.class);
@@ -62,6 +71,8 @@ class LecturaTraccarTest {
                 .isInstanceOf(ReglaDeNegocioException.class);
         assertThatThrownBy(() -> LecturaTraccar.de(
                 new ReenvioTraccar(new Posicion(1L, 3L, 14.6, -89.9, 0.0, T, null), null), UnidadVelocidad.NUDOS))
+                .isInstanceOf(ReglaDeNegocioException.class);
+        assertThatThrownBy(() -> de(new Posicion(1L, 3L, 14.6, -89.9, -1.0, T, null)))
                 .isInstanceOf(ReglaDeNegocioException.class);
     }
 

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -121,9 +122,41 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
     }
 
     @Test
+    void longitud_fuera_de_rango_responde_422() throws Exception {
+        enviar("""
+                {"device":{"uniqueId":"%s"},"position":{"id":7,"latitude":14.63,"longitude":-181,"fixTime":"%s"}}"""
+                .formatted(IMEI, Instant.now()))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(filas()).isZero();
+    }
+
+    @Test
     void un_cuerpo_mal_formado_responde_400() throws Exception {
         enviar("{no es json").andExpect(status().isBadRequest());
         enviar("\"texto\"").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void la_muestra_real_con_dispositivo_asociado_responde_202() throws Exception {
+        enviar(muestraReal(IMEI, Instant.now(), 14.634001, -89.9871))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.recibidas").value(1))
+                .andExpect(jsonPath("$.aceptadas").value(1))
+                .andExpect(jsonPath("$.descartadas").value(0));
+    }
+
+    @Test
+    void la_muestra_real_con_dispositivo_no_asociado_responde_422() throws Exception {
+        enviar(muestraReal("999999999999999", Instant.now(), 14.634001, -89.9871))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(filas()).isZero();
+    }
+
+    @Test
+    void la_muestra_real_con_coordenadas_invalidas_responde_422() throws Exception {
+        enviar(muestraReal(IMEI, Instant.now(), 95.0, -89.9871))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(filas()).isZero();
     }
 
     @Test
@@ -193,12 +226,38 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         return jdbc.queryForObject("SELECT count(*) FROM posiciones_historicas", Integer.class);
     }
 
-    /** Formato de reenvio de Traccar (forward.json=true). La velocidad va en nudos. */
+    /** Formato de reenvio de Traccar (forward.type=json). La velocidad va en nudos. */
     static String reenvio(long idPosicion, String uniqueId, double nudos, Instant fixTime) {
         return """
                 {"position":{"id":%d,"deviceId":3,"protocol":"gt06","latitude":14.6335,"longitude":-89.9885,
                  "speed":%s,"course":90,"fixTime":"%s","deviceTime":"%s","valid":true,"attributes":{"ignition":true}},
                  "device":{"id":3,"name":"BUS-01","uniqueId":"%s","status":"online"}}"""
                 .formatted(idPosicion, nudos, fixTime, fixTime, uniqueId);
+    }
+
+    /**
+     * Parte de la captura real. Se actualizan uniqueId, coordenadas y fechas para
+     * el caso de prueba: la estructura anidada no se inventa.
+     */
+    private static String muestraReal(String uniqueId, Instant cuando, double latitud, double longitud)
+            throws Exception {
+        String original = new String(
+                RecepcionTraccarIT.class.getResourceAsStream("/traccar/traccar-position-sample.json").readAllBytes(),
+                StandardCharsets.UTF_8);
+        com.fasterxml.jackson.databind.ObjectMapper json = new com.fasterxml.jackson.databind.ObjectMapper()
+                .findAndRegisterModules();
+        com.fasterxml.jackson.databind.node.ObjectNode raiz =
+                (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(original);
+        com.fasterxml.jackson.databind.node.ObjectNode posicion =
+                (com.fasterxml.jackson.databind.node.ObjectNode) raiz.get("position");
+        com.fasterxml.jackson.databind.node.ObjectNode device =
+                (com.fasterxml.jackson.databind.node.ObjectNode) raiz.get("device");
+        posicion.put("latitude", latitud);
+        posicion.put("longitude", longitud);
+        posicion.put("fixTime", cuando.toString());
+        posicion.put("deviceTime", cuando.toString());
+        posicion.put("serverTime", cuando.toString());
+        device.put("uniqueId", uniqueId);
+        return json.writeValueAsString(raiz);
     }
 }

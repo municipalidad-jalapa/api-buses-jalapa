@@ -34,19 +34,24 @@ public record LecturaTraccar(String dispositivo, LecturaEntrante lectura) {
 
         Double latitud = posicion.latitude();
         Double longitud = posicion.longitude();
-        if (latitud == null || latitud < -90 || latitud > 90) {
+        if (latitud == null || !Double.isFinite(latitud) || latitud < -90 || latitud > 90) {
             throw new ReglaDeNegocioException("latitud ausente o fuera de rango");
         }
-        if (longitud == null || longitud < -180 || longitud > 180) {
+        if (longitud == null || !Double.isFinite(longitud) || longitud < -180 || longitud > 180) {
             throw new ReglaDeNegocioException("longitud ausente o fuera de rango");
+        }
+        Double nudos = posicion.speed();
+        if (nudos != null && (!Double.isFinite(nudos) || nudos < 0)) {
+            throw new ReglaDeNegocioException("velocidad ausente o invalida");
         }
         Instant fecha = posicion.fixTime() != null ? posicion.fixTime() : posicion.deviceTime();
         if (fecha == null) {
             throw new ReglaDeNegocioException("La posicion no trae fecha (fixTime).");
         }
 
-        // Sin id de Traccar, la fecha del dispositivo identifica la lectura.
-        String clave = posicion.id() != null
+        // La captura real reenvia position.id=0 (todavia no persistida). Ese 0
+        // no identifica la lectura: se usa el uniqueId y la fecha.
+        String clave = posicion.id() != null && posicion.id() > 0
                 ? "traccar:" + posicion.id()
                 : "traccar:" + dispositivo + ":" + fecha.toEpochMilli();
 

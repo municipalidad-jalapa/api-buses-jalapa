@@ -39,9 +39,9 @@ public class TraccarController {
 
     @Operation(summary = "Recibe el reenvio de posiciones de Traccar",
             description = """
-                    Lo llama el servidor Traccar (forward.url, forward.json=true) con la
-                    cabecera `X-Traccar-Token`. Acepta un reenvio `{position, device}` o un
-                    arreglo de ellos.
+                    Lo llama el servidor Traccar (`forward.url` + `forward.type=json`) con la
+                    cabecera `X-Traccar-Token`. El cuerpo real es `{position, device}` (no un
+                    objeto plano). Acepta un reenvio o un arreglo de ellos.
 
                     La posicion se atribuye al vehiculo del equipo asociado al
                     `device.uniqueId`. Un 202 no implica que todas se guardaron: la
