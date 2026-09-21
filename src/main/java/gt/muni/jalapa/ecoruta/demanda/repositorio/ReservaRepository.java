@@ -17,7 +17,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     /**
      * Hay ya una reserva del dispositivo en alguno de los estados que ocupan el
      * cupo. Se consulta antes de crear para responder un 422 legible en vez de
-     * dejar que reviente {@code uq_reserva_vigente_por_dispositivo}.
+     * dejar que reviente {@code uq_registro_activo_por_dispositivo}.
      *
      * Vigente = ACTIVA o RENOVADA.
      * ABORDO no cuenta.
