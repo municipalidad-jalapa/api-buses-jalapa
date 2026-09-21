@@ -1,5 +1,7 @@
 package gt.muni.jalapa.ecoruta.telemetria.servicio;
 
+import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
+import gt.muni.jalapa.ecoruta.flota.repositorio.VehiculoRepository;
 import gt.muni.jalapa.ecoruta.telemetria.repositorio.PosicionHistoricaRepository;
 import gt.muni.jalapa.ecoruta.telemetria.web.dto.HistoricoRecorridoResponse;
 import gt.muni.jalapa.ecoruta.telemetria.web.dto.PuntoRecorridoHistoricoDto;
@@ -26,6 +28,7 @@ public class HistoricoRecorridoService {
             ZoneId.of("America/Guatemala");
 
     private final PosicionHistoricaRepository repository;
+    private final VehiculoRepository vehiculoRepository;
 
     @Transactional(readOnly = true)
     public HistoricoRecorridoResponse consultar(
@@ -34,6 +37,19 @@ public class HistoricoRecorridoService {
     ) {
 
         validar(vehiculoId, fecha);
+
+        /*
+         * HU-85 / observacion QA.
+         *
+         * Un vehiculo inexistente no debe confundirse
+         * con un vehiculo real que no tuvo posiciones.
+         */
+        if (!vehiculoRepository.existsById(vehiculoId)) {
+            throw new RecursoNoEncontradoException(
+                    "Vehiculo",
+                    vehiculoId
+            );
+        }
 
         Instant desde = fecha
                 .atStartOfDay(ZONA_GUATEMALA)

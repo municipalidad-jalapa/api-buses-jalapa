@@ -1,5 +1,7 @@
 package gt.muni.jalapa.ecoruta.demanda.servicio;
 
+import gt.muni.jalapa.ecoruta.catalogo.repositorio.ParadaRepository;
+import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ConsultaDemandaRepository;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.HistoricoDemandaResponse;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.PuntoDemandaHistoricaDto;
@@ -28,6 +30,7 @@ public class HistoricoDemandaService {
             ZoneId.of("America/Guatemala");
 
     private final ConsultaDemandaRepository consultaDemandaRepository;
+    private final ParadaRepository paradaRepository;
 
     @Transactional(readOnly = true)
     public HistoricoDemandaResponse consultar(
@@ -40,9 +43,18 @@ public class HistoricoDemandaService {
         validar(paradaId, fecha, horaInicio, horaFin);
 
         /*
-         * Convertimos la fecha y las horas de Guatemala
-         * a Instant para consultar correctamente TIMESTAMPTZ.
+         * HU-85 / observacion QA.
+         *
+         * Una parada inexistente no es lo mismo que
+         * una parada existente sin demanda.
          */
+        if (!paradaRepository.existsById(paradaId)) {
+            throw new RecursoNoEncontradoException(
+                    "Parada",
+                    paradaId
+            );
+        }
+
         Instant desde = fecha
                 .atStartOfDay(ZONA_GUATEMALA)
                 .plusHours(horaInicio)
@@ -60,12 +72,6 @@ public class HistoricoDemandaService {
                         hasta
                 );
 
-        /*
-         * Incluimos tambien las horas que tengan cero reservas.
-         *
-         * Esto es importante para que la grafica no tenga
-         * espacios faltantes.
-         */
         List<PuntoDemandaHistoricaDto> serie =
                 new ArrayList<>();
 
@@ -122,13 +128,6 @@ public class HistoricoDemandaService {
             );
         }
 
-        /*
-         * Permitimos 24 solamente como limite final.
-         *
-         * Ejemplo:
-         * horaInicio=18
-         * horaFin=24
-         */
         if (horaFin < 1 || horaFin > 24) {
             throw new IllegalArgumentException(
                     "horaFin debe estar entre 1 y 24"

@@ -12,8 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * HU-85.
  *
  * Casos adicionales reportados por QA para validar
- * que las entradas invalidas respondan 400
- * utilizando el formato uniforme ApiError.
+ * que las entradas invalidas respondan con el formato
+ * uniforme ApiError.
  */
 class HistoricoOperacionEntradasInvalidasIT
         extends IntegracionPostgisTest {
@@ -150,5 +150,59 @@ class HistoricoOperacionEntradasInvalidasIT
                         jsonPath("$.path")
                                 .value("/api/v1/admin/historico/demanda")
                 );
+    }
+
+    @Test
+    void parada_inexistente_responde_404_con_api_error()
+            throws Exception {
+
+        mockMvc.perform(
+                        get("/api/v1/admin/historico/demanda")
+                                .header(
+                                        AdminBootstrapFilter.CABECERA,
+                                        ADMIN
+                                )
+                                .param("paradaId", "999999")
+                                .param("fecha", "2026-09-17")
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("Parada con id 999999 no existe")
+                )
+                .andExpect(
+                        jsonPath("$.path")
+                                .value("/api/v1/admin/historico/demanda")
+                )
+                .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    void vehiculo_inexistente_responde_404_con_api_error()
+            throws Exception {
+
+        mockMvc.perform(
+                        get("/api/v1/admin/historico/recorrido")
+                                .header(
+                                        AdminBootstrapFilter.CABECERA,
+                                        ADMIN
+                                )
+                                .param("vehiculoId", "999999")
+                                .param("fecha", "2026-09-17")
+                )
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value("Vehiculo con id 999999 no existe")
+                )
+                .andExpect(
+                        jsonPath("$.path")
+                                .value("/api/v1/admin/historico/recorrido")
+                )
+                .andExpect(jsonPath("$.timestamp").exists());
     }
 }
