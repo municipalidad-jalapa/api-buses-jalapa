@@ -45,8 +45,9 @@ public record LecturaTraccar(String dispositivo, LecturaEntrante lectura) {
             throw new ReglaDeNegocioException("La posicion no trae fecha (fixTime).");
         }
 
-        // Sin id de Traccar, la fecha del dispositivo identifica la lectura.
-        String clave = posicion.id() != null
+        // Sin id de Traccar (null o <= 0), la fecha del dispositivo identifica la lectura.
+        // Traccar 6.x reenvia position.id=0 antes de persistir (traccar/traccar#4529).
+        String clave = posicion.id() != null && posicion.id() > 0
                 ? "traccar:" + posicion.id()
                 : "traccar:" + dispositivo + ":" + fecha.toEpochMilli();
 
