@@ -54,6 +54,7 @@ public class PasosDeSesionDelPasajero {
     @Before("@bloque-B")
     public void limpiar() {
         jdbc.update("DELETE FROM opiniones");
+        jdbc.update("DELETE FROM registros_espera WHERE pasajero_id IS NOT NULL");
         jdbc.update("DELETE FROM pasajeros");
     }
 
