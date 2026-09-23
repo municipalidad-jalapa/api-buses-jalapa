@@ -90,6 +90,10 @@ public class OpinionService {
             throw new ReglaDeNegocioException("La reserva no existe o no es de este dispositivo.");
         }
 
+        // Contar y luego insertar no es atomico: dos envios simultaneos del mismo
+        // navegador verian el mismo conteo y ambos pasarian. El candado de la
+        // transaccion serializa a ese navegador sin frenar a los demas.
+        jdbc.queryForList("SELECT pg_advisory_xact_lock(1461, hashtext(?))", dispositivoId);
         Instant desde = reloj.instant().minus(propiedades.ventana());
         if (opiniones.countByDispositivoIdAndCreadaEnAfter(dispositivoId, desde) >= propiedades.limiteEnvios()) {
             throw new LimiteDeOpinionesExcedido();

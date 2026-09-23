@@ -115,6 +115,12 @@ ecoruta:
     por-ip-ventana-segundos: 60
     por-dispositivo-capacidad: 60
     por-dispositivo-ventana-segundos: 60
+    # SCRUM-26: opiniones y sesion del pasajero crean filas por cada peticion y
+    # el limite por dispositivo depende de una cabecera que pone el cliente.
+    # Aparte del general, cada IP tiene este cupo propio por ruta. Holgado para
+    # varios telefonos detras del mismo NAT, pero corta una rafaga automatizada.
+    por-ip-estricto-capacidad: 30
+    por-ip-estricto-ventana-segundos: 600
   panel-admin:
     # SCRUM-173. Sin actividad durante este plazo, la sesion del panel se cierra.
     inactividad-minutos: ${PANEL_ADMIN_INACTIVIDAD_MINUTOS:30}

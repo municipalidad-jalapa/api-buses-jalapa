@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta;
 
 import gt.muni.jalapa.ecoruta.eta.servicio.EtaService;
+import gt.muni.jalapa.ecoruta.seguridad.ratelimit.RateLimitFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -81,8 +82,13 @@ public abstract class IntegracionPostgisTest {
         jdbc.update("DELETE FROM vehiculos WHERE identificador NOT IN ('BUS-01', 'BUS-02')");
         // El ETA vive en memoria y el contexto se comparte entre clases (SCRUM-166).
         etas.olvidarTodo();
+        // Los limites tambien: el cupo de una clase no debe gastarse en otra.
+        limites.reiniciar();
     }
 
     @Autowired
     private EtaService etas;
+
+    @Autowired
+    private RateLimitFilter limites;
 }

@@ -102,7 +102,8 @@ public class SecurityConfig {
                                         "Content-Security-Policy",
                                         "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))))
 
-                .authorizeHttpRequests(rutas -> rutas
+                .authorizeHttpRequests(rutas -> {
+                    rutas
 
                         /*
                          * Permitir que Spring procese correctamente
@@ -133,62 +134,16 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         )
-                        .permitAll()
+                        .permitAll();
 
-                        /*
-                         * Publico para el pasajero anonimo (Demanda y Rutas)
-                         */
-                        .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/posicion").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/telemetria/stream").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/rutas", "/api/v1/rutas/**").permitAll()
-                        .requestMatchers("/api/v1/demanda/**").permitAll()
-                        
-                        /*
-                         * Desarrollo-135 / SCRUM-306 / HU-134.
-                         * Crear reserva de parada.
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas").permitAll()
-                        
-                        /*
-                         * HU-135. Renovar su propia reserva.
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/renovacion").permitAll()
+                    /*
+                     * Rutas publicas del pasajero, de inicio de sesion y de
+                     * las opiniones: salen de RutasPublicas, el mismo catalogo
+                     * que limita RateLimitFilter (SCRUM-26, correccion de QA).
+                     */
+                    RutasPublicas.abrir(rutas);
 
-                        /*
-                         * HU-124. Cancelar su propia reserva.
-                         */
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reservas/*").permitAll()
-
-                        /*
-                         * HU-76. El pasajero consulta el estado de su reserva.
-                         */
-                        .requestMatchers(HttpMethod.GET, "/api/v1/reservas/*").permitAll()
-
-                        /*
-                         * HU-76. El pasajero declara que no abordó.
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/declaracion-no-abordo").permitAll()
-
-                        /*
-                         * HU-57. El pasajero responde al aviso de abordaje.
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/abordaje").permitAll()
-
-                        /*
-                         * Registro del dispositivo para notificaciones.
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/dispositivos/notificaciones").permitAll()
-
-                        /*
-                         * AUTENTICACIÓN DEL CONDUCTOR
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/conductor").permitAll()
-
-                        /*
-                         * AUTENTICACIÓN DEL PANEL MUNICIPAL (SCRUM-173)
-                         */
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/admin").permitAll()
-
+                    rutas
                         /*
                          * HU-76. El conductor marca una parada como atendida.
                          */
@@ -203,12 +158,6 @@ public class SecurityConfig {
                          * PANEL DEL CONDUCTOR
                          */
                         .requestMatchers("/api/v1/conductor/**").hasRole("CONDUCTOR")
-
-                        /*
-                         * SCRUM-26, bloque D. El pasajero con sesion tiene lo
-                         * suyo: sus reservas, desde cualquier telefono.
-                         */
-                        .requestMatchers(HttpMethod.GET, "/api/v1/reservas/mias").permitAll()
 
                         /*
                          * ADMINISTRACIÓN DEL SISTEMA (SCRUM-26, bloque D)
@@ -234,8 +183,8 @@ public class SecurityConfig {
                          * una regla explícita queda cerrado.
                          */
                         .anyRequest()
-                        .denyAll()
-                )
+                        .denyAll();
+                })
 
                 /*
                  * Respuestas uniformes para 401 y 403
