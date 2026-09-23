@@ -124,6 +124,21 @@ class OpinionesIT extends IntegracionPostgisTest {
                 .isEqualTo("&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; &amp; gracias");
     }
 
+    @Test
+    void conserva_espacios_y_entidades_en_el_round_trip() throws Exception {
+        for (String texto : java.util.List.of("  <script>alert(\"x\")</script> & texto  ",
+                "  &lt;b&gt; &amp; &#39; 😀\n  ", "   ")) {
+            jdbc.update("DELETE FROM opiniones");
+            opinar("literal", json.writeValueAsString(java.util.Map.of(
+                    "tipo", "comentario", "rutaId", 1, "texto", texto, "estrellas", 4)))
+                    .andExpect(status().isCreated());
+            assertThat(jdbc.queryForObject("SELECT texto FROM opiniones", String.class)).isEqualTo(texto);
+            String devuelto = listar("").at("/opiniones/0/texto").asText();
+            assertThat(devuelto).isEqualTo(org.springframework.web.util.HtmlUtils.htmlEscape(texto));
+            assertThat(org.springframework.web.util.HtmlUtils.htmlUnescape(devuelto)).isEqualTo(texto);
+        }
+    }
+
     // --- A.3 panel municipal -------------------------------------------------
 
     @Test

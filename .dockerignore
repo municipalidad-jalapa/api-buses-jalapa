@@ -4,3 +4,7 @@ target/
 .gitignore
 *.md
 .mvn/
+*firebase-adminsdk*.json
+*serviceAccount*.json
+docker-compose.override.yml
+.env

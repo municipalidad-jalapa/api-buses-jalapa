@@ -22,6 +22,7 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -42,6 +43,7 @@ import java.util.List;
 public class AdministracionDelSistema {
 
     private final UsuarioRepository usuarios;
+    private final JdbcTemplate jdbc;
     private final RutaRepository rutas;
     private final ParadaRepository paradas;
 
@@ -72,6 +74,10 @@ public class AdministracionDelSistema {
 
     @Transactional
     public CuentaResponse editarCuenta(Long id, EditarCuentaRequest peticion) {
+        // Un único bloqueo transaccional de PostgreSQL serializa la decisión entre JVMs.
+        // Adquirir ANTES de leer usuarios evita entidades obsoletas en el contexto JPA.
+        // Se libera al commit/rollback, después del flush de la modificación.
+        jdbc.execute("SELECT pg_advisory_xact_lock(146, 26)");
         Usuario usuario = usuarios.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta", id));
         if (peticion == null) {

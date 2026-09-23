@@ -66,12 +66,12 @@ public class OpinionService {
         if (peticion == null || peticion.tipo() == null) {
             throw new ReglaDeNegocioException("El tipo debe ser queja, comentario o calificacion.");
         }
-        String texto = StringUtils.hasText(peticion.texto()) ? peticion.texto().strip() : null;
+        String texto = peticion.texto(); // Validar contenido no debe modificar el valor que se almacena.
         Integer estrellas = peticion.estrellas();
         // SCRUM-26, bloque F: las tres valoraciones cuentan como contenido.
         boolean hayValoracion = estrellas != null || peticion.calidad() != null
                 || peticion.limpieza() != null || peticion.conduccion() != null;
-        if (texto == null && !hayValoracion) {
+        if (!StringUtils.hasText(texto) && !hayValoracion) {
             throw new ReglaDeNegocioException("Escribe un comentario o elige una calificacion.");
         }
         validarEstrellas(estrellas, "La calificacion");

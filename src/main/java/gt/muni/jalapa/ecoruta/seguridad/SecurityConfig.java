@@ -225,6 +225,8 @@ public class SecurityConfig {
                         /*
                          * PANEL MUNICIPAL (consulta)
                          */
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/catalogo/vehiculos")
+                                .hasAnyRole("ADMIN", "SUPERADMIN")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         /*
