@@ -14,6 +14,19 @@ las correcciones de la **Fase 2** (rama `qa-correcciones-develop`):
 Usá ventana de **360 × 740** (DevTools → modo dispositivo) y concedé el permiso de ubicación.
 Si estás lejos de Jalapa, en DevTools → *Sensors* fijá la ubicación en `14.6335, -89.9870`.
 
+## Preparación (obligatoria, ronda 2)
+
+Seguí [preparar-entorno-qa.md](preparar-entorno-qa.md) y hacé su **comprobación obligatoria**:
+el backend tiene que ser el de esta rama (`/api/v1/conductor/panel` y `/api/v1/admin/rutas` en
+`/v3/api-docs`, Flyway = 16). En la ronda 1 se probó contra el backend de SCRUM-26 y por eso
+estas fases no podían pasar.
+
+- Elegí parada sin tocar el mapa con `http://localhost:5173/registro/2` (1a Calle - Mercado), o
+  con el selector `[data-testid="parada-2"]`.
+- Con `VITE_UBICACION_SIMULADA=14.6326,-89.9871` el navegador no pide permiso: la mira y
+  "Usar la parada más cercana" usan ese punto (la más cercana es 1a Calle - Mercado).
+- El estado de la hoja se lee en `[data-testid="hoja"]` → atributo `data-fase`.
+
 ## Qué observó QA antes (Ecoruta_DESARROLLO.pdf, 4.1)
 
 1. "Al pulsar 'Usar mi ubicación' debe enviar a la ubicación actual de la persona, y al pulsarlo
@@ -55,15 +68,15 @@ Si estás lejos de Jalapa, en DevTools → *Sensors* fijá la ubicación en `14.
 
 ## C. Aviso por vencer y renovación de 15 min
 
-Para no esperar 3 minutos reales podés forzar una reserva a punto de vencer desde la consola
-(solo para la prueba visual; el backend no se entera):
+Hacé una reserva real (`/registro/2` → "Estoy esperando aquí") y, para no esperar 3 minutos,
+acortale la vigencia en la base (`id` = la reserva más reciente):
 
-```js
-localStorage.setItem('ecoruta_reserva', JSON.stringify({
-  id: 999999, paradaId: 2, estado: 'ACTIVA',
-  expiraEn: new Date(Date.now() + 100_000).toISOString(),
-})); location.reload();
+```sql
+UPDATE registros_espera SET expira_en = now() + interval '100 seconds'
+ WHERE id = (SELECT max(id) FROM registros_espera);
 ```
+
+Recargá la página.
 
 1. ✅ Con **menos de 2 minutos** la hoja muestra la tarjeta amarilla **"¿Seguís esperando?"** con
    el tiempo exacto ("Tu aviso vence en 1 min 35 s…") y dice que se alarga **15 minutos**.
@@ -73,8 +86,7 @@ localStorage.setItem('ecoruta_reserva', JSON.stringify({
 4. En un teléfono real: ✅ vibra una vez al entrar en los 2 minutos. Con la pestaña en segundo
    plano (otra app encima) y el permiso de notificaciones concedido: ✅ llega una notificación
    del sistema "Tu aviso está por vencer".
-5. Flujo real contra el backend: hacé una reserva de verdad ("Estoy esperando aquí"), esperá a
-   que falten < 2 min y tocá **"Sigo esperando"**.
+5. Con esa misma reserva tocá **"Sigo esperando"**.
    - ✅ La tarjeta desaparece y "MIN DE AVISO" pasa a **15**.
    - En la API: `POST /api/v1/reservas/{id}/renovacion` responde `expiraEn` ≈ ahora + 15 min.
 6. Dejá vencer una reserva: ✅ la hoja vuelve a "Parada elegida" con "Tu aviso venció…".

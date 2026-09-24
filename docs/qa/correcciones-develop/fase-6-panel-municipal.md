@@ -12,6 +12,20 @@ Sos tester de QA de EcoRuta. Vas a verificar la **Fase 6** (rama `qa-correccione
 **URL a probar:** `<URL del entorno>`. Pantalla de escritorio 1440 × 900.
 Necesitás una cuenta de administrador del panel municipal.
 
+## Preparación (obligatoria, ronda 2)
+
+Seguí [preparar-entorno-qa.md](preparar-entorno-qa.md) y hacé su **comprobación obligatoria**:
+el backend tiene que ser el de esta rama (`/api/v1/conductor/panel` y `/api/v1/admin/rutas` en
+`/v3/api-docs`, Flyway = 16). En la ronda 1 se probó contra el backend de SCRUM-26 y por eso
+estas fases no podían pasar.
+
+- Cuenta admin: `ECORUTA_ADMIN_FIREBASE_UID` / `ECORUTA_ADMIN_USUARIO` en el override del
+  backend (sección 5 de la guía).
+- Para B, la posición de hace 1070 min: sección 6 de la guía, con el simulador de la ruta 2
+  detenido.
+- Editá la **ruta 2** (de prueba) para no tocar la ruta 1 que usan las otras fases; al terminar,
+  `docker compose -p ecoruta-qa-develop down -v` deja todo como al principio.
+
 ## Qué observó QA antes (Ecoruta_DESARROLLO.pdf)
 
 - **5.6 (No cumple):** "No se puede acceder, corregir ruta en el panel del administrador. Al

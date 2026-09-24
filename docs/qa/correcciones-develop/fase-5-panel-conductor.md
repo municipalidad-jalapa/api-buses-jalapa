@@ -17,6 +17,18 @@ teléfono en soporte) y después 1280 × 800.
 (simulador: `python tools/simulador-gps.py --api <backend> --ruta 1`). Algunas reservas activas
 en paradas de esa ruta (hacelas desde otro navegador en la pantalla del pasajero).
 
+## Preparación (obligatoria, ronda 2)
+
+Seguí [preparar-entorno-qa.md](preparar-entorno-qa.md) y hacé su **comprobación obligatoria**:
+el backend tiene que ser el de esta rama (`/api/v1/conductor/panel` y `/api/v1/admin/rutas` en
+`/v3/api-docs`, Flyway = 16). En la ronda 1 se probó contra el backend de SCRUM-26 y por eso
+estas fases no podían pasar.
+
+- Cuentas: conductor con ruta y conductor sin ruta vinculados con
+  [cuentas-qa.sql](cuentas-qa.sql) (sección 5 de la guía).
+- Gente esperando: reservas desde `/registro/{id}` en ventanas privadas, o el `INSERT` de la
+  sección 6 de la guía.
+
 ## Qué observó QA antes (Ecoruta_DESARROLLO.pdf, 4.3 y 5.3 — Pendiente)
 
 > "Se perdió durante la migración; debe volver a subirse." Referencia: HU-62 (reservas por
@@ -45,7 +57,8 @@ siempre 403, porque la asignación de ruta se buscaba solo por `username`.
    - Tocá **Volver** → ✅ no pasa nada.
    - Tocá de nuevo y **Sí, ya subieron** → ✅ aviso verde "Listo: N pasajeros abordaron.";
      la fila pasa a punteada, gris, **"Atendida HH:MM"**, "Ya pasaste por aquí", sin botón.
-   - ✅ En el navegador del pasajero de esa parada, su reserva queda como abordada.
+   - ✅ En el navegador del pasajero de esa parada, en ≤ 20 s (o al volver a la pestaña) la hoja
+     dice **"Buen viaje. Tu reserva quedó cerrada."**
 6. Marcá la misma parada desde otra pestaña (409): ✅ "Esta parada ya estaba marcada como
    atendida." y la lista se refresca.
 7. Conductor **sin ruta asignada** (`usuarios.ruta_id = NULL`): ✅ mensaje

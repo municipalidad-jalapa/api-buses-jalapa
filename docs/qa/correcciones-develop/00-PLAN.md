@@ -56,3 +56,27 @@ Hallazgos que no venían en el PDF y se corrigieron en el camino:
 - Con la sesión real del conductor (uid de Firebase) marcar una parada atendida respondía 403.
 - El backend mandaba `data.tipo` con nombres que la web no reconocía: los push se descartaban.
 - El Dockerfile del frontend no pasaba las variables de mensajería al build.
+
+## Ronda 2 (resultado de pruebas visuales del 2026-09-24)
+
+[resultado-pruebas-visuales-2026-09-24.md](resultado-pruebas-visuales-2026-09-24.md): fase 1
+**PASS**; fases 2–6 parciales o bloqueadas. No se reportaron defectos de producto, pero:
+
+- Se probó contra el backend de **SCRUM-26** (V23, sin `/api/v1/conductor/panel` ni
+  `/api/v1/admin/rutas`): las fases 4–6 no podían pasar. Ahora hay
+  [preparar-entorno-qa.md](preparar-entorno-qa.md) con un stack aislado y una comprobación
+  obligatoria.
+- Faltaban herramientas para repetir los escenarios: `/registro/{id}`, `data-testid`,
+  `VITE_UBICACION_SIMULADA`, `tools/posicionar-bus.py` y [cuentas-qa.sql](cuentas-qa.sql).
+- CORS local: `127.0.0.1:5173` ahora también funciona.
+- El cierre normal del SSE ya no deja WARN en el log.
+
+Defecto encontrado al preparar la ronda 2 y corregido: la reserva del pasajero no se
+sincronizaba con el servidor, así que "Marcar atendida" del conductor (o un vencimiento del
+servidor) no llegaba a la pantalla del pasajero.
+
+Verificado en local con el stack aislado: reserva por `/registro/2` con ubicación simulada, ETA
+confiable/aproximado, aviso por vencer, renovación de 15 min, cancelación, y el conductor que
+marca la parada atendida llegando al pasajero. Sigue pendiente, por depender de cuentas reales de
+Firebase y de un teléfono: login real de conductor y admin (fases 5–6) y push en Android (fase 3 B–C).
+

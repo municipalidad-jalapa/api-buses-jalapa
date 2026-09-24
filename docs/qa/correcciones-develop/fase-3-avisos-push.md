@@ -11,6 +11,19 @@ Sos tester de QA de EcoRuta. Vas a verificar la **Fase 3** (rama `qa-correccione
 - backend: `fix(qa): avisos push que llegan con la pestana cerrada y aviso por vencer`
 - frontend: `fix(qa): avisos push con la pestana cerrada`
 
+## Preparación (obligatoria, ronda 2)
+
+Seguí [preparar-entorno-qa.md](preparar-entorno-qa.md) y hacé su **comprobación obligatoria**:
+el backend tiene que ser el de esta rama (`/api/v1/conductor/panel` y `/api/v1/admin/rutas` en
+`/v3/api-docs`, Flyway = 16). En la ronda 1 se probó contra el backend de SCRUM-26 y por eso
+estas fases no podían pasar.
+
+- **Automatizable en local:** A (salvo el paso 1, que es del build de QA) y D.
+- **Solo con teléfono Android real:** B y C. Para B usá `tools/posicionar-bus.py` en lugar del
+  simulador: `--metros 240` dispara "El bus está por llegar" y `--metros 0` "¿Lograste subir?".
+- Reserva real desde `/registro/{id}`; para C forzá el vencimiento con el `UPDATE` de la
+  sección 6 de la guía.
+
 ## Qué observó QA antes (Ecoruta_DESARROLLO.pdf, 4.2)
 
 > "La aplicación solo genera avisos en la pantalla del navegador; si la pestaña está cerrada no
