@@ -8,9 +8,21 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * El stream de posiciones (SSE) vence por diseno cada
+     * {@code sse-timeout-minutos} y el cliente reconecta solo. No es un error:
+     * sin este manejador, Spring dejaba dos WARN por cliente en cada cierre
+     * (QA, ronda 2). La respuesta ya esta enviada, asi que no se escribe nada.
+     */
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public void streamVencido() {
+        // Cierre normal del SSE.
+    }
 
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ApiError> notFound(
