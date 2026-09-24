@@ -2,8 +2,11 @@ package gt.muni.jalapa.ecoruta.common;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.PrecisionModel;
+
+import java.util.List;
 
 /**
  * Unico lugar del codigo autorizado a construir o leer un {@link Point}.
@@ -32,6 +35,17 @@ public final class Geo {
     /** OJO: la coordenada se arma (longitud, latitud), no al reves. */
     public static Point punto(double latitud, double longitud) {
         return FABRICA.createPoint(new Coordinate(longitud, latitud));
+    }
+
+    /**
+     * Una linea con los puntos dados como pares {latitud, longitud}, en ese
+     * orden. Se invierten aqui, igual que en {@link #punto}.
+     */
+    public static LineString linea(List<double[]> latitudLongitud) {
+        Coordinate[] coordenadas = latitudLongitud.stream()
+                .map(p -> new Coordinate(p[1], p[0]))
+                .toArray(Coordinate[]::new);
+        return FABRICA.createLineString(coordenadas);
     }
 
     public static double latitud(Point punto) {
