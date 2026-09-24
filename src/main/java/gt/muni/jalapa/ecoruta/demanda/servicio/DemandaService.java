@@ -67,8 +67,8 @@ public class DemandaService {
     }
 
     /**
-     * Renueva una reserva vigente: extiende su expiracion otros
-     * {@code vigenciaMinutos} y la deja RENOVADA, conservando su identificador.
+     * Renueva una reserva vigente: extiende su expiracion
+     * {@code renovacionMinutos} y la deja RENOVADA, conservando su identificador.
      *
      * @throws RecursoNoEncontradoException si no existe una reserva con ese id
      * @throws ReglaDeNegocioException      si la reserva ya expiro o no esta activa (422)
@@ -85,7 +85,7 @@ public class DemandaService {
                             .formatted(reservaId));
         }
 
-        reserva.renovar(ahora.plus(propiedades.vigencia()));
+        reserva.renovar(ahora.plus(propiedades.renovacion()));
         log.info("Reserva {} renovada; nueva expiracion {}", reservaId, reserva.getExpiraEn());
         return reserva;
     }

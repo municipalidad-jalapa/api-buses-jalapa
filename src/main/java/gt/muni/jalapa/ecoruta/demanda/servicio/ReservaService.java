@@ -176,7 +176,7 @@ public class ReservaService {
         }
 
         reserva.renovar(
-                ahora.plus(demanda.vigencia())
+                ahora.plus(demanda.renovacion())
         );
 
         return ReservaResponse.de(reserva);

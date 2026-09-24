@@ -28,6 +28,8 @@ ecoruta:
     umbral-salida: 10
     # Desarrollo-135 / SCRUM-307: la reserva dura estos minutos desde que se crea.
     vigencia-minutos: 5
+    # QA 4.1: al renovar ("sigo esperando") la reserva gana estos minutos.
+    renovacion-minutos: ${DEMANDA_RENOVACION_MINUTOS:15}
     # Cada cuanto la tarea programada barre las reservas vencidas.
     barrido-segundos: 60
     geocerca-metros: ${DEMANDA_GEOCERCA_METROS:150}
