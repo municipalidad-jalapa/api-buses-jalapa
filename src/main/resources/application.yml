@@ -40,6 +40,9 @@ ecoruta:
     # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
     radio-aproximacion-metros: ${NOTIF_RADIO_APROXIMACION_METROS:250}
     radio-llegada-metros: ${NOTIF_RADIO_LLEGADA_METROS:40}
+    # QA 4.1: push "tu aviso esta por vencer" este tiempo antes del vencimiento.
+    aviso-vencimiento-segundos: ${NOTIF_AVISO_VENCIMIENTO_SEGUNDOS:120}
+    barrido-vencimiento-segundos: 20
   telemetria:
     # Tolerancia contra relojes desfasados del equipo a bordo (SCRUM-138).
     ventana-horas: 12

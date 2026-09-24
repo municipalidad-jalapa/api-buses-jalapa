@@ -4,7 +4,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
-import com.google.firebase.messaging.Notification;
+import com.google.firebase.messaging.WebpushConfig;
 import gt.muni.jalapa.ecoruta.identidad.config.ClienteFirebaseAuth;
 import gt.muni.jalapa.ecoruta.notificaciones.dominio.Aviso;
 import lombok.RequiredArgsConstructor;
@@ -42,17 +42,30 @@ public class EnviadorFcm implements EnviadorDeNotificaciones {
         }
     }
 
-    private static Message mensaje(Aviso aviso) {
+    /**
+     * Mensaje solo de datos, con urgencia alta.
+     *
+     * <p>Sin bloque {@code notification}: con el, el SDK web de Firebase dibuja
+     * la notificacion por su cuenta cuando la pestana esta cerrada, sin los
+     * botones "Si subi / No subi" ni la etiqueta que evita duplicados. Solo con
+     * datos, la dibuja el Service Worker ({@code firebase-messaging-sw.js}) con
+     * {@code titulo}, {@code cuerpo} y {@code tipo}. {@code Urgency: high} evita
+     * que Android la retrase con el telefono en reposo; el TTL descarta un aviso
+     * que llegaria cuando ya no sirve.
+     */
+    static Message mensaje(Aviso aviso) {
         return Message.builder()
                 .setToken(aviso.tokenNotificacion())
-                .setNotification(Notification.builder()
-                        .setTitle(aviso.titulo())
-                        .setBody(aviso.cuerpo())
-                        .build())
-                .putData("tipo", aviso.tipo().name())
+                .putData("tipo", aviso.tipo().codigoWeb())
+                .putData("titulo", aviso.titulo())
+                .putData("cuerpo", aviso.cuerpo())
                 .putData("reservaId", String.valueOf(aviso.reservaId()))
                 .putData("paradaId", String.valueOf(aviso.paradaId()))
                 .putData("dispositivoId", aviso.dispositivoId())
+                .setWebpushConfig(WebpushConfig.builder()
+                        .putHeader("Urgency", "high")
+                        .putHeader("TTL", "300")
+                        .build())
                 .build();
     }
 }
