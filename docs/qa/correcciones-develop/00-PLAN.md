@@ -39,3 +39,20 @@ No incluye nada de SCRUM-26 (sigue en su rama propia).
 
 Cada fase termina con pruebas automáticas en verde y un archivo
 `docs/qa/correcciones-develop/fase-N-*.md` con un prompt para la prueba visual.
+
+## Estado
+
+| Fase | Estado | Prueba visual |
+|---|---|---|
+| 1 | Hecha | [fase-1-mapa-legible-y-responsive.md](fase-1-mapa-legible-y-responsive.md) |
+| 2 | Hecha | [fase-2-reserva.md](fase-2-reserva.md) |
+| 3 | Hecha (requiere configurar `VITE_FIREBASE_VAPID_KEY` en QA) | [fase-3-avisos-push.md](fase-3-avisos-push.md) |
+| 4 | Hecha | [fase-4-eta-pasajero.md](fase-4-eta-pasajero.md) |
+| 5 | Hecha | [fase-5-panel-conductor.md](fase-5-panel-conductor.md) |
+| 6 | Hecha | [fase-6-panel-municipal.md](fase-6-panel-municipal.md) |
+
+Hallazgos que no venían en el PDF y se corrigieron en el camino:
+
+- Con la sesión real del conductor (uid de Firebase) marcar una parada atendida respondía 403.
+- El backend mandaba `data.tipo` con nombres que la web no reconocía: los push se descartaban.
+- El Dockerfile del frontend no pasaba las variables de mensajería al build.
