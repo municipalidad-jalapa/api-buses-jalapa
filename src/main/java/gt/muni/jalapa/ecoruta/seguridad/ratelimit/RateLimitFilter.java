@@ -116,6 +116,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         porIpEstricto.reiniciar();
     }
 
+    /** Visible para RutasPublicasProtegidasIT, que la contrasta con la autorizacion real. */
+    boolean esRutaProtegida(HttpServletRequest peticion) {
+        return rutaProtegida(peticion) != null;
+    }
+
     /** La primera ruta del catalogo que coincide, o null si la peticion no se limita. */
     private RutasPublicas.Ruta rutaProtegida(HttpServletRequest peticion) {
         String metodo = peticion.getMethod();
