@@ -19,18 +19,23 @@ public record ResumenRutaResponse(
         RutaResumenDto ruta,
         @Schema(nullable = true, description = "null si el bus aun no ha reportado posicion")
         PosicionActualDto posicionActual,
-        ReservasActivasDto reservasActivas) {
+        ReservasActivasDto reservasActivas,
+        @Schema(nullable = true, description = "Cuanta gente lleva el bus; null sin conteo del conductor hoy")
+        OcupacionDto ocupacion) {
 
     /**
      * Compone la respuesta a partir del resultado de la orquestacion.
      *
      * @param compuesto  ruta, posicion y conteos ya resueltos por el servicio
      * @param calculadoEn instante en que se hizo la consulta de demanda (ISO-8601 UTC)
+     * @param ocupacion   cuanta gente lleva el bus, o null sin conteo hoy
      */
-    public static ResumenRutaResponse de(ResumenRutaCompuesto compuesto, Instant calculadoEn) {
+    public static ResumenRutaResponse de(ResumenRutaCompuesto compuesto, Instant calculadoEn,
+                                         OcupacionDto ocupacion) {
         return new ResumenRutaResponse(
                 RutaResumenDto.de(compuesto.ruta()),
                 PosicionActualDto.de(compuesto.posicionActual()),
-                ReservasActivasDto.de(compuesto.reservasActivasPorParada(), calculadoEn));
+                ReservasActivasDto.de(compuesto.reservasActivasPorParada(), calculadoEn),
+                ocupacion);
     }
 }

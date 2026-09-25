@@ -44,6 +44,9 @@ class ResumenRutaServiceTest {
     @Mock
     private DemandaService demanda;
 
+    @Mock
+    private OcupacionDelBus ocupacion;
+
     @InjectMocks
     private ResumenRutaService servicio;
 

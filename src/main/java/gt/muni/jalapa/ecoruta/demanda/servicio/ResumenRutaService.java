@@ -23,6 +23,7 @@ public class ResumenRutaService {
     private final CatalogoService catalogo;
     private final TelemetriaService telemetria;
     private final DemandaService demanda;
+    private final OcupacionDelBus ocupacion;
 
     /**
      * El resumen ya mapeado al DTO del contrato REST (SCRUM-284).
@@ -34,7 +35,7 @@ public class ResumenRutaService {
     @Transactional(readOnly = true)
     public ResumenRutaResponse resumir(Long rutaId) {
         Instant calculadoEn = Instant.now();
-        return ResumenRutaResponse.de(componer(rutaId), calculadoEn);
+        return ResumenRutaResponse.de(componer(rutaId), calculadoEn, ocupacion.de(rutaId).orElse(null));
     }
 
     @Transactional(readOnly = true)
