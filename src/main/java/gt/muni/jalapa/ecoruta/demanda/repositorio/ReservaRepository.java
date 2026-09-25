@@ -9,28 +9,85 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     /**
-     * Una sola consulta: ¿el dispositivo ya tiene una reserva vigente?
-     * Vigente = {@code ACTIVA} o {@code RENOVADA}. {@code ABORDO} no cuenta.
+     * Hay ya una reserva del dispositivo en alguno de los estados que ocupan el
+     * cupo. Se consulta antes de crear para responder un 422 legible en vez de
+     * dejar que reviente {@code uq_registro_activo_por_dispositivo}.
+     *
+     * Vigente = ACTIVA o RENOVADA.
+     * ABORDO no cuenta.
      */
-    @Query("""
-            SELECT CASE WHEN COUNT(r) > 0 THEN TRUE ELSE FALSE END
-              FROM Reserva r
-             WHERE r.dispositivoId = :dispositivoId
-               AND r.estado IN :estados
-            """)
-    boolean existeVigentePorDispositivo(@Param("dispositivoId") String dispositivoId,
-                                        @Param("estados") Collection<EstadoReserva> estados);
-
-    long countByDispositivoIdAndEstadoIn(String dispositivoId, Collection<EstadoReserva> estados);
+    boolean existsByDispositivoIdAndEstadoIn(String dispositivoId, Collection<EstadoReserva> estados);
 
     /**
-     * Pasa a EXPIRADA toda reserva vigente cuya fecha de expiracion ya paso
-     * (HU-135). Es un UPDATE masivo: lo corre la tarea programada sin cargar
-     * entidades.
+     * Cuenta las reservas del dispositivo
+     * que se encuentran en alguno de los
+     * estados indicados.
+     */
+    long countByDispositivoIdAndEstadoIn(
+            String dispositivoId,
+            Collection<EstadoReserva> estados
+    );
+
+    /**
+     * HU Desarrollo-95.
+     *
+     * ¿El dispositivo creó alguna reserva después de {@code desde},
+     * sin importar su estado actual?
+     *
+     * A diferencia de {@link #existsByDispositivoIdAndEstadoIn}, cuenta
+     * también las ya canceladas o expiradas: es justo lo que un bucle
+     * crear-cancelar necesita para no quedar atrapado nunca por el
+     * índice de "una vigente por dispositivo".
+     */
+    boolean existsByDispositivoIdAndCreadoEnAfter(
+            String dispositivoId,
+            Instant desde
+    );
+
+    /**
+     * HU-76.
+     *
+     * Obtiene las reservas que siguen pendientes
+     * en una parada determinada.
+     *
+     * El servicio envía ACTIVA y RENOVADA,
+     * por lo que CANCELADA, EXPIRADA y ABORDO
+     * no aparecen.
+     */
+    List<Reserva> findByParada_IdAndEstadoIn(
+            Long paradaId,
+            Collection<EstadoReserva> estados
+    );
+
+    /**
+     * Busca una reserva verificando también
+     * el dispositivo que la creó.
+     *
+     * Utilizado por las operaciones donde el
+     * pasajero solamente puede modificar
+     * sus propias reservas.
+     */
+    Optional<Reserva> findByIdAndDispositivoId(
+            Long id,
+            String dispositivoId
+    );
+
+    /**
+     * SCRUM-26, bloque B.2. Reservas de una cuenta de pasajero, de la mas
+     * reciente a la mas antigua. Solo aparecen las que se vincularon a la
+     * cuenta; las anonimas de otro navegador no.
+     */
+    List<Reserva> findByPasajeroIdOrderByCreadoEnDesc(Long pasajeroId);
+
+    /**
+     * Pasa a EXPIRADA toda reserva vigente cuya fecha de expiracion ya paso. Es
+     * un UPDATE masivo: lo corre la tarea programada sin cargar entidades.
      *
      * <p>{@code clearAutomatically} vacia el contexto de persistencia despues,
      * para que nadie siga viendo el estado viejo de una fila recien tocada.
