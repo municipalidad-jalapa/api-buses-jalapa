@@ -1,8 +1,11 @@
 package gt.muni.jalapa.ecoruta.catalogo.web;
 
+import gt.muni.jalapa.ecoruta.catalogo.servicio.AltaDeRutaService;
 import gt.muni.jalapa.ecoruta.catalogo.servicio.CorreccionDeRutaService;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.CorregirParadaRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.CorregirTrazadoRequest;
+import gt.muni.jalapa.ecoruta.catalogo.web.dto.CrearRutaRequest;
+import gt.muni.jalapa.ecoruta.catalogo.web.dto.PublicarRutaRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.RutaResponse;
 import gt.muni.jalapa.ecoruta.common.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,9 +16,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +40,7 @@ import java.util.List;
 public class RutaAdminController {
 
     private final CorreccionDeRutaService correccion;
+    private final AltaDeRutaService alta;
 
     @Operation(summary = "Todas las rutas con paradas y trazado, activas o no")
     @GetMapping
@@ -71,5 +78,26 @@ public class RutaAdminController {
                                        @Valid @RequestBody CorregirParadaRequest peticion,
                                        Authentication autenticacion) {
         return correccion.corregirParada(rutaId, paradaId, peticion, autenticacion.getName());
+    }
+
+    @Operation(summary = "Crea una ruta nueva, como borrador",
+            description = "Nace inactiva: el pasajero no la ve hasta publicarla con paradas y trazado.")
+    @PostMapping
+    public ResponseEntity<RutaResponse> crear(@Valid @RequestBody CrearRutaRequest peticion) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(alta.crear(peticion.nombre()));
+    }
+
+    @Operation(summary = "Agrega una parada al final del recorrido")
+    @PostMapping("/{rutaId}/paradas")
+    public ResponseEntity<RutaResponse> agregarParada(@PathVariable Long rutaId,
+                                                      @Valid @RequestBody CorregirParadaRequest peticion) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(alta.agregarParada(rutaId, peticion));
+    }
+
+    @Operation(summary = "Publica u oculta la ruta para el pasajero",
+            description = "Publicar pide al menos 2 paradas y el trazado.")
+    @PutMapping("/{rutaId}/publicacion")
+    public RutaResponse publicar(@PathVariable Long rutaId, @Valid @RequestBody PublicarRutaRequest peticion) {
+        return alta.publicar(rutaId, peticion.activa());
     }
 }

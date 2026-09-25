@@ -28,12 +28,15 @@ Característica: Modelo de roles y permisos
     Entonces la respuesta tiene codigo 403
 
   @D-criterio-2 @D-criterio-3
-  Escenario: Solo el SuperAdmin administra rutas, paradas y vehículos
+  Escenario: La municipalidad administra vehículos; las credenciales de los equipos, solo el SuperAdmin
     Dado que tengo una sesión de "superadmin"
     Cuando administro los vehículos
     Entonces la respuesta tiene codigo 200
     Dado que tengo una sesión de "municipalidad"
     Cuando administro los vehículos
+    Entonces la respuesta tiene codigo 200
+    Dado que tengo una sesión de "municipalidad"
+    Cuando emito la credencial del equipo de un bus
     Entonces la respuesta tiene codigo 403
 
   @D-criterio-3 @D-criterio-4

@@ -79,6 +79,15 @@ public class PasosDeRolesYPermisos {
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)));
     }
 
+    @Cuando("emito la credencial del equipo de un bus")
+    public void emito_credencial_de_equipo() throws Exception {
+        Long bus = jdbc.queryForObject("SELECT id FROM vehiculos ORDER BY id LIMIT 1", Long.class);
+        contexto.guardarRespuesta(mockMvc.perform(post("/api/v1/admin/vehiculos/" + bus + "/equipos")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"etiqueta\":\"Tableta nueva\"}")));
+    }
+
     @Cuando("consulto el panel municipal como ese rol")
     public void consulto_el_panel() throws Exception {
         contexto.guardarRespuesta(mockMvc.perform(get("/api/v1/admin/servicio")

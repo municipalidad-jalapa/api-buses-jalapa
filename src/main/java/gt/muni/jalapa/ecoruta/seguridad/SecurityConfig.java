@@ -163,12 +163,12 @@ public class SecurityConfig {
                          * ADMINISTRACIÓN DEL SISTEMA (SCRUM-26, bloque D)
                          *
                          * Solo el SuperAdmin crea, edita y desactiva cuentas y
-                         * administra rutas, paradas y vehiculos. La cuenta de
-                         * municipalidad mira el panel, pero no administra: en
-                         * estas rutas recibe 403.
+                         * emite las credenciales de los equipos a bordo. Crear
+                         * vehiculos y rutas lo hace cualquier admin desde el panel
+                         * municipal (/api/v1/admin/vehiculos y /api/v1/admin/rutas).
                          */
                         .requestMatchers("/api/v1/superadmin/**").hasRole("SUPERADMIN")
-                        .requestMatchers("/api/v1/admin/vehiculos/**").hasRole("SUPERADMIN")
+                        .requestMatchers("/api/v1/admin/vehiculos/*/equipos").hasRole("SUPERADMIN")
                         .requestMatchers("/api/v1/admin/equipos/**").hasRole("SUPERADMIN")
 
                         /*

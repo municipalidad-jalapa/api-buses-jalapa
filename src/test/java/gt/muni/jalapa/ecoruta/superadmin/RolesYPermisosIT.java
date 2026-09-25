@@ -79,7 +79,7 @@ class RolesYPermisosIT extends IntegracionPostgisTest {
     }
 
     @Test
-    void solo_el_superadmin_administra_rutas_paradas_y_vehiculos() throws Exception {
+    void la_municipalidad_administra_vehiculos_pero_no_cuentas_ni_el_catalogo_del_superadmin() throws Exception {
         mockMvc.perform(get("/api/v1/superadmin/rutas").header(HttpHeaders.AUTHORIZATION, bearer(superadmin)))
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/admin/vehiculos").header(HttpHeaders.AUTHORIZATION, bearer(superadmin)))
@@ -87,8 +87,9 @@ class RolesYPermisosIT extends IntegracionPostgisTest {
 
         mockMvc.perform(get("/api/v1/superadmin/rutas").header(HttpHeaders.AUTHORIZATION, bearer(municipalidad)))
                 .andExpect(status().isForbidden());
+        // Crear vehiculos y rutas lo hace cualquier admin desde el panel municipal.
         mockMvc.perform(get("/api/v1/admin/vehiculos").header(HttpHeaders.AUTHORIZATION, bearer(municipalidad)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
