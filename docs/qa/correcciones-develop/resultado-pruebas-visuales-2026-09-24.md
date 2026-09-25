@@ -95,26 +95,27 @@ No fue posible completar la fase porque depende de una reserva activa y, para lo
 
 ### Fase 4 — ETA para el pasajero
 
-**Resultado: PARCIAL / PENDIENTE DE VALIDACIÓN**
+**Resultado: PASS EN INTERFAZ PÚBLICA**
 
 Comprobaciones superadas:
 
 - La API recibe posiciones recientes de ambos buses.
 - El marcador de cada bus aparece y se desplaza en su ruta.
 - El selector conserva el aislamiento entre rutas.
+- Al seleccionar una parada aparece inmediatamente la tarjeta ETA.
+- Se observaron valores reales y cambiantes (`6 min`, `8 min`, `2 min` y `1 min`) mientras avanzaban los simuladores.
+- La tarjeta distingue el cálculo como confiable y muestra la hora del último dato.
 
-Comprobaciones pendientes:
+Comprobaciones todavía pendientes de extremo a extremo:
 
-- Visualización de la tarjeta ETA después de elegir una parada.
 - Estados de cálculo, ETA disponible, dato antiguo y ETA no disponible.
 - Actualización del ETA mientras el bus se desplaza.
 - Comportamiento del ETA cuando el bus llega a la parada.
 
 **Qué se debe arreglar o preparar:**
 
-1. Desbloquear el flujo de reserva/selección de parada.
-2. Añadir un escenario de QA que permita posicionar el bus antes y después de una parada concreta.
-3. Repetir la prueba con un solo simulador por ruta, como exige el modelo funcional.
+1. Añadir un escenario de QA que permita posicionar el bus antes y después de una parada concreta.
+2. Repetir el caso de llegada exacta con un solo simulador por ruta, como exige el modelo funcional.
 
 ### Fase 5 — Panel del conductor
 
@@ -177,6 +178,42 @@ Comprobaciones pendientes:
 - Los avisos `AsyncRequestTimeoutException` encontrados en el historial corresponden al flujo SSE y son anteriores al arranque de esta sesión; no se observó un fallo actual de la aplicación asociado con ellos.
 - La interfaz debe abrirse como `http://localhost:5173`, ya que esa dirección coincide con la configuración local de API y CORS. Al usar `127.0.0.1`, la pantalla inicialmente no cargó las rutas.
 
+## Segunda pasada de verificación
+
+Se repitieron las pruebas desde una sesión limpia después de reiniciar el frontend y reactivar ambos simuladores con sus equipos existentes.
+
+Resultados adicionales:
+
+- Se confirmó nuevamente que cada ruta presenta un solo bus: `BUS-01` en la ruta 1 y `BUS-02` en la ruta 2.
+- Los cinco tamaños objetivo volvieron a quedar sin desbordamiento horizontal.
+- La selección directa de marcadores Leaflet sí funciona usando interacción forzada del navegador de pruebas. La limitación indicada en la primera pasada no corresponde a un defecto del producto.
+- La selección de `1a Calle - Mercado` mostró un ETA confiable de `6 min`.
+- La selección de `Parque Central` en la ruta 2 mostró ETA de `8 min`, y posteriormente valores de `2 min` y `1 min` conforme avanzó el bus.
+- El modo oscuro de escritorio se mantuvo legible. Durante la carga apareció brevemente un rectángulo de teselas con brillo distinto, pero desapareció cuando terminó de cargar el mapa; no se considera defecto persistente.
+- Al intentar confirmar una reserva sin permiso de ubicación, el botón mostró `Avisando…`, esperó el límite de geolocalización, recuperó los controles y presentó: “Para avisar necesitamos comprobar que estás en la parada. Activá el permiso de ubicación e intentá de nuevo.”
+- No se transmitió ubicación ni se creó una reserva al fallar el permiso.
+
+Pruebas automatizadas ejecutadas:
+
+```text
+npm test -- src/paginas/Mapa.test.tsx \
+  src/estado/ReservaProvider.test.tsx \
+  src/componentes/TarjetaEta.test.tsx \
+  src/componentes/MapaJalapa.test.tsx \
+  src/componentes/HojaReserva.test.tsx \
+  src/core/estiloMapa.test.ts
+```
+
+Resultado: **6 archivos aprobados, 68 pruebas aprobadas, 0 fallos**.
+
+La salida muestra advertencias conocidas de `HTMLCanvasElement.getContext()` en jsdom y `--localstorage-file` sin ruta; no hicieron fallar ninguna prueba. Conviene limpiar estas advertencias para que futuros errores reales sean más visibles.
+
+Conclusión actualizada de la fase 2:
+
+- La selección manual, el ETA previo, el estado de envío y el error por falta de permiso quedaron comprobados visualmente.
+- Creación, persistencia, renovación, expiración, cancelación y reserva duplicada quedaron cubiertas por las pruebas automatizadas.
+- Continúa pendiente una prueba manual end-to-end en navegador/dispositivo con permiso de geolocalización concedido.
+
 ## Correcciones y acciones prioritarias
 
 | Prioridad | Acción | Tipo |
@@ -184,10 +221,11 @@ Comprobaciones pendientes:
 | Alta | Alinear la configuración local para que frontend, API y CORS utilicen el mismo host (`localhost` o `127.0.0.1`) | Configuración |
 | Alta | Preparar cuentas QA de conductor y administrador municipal | Datos de prueba |
 | Alta | Completar la fase de reserva y, a partir de ella, ETA y notificaciones | Validación funcional |
-| Media | Añadir selectores estables o utilidades QA para accionar marcadores Leaflet | Testabilidad |
+| Media | Añadir identificadores estables para los marcadores Leaflet y simplificar su automatización | Testabilidad |
 | Media | Preparar una configuración reproducible de geolocalización simulada | Testabilidad |
 | Media | Ejecutar notificaciones push en Android real | Compatibilidad |
 | Baja | Revisar los timeouts periódicos del SSE y confirmar que sean cierres esperados, no ruido innecesario en logs | Observabilidad |
+| Baja | Eliminar las advertencias de canvas y `--localstorage-file` en Vitest | Calidad de pruebas |
 
 ## Criterio de cierre recomendado
 
@@ -198,4 +236,3 @@ La corrección puede considerarse aprobada visualmente para el **mapa público y
 3. Push en Android real.
 4. Panel del conductor autenticado.
 5. Panel municipal autenticado y edición de rutas.
-
