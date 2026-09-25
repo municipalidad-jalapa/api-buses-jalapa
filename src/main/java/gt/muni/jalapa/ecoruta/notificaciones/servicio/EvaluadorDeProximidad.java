@@ -1,13 +1,9 @@
 package gt.muni.jalapa.ecoruta.notificaciones.servicio;
 
 import gt.muni.jalapa.ecoruta.notificaciones.NotificacionesProperties;
-import gt.muni.jalapa.ecoruta.notificaciones.dominio.Aviso;
 import gt.muni.jalapa.ecoruta.notificaciones.dominio.EstadoAvisoProximidad;
-import gt.muni.jalapa.ecoruta.notificaciones.dominio.FalloDeAviso;
 import gt.muni.jalapa.ecoruta.notificaciones.dominio.TipoAviso;
-import gt.muni.jalapa.ecoruta.notificaciones.repositorio.DispositivoNotificacionRepository;
 import gt.muni.jalapa.ecoruta.notificaciones.repositorio.EstadoAvisoProximidadRepository;
-import gt.muni.jalapa.ecoruta.notificaciones.repositorio.FalloDeAvisoRepository;
 import gt.muni.jalapa.ecoruta.telemetria.servicio.PosicionVigenteActualizada;
 import gt.muni.jalapa.ecoruta.telemetria.web.dto.PosicionActualResponse;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +30,7 @@ public class EvaluadorDeProximidad {
     private final JdbcTemplate jdbc;
     private final NotificacionesProperties radios;
     private final EstadoAvisoProximidadRepository estados;
-    private final DispositivoNotificacionRepository dispositivos;
-    private final FalloDeAvisoRepository fallos;
-    private final EnviadorDeNotificaciones enviador;
+    private final DespachadorDeAvisos despachador;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -74,32 +68,8 @@ public class EvaluadorDeProximidad {
     }
 
     private void enviar(ReservaConDistancia reserva, TipoAviso tipo) {
-        String token = dispositivos.findById(reserva.dispositivoId())
-                .map(d -> d.getToken())
-                .orElse("");
-        Aviso aviso = new Aviso(
-                reserva.reservaId(),
-                reserva.dispositivoId(),
-                token,
-                tipo,
-                reserva.paradaId(),
-                reserva.paradaNombre());
-        try {
-            enviador.enviar(aviso);
-        } catch (RuntimeException ex) {
-            registrarFallo(reserva.reservaId(), tipo, ex);
-            log.warn("Aviso no enviado: tipo={} reserva={} motivo={}",
-                    tipo, reserva.reservaId(), ex.getMessage());
-        }
-    }
-
-    private void registrarFallo(Long reservaId, TipoAviso tipo, RuntimeException ex) {
-        FalloDeAviso fallo = new FalloDeAviso();
-        fallo.setReservaId(reservaId);
-        fallo.setTipo(tipo);
-        fallo.setDetalle(ex.getMessage());
-        fallo.setOcurridoEn(Instant.now());
-        fallos.save(fallo);
+        despachador.despachar(reserva.reservaId(), reserva.dispositivoId(), tipo,
+                reserva.paradaId(), reserva.paradaNombre());
     }
 
     private EstadoAvisoProximidad nuevo(Long reservaId, TipoAviso tipo) {

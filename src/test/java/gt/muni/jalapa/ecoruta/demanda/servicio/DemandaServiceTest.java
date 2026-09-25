@@ -82,7 +82,7 @@ class DemandaServiceTest {
     }
 
     @Test
-    void renovar_una_reserva_vigente_la_extiende_otros_cinco_minutos_y_la_deja_renovada() {
+    void renovar_una_reserva_vigente_la_extiende_quince_minutos_y_la_deja_renovada() {
         Reserva reserva = new Reserva("disp", parada(1L), Instant.now().plusSeconds(30));
         when(reservas.findById(7L)).thenReturn(Optional.of(reserva));
 
@@ -90,7 +90,7 @@ class DemandaServiceTest {
         Reserva renovada = servicio.renovar(7L);
 
         assertThat(renovada.getEstado()).isEqualTo(EstadoReserva.RENOVADA);
-        assertThat(renovada.getExpiraEn()).isAfter(antes.plus(Duration.ofMinutes(4)));
+        assertThat(renovada.getExpiraEn()).isAfter(antes.plus(Duration.ofMinutes(14)));
     }
 
     @Test

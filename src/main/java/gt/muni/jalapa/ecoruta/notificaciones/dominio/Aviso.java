@@ -13,14 +13,19 @@ public record Aviso(
         String paradaNombre) {
 
     public String titulo() {
-        return tipo == TipoAviso.APROXIMACION
-                ? "El bus esta por llegar"
-                : "¿Lograste subir al bus?";
+        return switch (tipo) {
+            case APROXIMACION -> "El bus está por llegar";
+            case LLEGADA -> "¿Lograste subir al bus?";
+            case POR_VENCER -> "Tu aviso está por vencer";
+        };
     }
 
     public String cuerpo() {
-        return tipo == TipoAviso.APROXIMACION
-                ? "El bus se acerca a " + paradaNombre + ". Preparate."
-                : "Confirma si subiste en " + paradaNombre + ".";
+        return switch (tipo) {
+            case APROXIMACION -> "El bus se acerca a " + paradaNombre + ". Preparate.";
+            case LLEGADA -> "Confirmá si subiste en " + paradaNombre + ".";
+            case POR_VENCER -> "¿Seguís esperando en " + paradaNombre
+                    + "? Abrí EcoRuta y tocá «Sigo esperando» para guardar tu lugar.";
+        };
     }
 }

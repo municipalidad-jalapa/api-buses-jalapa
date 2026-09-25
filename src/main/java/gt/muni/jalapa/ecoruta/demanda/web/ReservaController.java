@@ -127,7 +127,8 @@ public class ReservaController {
                     Se identifica mediante la cabecera X-Dispositivo-Id.
 
                     La reserva conserva su identificador,
-                    extiende su vigencia y pasa a RENOVADA.
+                    extiende su vigencia (ecoruta.demanda.renovacion-minutos,
+                    15 por defecto) y pasa a RENOVADA.
                     Si ya expiro o no esta activa responde 422.
                     """
     )
