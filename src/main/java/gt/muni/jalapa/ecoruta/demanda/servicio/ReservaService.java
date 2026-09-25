@@ -197,12 +197,15 @@ public class ReservaService {
     }
 
     /**
-     * HU-124.
+     * HU-124 / SCRUM-172.
      *
      * El pasajero cancela manualmente su reserva.
      *
      * La reserva no se elimina de la base de datos:
      * cambia a CANCELADA y conserva cuándo ocurrió.
+     *
+     * <p>Una reserva en {@link EstadoReserva#ABORDO} jamás pasa a CANCELADA por
+     * este flujo: el pasajero ya subió y el conteo de espera ya no la incluye.
      */
     @Transactional
     public void cancelar(
@@ -243,6 +246,14 @@ public class ReservaService {
 
             throw new ReglaDeNegocioException(
                     "Esta reserva ya estaba cancelada."
+            );
+        }
+
+        if (reserva.getEstado()
+                == EstadoReserva.ABORDO) {
+
+            throw new ReglaDeNegocioException(
+                    "No se puede cancelar una reserva ya marcada como abordada."
             );
         }
 
