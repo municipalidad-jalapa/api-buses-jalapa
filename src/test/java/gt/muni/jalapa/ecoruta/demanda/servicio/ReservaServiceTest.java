@@ -45,6 +45,7 @@ class ReservaServiceTest {
     private static final String DISPOSITIVO = "550e8400-e29b-41d4-a716-446655440000";
     private static final int TTL_MINUTOS = 20;
     private static final int GEOCERCA = 150;
+    private static final int RITMO_MINIMO_SEGUNDOS = 5;
 
     @Mock
     private ReservaRepository reservas;
@@ -57,7 +58,7 @@ class ReservaServiceTest {
 
     @BeforeEach
     void armarServicio() {
-        demanda = new DemandaProperties(10, TTL_MINUTOS, GEOCERCA);
+        demanda = new DemandaProperties(TTL_MINUTOS, 60, 10, GEOCERCA, RITMO_MINIMO_SEGUNDOS);
         servicio = new ReservaService(reservas, paradas, demanda, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
@@ -66,7 +67,7 @@ class ReservaServiceTest {
         Parada parada = parada(1L);
         when(paradas.findById(1L)).thenReturn(Optional.of(parada));
         when(paradas.estaDentroDeGeocerca(1L, 14.634878, -89.981202, GEOCERCA)).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(eq(DISPOSITIVO), anyCollection())).thenReturn(false);
+        when(reservas.existsByDispositivoIdAndEstadoIn(eq(DISPOSITIVO), anyCollection())).thenReturn(false);
         when(reservas.saveAndFlush(any(Reserva.class))).thenAnswer(inv -> {
             Reserva r = inv.getArgument(0);
             r.setId(42L);
@@ -85,7 +86,7 @@ class ReservaServiceTest {
         Reserva guardada = captor.getValue();
         assertThat(guardada.getEstado()).isEqualTo(EstadoReserva.ACTIVA);
         assertThat(guardada.getCreadoEn()).isEqualTo(AHORA);
-        assertThat(guardada.getExpiraEn()).isEqualTo(AHORA.plus(demanda.ttl()));
+        assertThat(guardada.getExpiraEn()).isEqualTo(AHORA.plus(demanda.vigencia()));
         assertThat(guardada.getDispositivoId()).isEqualTo(DISPOSITIVO);
     }
 
@@ -114,14 +115,14 @@ class ReservaServiceTest {
                 .hasMessageContaining("acercarte");
 
         verify(reservas, never()).saveAndFlush(any());
-        verify(reservas, never()).existeVigentePorDispositivo(anyString(), anyCollection());
+        verify(reservas, never()).existsByDispositivoIdAndEstadoIn(anyString(), anyCollection());
     }
 
     @Test
     void dispositivo_con_reserva_activa_no_guarda() {
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
+        when(reservas.existsByDispositivoIdAndEstadoIn(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> servicio.crear(peticionCerca()))
@@ -135,7 +136,7 @@ class ReservaServiceTest {
     void dispositivo_con_reserva_renovada_no_guarda() {
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
+        when(reservas.existsByDispositivoIdAndEstadoIn(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> servicio.crear(peticionCerca()))
@@ -153,7 +154,7 @@ class ReservaServiceTest {
 
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
+        when(reservas.existsByDispositivoIdAndEstadoIn(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
                 .thenReturn(false);
         when(reservas.saveAndFlush(any(Reserva.class))).thenAnswer(inv -> {
             Reserva r = inv.getArgument(0);
@@ -171,7 +172,7 @@ class ReservaServiceTest {
     void violacion_concurrente_del_indice_unico_se_traduce_a_regla_de_negocio() {
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(anyString(), anyCollection())).thenReturn(false);
+        when(reservas.existsByDispositivoIdAndEstadoIn(anyString(), anyCollection())).thenReturn(false);
         when(reservas.saveAndFlush(any(Reserva.class))).thenThrow(
                 new DataIntegrityViolationException(
                         "duplicate",
@@ -188,7 +189,7 @@ class ReservaServiceTest {
     void otra_violacion_de_integridad_no_se_traduce_a_reserva_duplicada() {
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(anyString(), anyCollection())).thenReturn(false);
+        when(reservas.existsByDispositivoIdAndEstadoIn(anyString(), anyCollection())).thenReturn(false);
         DataIntegrityViolationException otra = new DataIntegrityViolationException(
                 "fk",
                 new RuntimeException("ERROR: insert or update on table \"registros_espera\" "
@@ -203,7 +204,7 @@ class ReservaServiceTest {
     void el_estado_persistido_siempre_es_activa() {
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(anyString(), anyCollection())).thenReturn(false);
+        when(reservas.existsByDispositivoIdAndEstadoIn(anyString(), anyCollection())).thenReturn(false);
         when(reservas.saveAndFlush(any(Reserva.class))).thenAnswer(inv -> {
             Reserva r = inv.getArgument(0);
             r.setId(1L);
@@ -219,13 +220,13 @@ class ReservaServiceTest {
 
     @Test
     void expira_en_usa_ttl_configurable_y_no_un_numero_hardcodeado() {
-        DemandaProperties otroTtl = new DemandaProperties(10, 7, GEOCERCA);
+        DemandaProperties otroTtl = new DemandaProperties(7, 60, 10, GEOCERCA, RITMO_MINIMO_SEGUNDOS);
         ReservaService conOtroTtl = new ReservaService(
                 reservas, paradas, otroTtl, Clock.fixed(AHORA, ZoneOffset.UTC));
 
         when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
         when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
-        when(reservas.existeVigentePorDispositivo(anyString(), anyCollection())).thenReturn(false);
+        when(reservas.existsByDispositivoIdAndEstadoIn(anyString(), anyCollection())).thenReturn(false);
         when(reservas.saveAndFlush(any(Reserva.class))).thenAnswer(inv -> {
             Reserva r = inv.getArgument(0);
             r.setId(1L);
@@ -234,8 +235,65 @@ class ReservaServiceTest {
 
         ReservaResponse respuesta = conOtroTtl.crear(peticionCerca());
 
-        assertThat(respuesta.expiraEn()).isEqualTo(AHORA.plus(otroTtl.ttl()));
+        assertThat(respuesta.expiraEn()).isEqualTo(AHORA.plus(otroTtl.vigencia()));
         assertThat(respuesta.expiraEn()).isNotEqualTo(AHORA.plusSeconds(TTL_MINUTOS * 60L));
+    }
+
+    @Test
+    void dispositivo_que_creo_una_reserva_hace_poco_no_puede_crear_otra_aunque_no_tenga_vigente() {
+        when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
+        when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
+        when(reservas.existsByDispositivoIdAndEstadoIn(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
+                .thenReturn(false);
+        when(reservas.existsByDispositivoIdAndCreadoEnAfter(
+                DISPOSITIVO, AHORA.minusSeconds(RITMO_MINIMO_SEGUNDOS)))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> servicio.crear(peticionCerca()))
+                .isInstanceOf(ReglaDeNegocioException.class)
+                .hasMessageContaining("ritmo");
+
+        verify(reservas, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void dispositivo_sin_creaciones_recientes_si_puede_crear_otra() {
+        when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
+        when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
+        when(reservas.existsByDispositivoIdAndEstadoIn(eq(DISPOSITIVO), eq(ReservaService.ESTADOS_VIGENTES)))
+                .thenReturn(false);
+        when(reservas.existsByDispositivoIdAndCreadoEnAfter(
+                DISPOSITIVO, AHORA.minusSeconds(RITMO_MINIMO_SEGUNDOS)))
+                .thenReturn(false);
+        when(reservas.saveAndFlush(any(Reserva.class))).thenAnswer(inv -> {
+            Reserva r = inv.getArgument(0);
+            r.setId(9L);
+            return r;
+        });
+
+        ReservaResponse respuesta = servicio.crear(peticionCerca());
+
+        assertThat(respuesta.estado()).isEqualTo(EstadoReserva.ACTIVA);
+    }
+
+    @Test
+    void el_ritmo_minimo_usa_la_ventana_configurada_y_no_un_numero_hardcodeado() {
+        DemandaProperties otroRitmo = new DemandaProperties(TTL_MINUTOS, 60, 10, GEOCERCA, 30);
+        ReservaService conOtroRitmo = new ReservaService(
+                reservas, paradas, otroRitmo, Clock.fixed(AHORA, ZoneOffset.UTC));
+
+        when(paradas.findById(1L)).thenReturn(Optional.of(parada(1L)));
+        when(paradas.estaDentroDeGeocerca(anyLong(), anyDouble(), anyDouble(), anyDouble())).thenReturn(true);
+        when(reservas.existsByDispositivoIdAndEstadoIn(anyString(), anyCollection())).thenReturn(false);
+        when(reservas.saveAndFlush(any(Reserva.class))).thenAnswer(inv -> {
+            Reserva r = inv.getArgument(0);
+            r.setId(1L);
+            return r;
+        });
+
+        conOtroRitmo.crear(peticionCerca());
+
+        verify(reservas).existsByDispositivoIdAndCreadoEnAfter(DISPOSITIVO, AHORA.minusSeconds(30));
     }
 
     private static CrearReservaRequest peticionCerca() {
