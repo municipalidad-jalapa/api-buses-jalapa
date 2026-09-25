@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /** Traduce los pasos de {@code calcular_tiempo_estimado_de_llegada.feature} (SCRUM-166). */
@@ -184,6 +185,59 @@ public class PasosDeEta {
         JsonNode primero = respuesta().get("desvio").get("recorridoEstimado").get(0);
         assertThat(primero.get("latitud").asDouble()).isEqualTo(LAT_ANTES_DE_PARADA_2);
         assertThat(primero.get("longitud").asDouble()).isEqualTo(LON_ANTES_DE_PARADA_2);
+    }
+
+    // --- SCRUM-26, bloque C: el desvio trazado por las calles de OSM ---------
+
+    @Dado("que el vehiculo {string} sale del trazado unas cuadras al norte de la 1a Calle")
+    public void sale_del_trazado_hacia_las_calles(String identificador) {
+        Instant ahora = Instant.now();
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 25d,
+                ahora.minusSeconds(40));
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2 + 0.0035,
+                LON_ANTES_DE_PARADA_2 - 0.0012, 25d, ahora);
+    }
+
+    @Dado("que el vehiculo {string} sale del trazado donde no hay ninguna calle importada")
+    public void sale_del_trazado_sin_calles(String identificador) {
+        Instant ahora = Instant.now();
+        insertarPosicion(identificador, LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 25d,
+                ahora.minusSeconds(40));
+        insertarPosicion(identificador, 14.90, -90.40, 25d, ahora);
+    }
+
+    @Y("la vuelta al trazado es mas larga que la linea recta")
+    public void la_vuelta_es_mas_larga() throws Exception {
+        JsonNode desvio = respuesta().get("desvio");
+        double fuera = desvio.get("metrosFueraDelTrazado").asDouble();
+        double hastaVolver = desvio.get("metrosHastaReincorporar").asDouble();
+        assertThat(hastaVolver).isGreaterThan(fuera * propiedades.factorDesvio());
+    }
+
+    @Y("el recorrido estimado sigue las calles")
+    public void el_recorrido_sigue_las_calles() throws Exception {
+        assertThat(respuesta().get("desvio").get("recorridoEstimado").size()).isGreaterThan(5);
+    }
+
+    @Y("la vuelta al trazado se estimo con el factor")
+    public void la_vuelta_con_factor() throws Exception {
+        JsonNode desvio = respuesta().get("desvio");
+        double fuera = desvio.get("metrosFueraDelTrazado").asDouble();
+        double hastaVolver = desvio.get("metrosHastaReincorporar").asDouble();
+        assertThat(hastaVolver / fuera).isCloseTo(propiedades.factorDesvio(), within(0.1));
+    }
+
+    @Entonces("la red de calles de Jalapa esta importada en la base")
+    public void la_red_esta_importada() {
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM calles", Integer.class)).isGreaterThan(1000);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM calles_nodos", Integer.class)).isGreaterThan(500);
+    }
+
+    @Y("las vias de un solo sentido no se pueden recorrer al reves")
+    public void sentido_respetado() {
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM calles WHERE sentido_unico AND costo_reverso <> -1", Integer.class))
+                .isZero();
     }
 
     @Dado("que el intervalo minimo de recalculo es de {int} segundos")

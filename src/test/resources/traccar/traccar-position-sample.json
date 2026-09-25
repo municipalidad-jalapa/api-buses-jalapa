@@ -1,0 +1,43 @@
+{
+  "position": {
+    "id": 0,
+    "attributes": {
+      "hdop": 0.7,
+      "distance": 159.0000173865862,
+      "totalDistance": 159.0000173865862,
+      "motion": true
+    },
+    "deviceId": 1,
+    "protocol": "osmand",
+    "serverTime": "2026-09-21T02:41:35.747+00:00",
+    "deviceTime": "2026-09-21T02:41:35.000+00:00",
+    "fixTime": "2026-09-21T02:41:35.000+00:00",
+    "valid": true,
+    "latitude": 14.634001,
+    "longitude": -89.9871,
+    "altitude": 1361.0,
+    "speed": 12.5,
+    "course": 45.0,
+    "address": null,
+    "accuracy": 8.0,
+    "network": null,
+    "geofenceIds": null
+  },
+  "device": {
+    "id": 1,
+    "attributes": {},
+    "groupId": 0,
+    "calendarId": 0,
+    "name": "BUS-01-prueba",
+    "uniqueId": "860000000000001",
+    "status": "online",
+    "lastUpdate": "2026-09-21T02:41:35.752+00:00",
+    "positionId": 2,
+    "phone": null,
+    "model": null,
+    "contact": null,
+    "category": null,
+    "disabled": false,
+    "expirationTime": null
+  }
+}

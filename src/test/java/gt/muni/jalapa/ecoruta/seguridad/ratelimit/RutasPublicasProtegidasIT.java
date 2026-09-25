@@ -30,11 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * HU Desarrollo-95, criterio 1: todo endpoint publico de negocio tiene que
  * pasar por el limite de peticiones.
  *
- * <p>Las rutas publicas viven en dos sitios que no se hablan entre si:
- * {@code SecurityConfig} (quien puede entrar sin credencial) y
- * {@code RateLimitFilter.RUTAS_PROTEGIDAS} (a quien se le limita). QA encontro
- * asi que {@code POST /api/v1/auth/admin}, publico desde SCRUM-173, quedo sin
- * limite: alguien lo agrego a una lista y no a la otra.
+ * <p>{@code RutasPublicas} abre y limita las mismas rutas, pero nada impide
+ * que un controlador o una cadena de seguridad declare un {@code permitAll()}
+ * por fuera del catalogo. Asi se le escapo a QA {@code POST /api/v1/auth/admin}
+ * (SCRUM-173) cuando habia dos listas a mano.
  *
  * <p>Esta prueba no compara las dos listas a mano. Recorre los endpoints
  * reales de los controladores, le pregunta a la autorizacion real de Spring
@@ -101,7 +100,7 @@ class RutasPublicasProtegidasIT extends IntegracionPostgisTest {
 
         assertThat(sinLimite)
                 .as("Endpoints publicos SIN limite de peticiones. Agregalos a "
-                        + "RateLimitFilter.RUTAS_PROTEGIDAS (o, si es a proposito, "
+                        + "RutasPublicas.TODAS (o, si es a proposito, "
                         + "documenta por que no en esta prueba)")
                 .isEmpty();
     }

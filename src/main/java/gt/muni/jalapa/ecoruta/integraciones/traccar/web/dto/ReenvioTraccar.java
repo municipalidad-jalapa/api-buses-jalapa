@@ -3,25 +3,30 @@ package gt.muni.jalapa.ecoruta.integraciones.traccar.web.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.time.Instant;
+import java.util.Map;
 
-/**
- * Un reenvio de Traccar en formato JSON ({@code forward.json=true}):
- * {@code {"position": {...}, "device": {...}}}. Solo se leen los campos que
- * EcoRuta usa; el resto se ignora.
- *
- * <p>Parte del contrato documentado en SCRUM-24. Si la captura real difiere,
- * el ajuste se hace aqui y en {@code LecturaTraccar}, no en la ingesta.
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ReenvioTraccar(Posicion position, Dispositivo device) {
 
-    /** @param speed en la unidad de {@code ecoruta.integraciones.traccar.unidad-velocidad} (nudos por defecto) */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Posicion(Long id, Long deviceId, Double latitude, Double longitude,
-                           Double speed, Instant fixTime, Instant deviceTime) {
+                           Double speed, Instant fixTime, Instant deviceTime, Instant serverTime,
+                           String protocol, Boolean valid, Double altitude, Double course,
+                           Double accuracy, Map<String, Object> attributes) {
+
+        public Posicion(Long id, Long deviceId, Double latitude, Double longitude,
+                        Double speed, Instant fixTime, Instant deviceTime) {
+            this(id, deviceId, latitude, longitude, speed, fixTime, deviceTime,
+                    null, null, null, null, null, null, null);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Dispositivo(Long id, String uniqueId, String name) {
+    public record Dispositivo(Long id, String uniqueId, String name, String status,
+                              Instant lastUpdate, Map<String, Object> attributes) {
+
+        public Dispositivo(Long id, String uniqueId, String name) {
+            this(id, uniqueId, name, null, null, null);
+        }
     }
 }

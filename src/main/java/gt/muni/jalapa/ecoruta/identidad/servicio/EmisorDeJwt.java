@@ -27,6 +27,9 @@ public class EmisorDeJwt {
     public static final String ROL_CONDUCTOR = "conductor";
     public static final String ROL_ADMIN = "admin";
 
+    /** SCRUM-26, bloque D. Manda mas que el admin: administra el sistema. */
+    public static final String ROL_SUPERADMIN = "superadmin";
+
     private final JwtProperties jwt;
 
     public SesionJwt emitirParaConductor(String subject) {

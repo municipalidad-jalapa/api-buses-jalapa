@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -20,7 +21,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** SCRUM-24 (HU Desarrollo-144): recibir en la API las posiciones que reenvia Traccar. */
 class RecepcionTraccarIT extends IntegracionPostgisTest {
 
     static final String RUTA = "/api/v1/integraciones/traccar/posiciones";
@@ -43,8 +43,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 SELECT ?, id FROM equipos WHERE vehiculo_id = ? AND estado = 'ACTIVO'
                 """, IMEI, bus);
     }
-
-    // --- criterio 1: credencial de integracion ---------------------------------
 
     @Test
     void sin_cabecera_o_con_un_token_distinto_responde_401() throws Exception {
@@ -75,8 +73,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // --- criterio 2: dispositivo -> equipo -> vehiculo -------------------------
-
     @Test
     void una_posicion_valida_se_registra_para_el_vehiculo_del_equipo_asociado() throws Exception {
         enviar(reenvio(501, IMEI, 10, Instant.now()))
@@ -105,8 +101,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         assertThat(filas()).isZero();
     }
 
-    // --- criterio 3: validacion y unidades --------------------------------------
-
     @Test
     void latitud_fuera_de_rango_o_sin_fecha_responde_422() throws Exception {
         enviar("""
@@ -121,9 +115,41 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
     }
 
     @Test
+    void longitud_fuera_de_rango_responde_422() throws Exception {
+        enviar("""
+                {"device":{"uniqueId":"%s"},"position":{"id":7,"latitude":14.63,"longitude":-181,"fixTime":"%s"}}"""
+                .formatted(IMEI, Instant.now()))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(filas()).isZero();
+    }
+
+    @Test
     void un_cuerpo_mal_formado_responde_400() throws Exception {
         enviar("{no es json").andExpect(status().isBadRequest());
         enviar("\"texto\"").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void la_muestra_real_con_dispositivo_asociado_responde_202() throws Exception {
+        enviar(muestraReal(IMEI, Instant.now(), 14.634001, -89.9871))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.recibidas").value(1))
+                .andExpect(jsonPath("$.aceptadas").value(1))
+                .andExpect(jsonPath("$.descartadas").value(0));
+    }
+
+    @Test
+    void la_muestra_real_con_dispositivo_no_asociado_responde_422() throws Exception {
+        enviar(muestraReal("999999999999999", Instant.now(), 14.634001, -89.9871))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(filas()).isZero();
+    }
+
+    @Test
+    void la_muestra_real_con_coordenadas_invalidas_responde_422() throws Exception {
+        enviar(muestraReal(IMEI, Instant.now(), 95.0, -89.9871))
+                .andExpect(status().isUnprocessableEntity());
+        assertThat(filas()).isZero();
     }
 
     @Test
@@ -134,8 +160,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         assertThat(kmh).isEqualTo(18.52, org.assertj.core.data.Offset.offset(0.001));
     }
 
-    // --- criterio 4: ventana de 12 h ---------------------------------------------
-
     @Test
     void una_lectura_fuera_de_la_ventana_de_doce_horas_se_descarta() throws Exception {
         enviar(reenvio(10, IMEI, 10, Instant.now().minus(Duration.ofHours(13))))
@@ -144,8 +168,6 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
                 .andExpect(jsonPath("$.descartadas").value(1));
         assertThat(filas()).isZero();
     }
-
-    // --- criterios 5 y 7: sin duplicados, respuesta resumida ---------------------
 
     @Test
     void un_reenvio_repetido_no_genera_una_posicion_duplicada() throws Exception {
@@ -164,10 +186,10 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         enviar(reenvio(100, IMEI, 10, Instant.now())).andExpect(status().isAccepted());
 
         enviar("[" + String.join(",",
-                        reenvio(100, IMEI, 10, Instant.now()),                              // repetida
-                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30)),            // nueva
-                        reenvio(102, IMEI, 10, Instant.now().minus(Duration.ofHours(20))), // fuera de ventana
-                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30))) + "]")     // repetida en el lote
+                        reenvio(100, IMEI, 10, Instant.now()),
+                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30)),
+                        reenvio(102, IMEI, 10, Instant.now().minus(Duration.ofHours(20))),
+                        reenvio(101, IMEI, 10, Instant.now().minusSeconds(30))) + "]")
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.recibidas").value(4))
                 .andExpect(jsonPath("$.aceptadas").value(1))
@@ -193,12 +215,33 @@ class RecepcionTraccarIT extends IntegracionPostgisTest {
         return jdbc.queryForObject("SELECT count(*) FROM posiciones_historicas", Integer.class);
     }
 
-    /** Formato de reenvio de Traccar (forward.json=true). La velocidad va en nudos. */
     static String reenvio(long idPosicion, String uniqueId, double nudos, Instant fixTime) {
         return """
                 {"position":{"id":%d,"deviceId":3,"protocol":"gt06","latitude":14.6335,"longitude":-89.9885,
                  "speed":%s,"course":90,"fixTime":"%s","deviceTime":"%s","valid":true,"attributes":{"ignition":true}},
                  "device":{"id":3,"name":"BUS-01","uniqueId":"%s","status":"online"}}"""
                 .formatted(idPosicion, nudos, fixTime, fixTime, uniqueId);
+    }
+
+    private static String muestraReal(String uniqueId, Instant cuando, double latitud, double longitud)
+            throws Exception {
+        String original = new String(
+                RecepcionTraccarIT.class.getResourceAsStream("/traccar/traccar-position-sample.json").readAllBytes(),
+                StandardCharsets.UTF_8);
+        com.fasterxml.jackson.databind.ObjectMapper json = new com.fasterxml.jackson.databind.ObjectMapper()
+                .findAndRegisterModules();
+        com.fasterxml.jackson.databind.node.ObjectNode raiz =
+                (com.fasterxml.jackson.databind.node.ObjectNode) json.readTree(original);
+        com.fasterxml.jackson.databind.node.ObjectNode posicion =
+                (com.fasterxml.jackson.databind.node.ObjectNode) raiz.get("position");
+        com.fasterxml.jackson.databind.node.ObjectNode device =
+                (com.fasterxml.jackson.databind.node.ObjectNode) raiz.get("device");
+        posicion.put("latitude", latitud);
+        posicion.put("longitude", longitud);
+        posicion.put("fixTime", cuando.toString());
+        posicion.put("deviceTime", cuando.toString());
+        posicion.put("serverTime", cuando.toString());
+        device.put("uniqueId", uniqueId);
+        return json.writeValueAsString(raiz);
     }
 }

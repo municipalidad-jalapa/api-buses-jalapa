@@ -15,10 +15,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-/**
- * Un dispositivo de un sistema externo (hoy, Traccar) y el equipo al que
- * corresponde (SCRUM-24). De ahi sale el vehiculo que se le atribuye la posicion.
- */
 @Entity
 @Table(name = "dispositivos_externos")
 @Getter
@@ -38,7 +34,6 @@ public class DispositivoExterno {
     @ToString.Include
     private String proveedor = TRACCAR;
 
-    /** uniqueId del dispositivo en Traccar, normalmente el IMEI. */
     @Column(name = "identificador", nullable = false, length = 64)
     @ToString.Include
     private String identificador;

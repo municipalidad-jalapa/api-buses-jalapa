@@ -8,7 +8,6 @@ import java.util.Optional;
 
 public interface DispositivoExternoRepository extends JpaRepository<DispositivoExterno, Long> {
 
-    /** Con el equipo y su vehiculo ya cargados: quien llama los navega enseguida. */
     @Query("""
             SELECT d FROM DispositivoExterno d
             JOIN FETCH d.equipo e

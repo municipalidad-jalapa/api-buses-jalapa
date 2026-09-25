@@ -25,7 +25,7 @@ class AdministradorInicialTest {
     void crea_la_cuenta_admin_con_el_uid_configurado_y_sin_contrasena() {
         when(usuarios.findByFirebaseUid("uid-muni")).thenReturn(Optional.empty());
 
-        new AdministradorInicial(new PanelAdminProperties(30, 120, "uid-muni", "jefe-transporte"), usuarios)
+        new AdministradorInicial(new PanelAdminProperties(30, 120, "uid-muni", "jefe-transporte", null), usuarios)
                 .run(null);
 
         ArgumentCaptor<Usuario> creado = ArgumentCaptor.forClass(Usuario.class);
@@ -40,14 +40,14 @@ class AdministradorInicialTest {
     void es_idempotente_si_la_cuenta_ya_existe() {
         when(usuarios.findByFirebaseUid("uid-muni")).thenReturn(Optional.of(new Usuario()));
 
-        new AdministradorInicial(new PanelAdminProperties(30, 120, "uid-muni", null), usuarios).run(null);
+        new AdministradorInicial(new PanelAdminProperties(30, 120, "uid-muni", null, null), usuarios).run(null);
 
         verify(usuarios, never()).save(any());
     }
 
     @Test
     void sin_uid_configurado_no_crea_nada() {
-        new AdministradorInicial(new PanelAdminProperties(0, 0, "", null), usuarios).run(null);
+        new AdministradorInicial(new PanelAdminProperties(0, 0, "", null, null), usuarios).run(null);
 
         verify(usuarios, never()).save(any());
     }
