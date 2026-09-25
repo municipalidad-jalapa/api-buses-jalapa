@@ -25,14 +25,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * SCRUM-24, criterio 9: el evento en tiempo real se publica despues de guardar,
- * nunca antes. Un oyente AFTER_COMMIT de prueba lo registra; si la transaccion
- * se revierte, no llega nada.
- *
- * <p>Lleva su propio oyente, asi que levanta un contexto aparte: es la unica
- * forma de observar el evento sin tocar los oyentes reales.
- */
 @Import(EventoTrasGuardarIT.Oyente.class)
 class EventoTrasGuardarIT extends IntegracionPostgisTest {
 

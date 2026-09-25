@@ -157,14 +157,16 @@ Cada una solo abre su propia ruta.
    TRACCAR_UNIDAD_VELOCIDAD=NUDOS
    ```
 
-2. Configurar el reenvío en `traccar.xml`:
+2. Configurar el reenvío en `traccar.xml` (Traccar 6.14+: `forward.type=json`; `forward.json=true` ya no aplica):
 
    ```xml
-   <entry key='forward.enable'>true</entry>
    <entry key='forward.url'>https://<api>/api/v1/integraciones/traccar/posiciones</entry>
-   <entry key='forward.json'>true</entry>
+   <entry key='forward.type'>json</entry>
    <entry key='forward.header'>X-Traccar-Token: <secreto-largo></entry>
    ```
+
+   El cuerpo real es `{ "position": {...}, "device": {...} }`. No es un objeto plano.
+   Detalle de campos y la muestra versionada: `docs/integraciones/traccar-formato-reenvio.md`.
 
 3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el equipo del bus:
 
@@ -173,9 +175,19 @@ Cada una solo abre su propia ruta.
    VALUES ('860000000000001', <id del equipo ACTIVO del bus>);
    ```
 
+En desarrollo local, `docker-compose` ya define `TRACCAR_TOKEN`. Tras levantar la API y asociar el IMEI:
+
+```bash
+API_BASE=http://localhost:8080 TRACCAR_TOKEN=solo-para-desarrollo-local-traccar-32chars \
+  python3 tools/probar-reenvio-traccar.py --caso 202
+```
+
+Otros casos: `--caso 401`, `--caso 400`, `--caso 422-dispositivo`, `--caso 422-coordenadas`.
+
 Respuestas: `202 {"recibidas", "aceptadas", "descartadas"}` — un 202 no implica que todas se
 guardaron: se descartan las lecturas fuera de la ventana de 12 h y los reenvíos repetidos (se
-deduplican por `position.id`). `400` cuerpo mal formado, `401` token ausente o inválido, `422`
+deduplican por la clave de origen: `position.id` cuando es mayor que 0, o `uniqueId` y fecha
+si Traccar reenvia `id=0` antes de persistir). `400` cuerpo mal formado, `401` token ausente o inválido, `422`
 dispositivo sin equipo asociado (o con el equipo revocado o sin vehículo), o datos inválidos; en
 ese caso no se registra nada del reenvío.
 
