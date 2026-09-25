@@ -3,14 +3,6 @@ package gt.muni.jalapa.ecoruta.integraciones.traccar;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
 
-/**
- * Integracion con Traccar (SCRUM-24, HU Desarrollo-144).
- *
- * @param token           secreto que Traccar envia en {@code X-Traccar-Token}.
- *                        Vacio = nadie entra: la integracion falla cerrada
- * @param unidadVelocidad unidad de {@code position.speed} en el reenvio.
- *                        Traccar usa nudos salvo que se configure otra cosa
- */
 @ConfigurationProperties("ecoruta.integraciones.traccar")
 public record TraccarProperties(String token, UnidadVelocidad unidadVelocidad) {
 

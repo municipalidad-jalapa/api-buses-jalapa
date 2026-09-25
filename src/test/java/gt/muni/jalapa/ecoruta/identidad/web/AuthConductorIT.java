@@ -35,7 +35,9 @@ class AuthConductorIT extends IntegracionPostgisTest {
 
     @AfterEach
     void borrarUsuariosDePrueba() {
-        jdbc.update("DELETE FROM usuarios WHERE username <> 'conductor1'");
+        // Solo lo que crea esta clase: la cuenta de SuperAdmin de V21 y las de
+        // otras pruebas tienen que sobrevivir (SCRUM-26, bloque D).
+        jdbc.update("DELETE FROM usuarios WHERE username IN ('cond-fb', 'cond-inactivo', 'admin-fb')");
     }
 
     @Test

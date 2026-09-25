@@ -78,6 +78,16 @@ ecoruta:
     # recta por el factor.
     desvio-metros: 60
     factor-desvio: 1.3
+  red-de-calles:
+    # SCRUM-26, bloque C. Camino real por las calles de Jalapa (OpenStreetMap
+    # importado en la base, migraciones V19/V20) para estimar la vuelta al
+    # trazado cuando el bus se desvia. No consume ningun servicio externo.
+    # Con habilitada: false se vuelve a la estimacion por ecoruta.eta.factor-desvio.
+    habilitada: ${RED_DE_CALLES_HABILITADA:true}
+    # A mas de esta distancia no hay calle que enganchar: se estima por factor.
+    radio-nodo-metros: 150
+    # Puntos del trazado por delante que se prueban como reincorporacion.
+    candidatos: 12
   integraciones:
     traccar:
       # SCRUM-24. Secreto que Traccar envia en X-Traccar-Token (forward.header).
@@ -85,6 +95,15 @@ ecoruta:
       token: ${TRACCAR_TOKEN:}
       # Unidad de position.speed en el reenvio: NUDOS (lo que usa Traccar), KMH o MS.
       unidad-velocidad: ${TRACCAR_UNIDAD_VELOCIDAD:NUDOS}
+  pasajero:
+    # SCRUM-26, bloque B. Duracion de la sesion opcional del pasajero (Google).
+    sesion-dias: 30
+  opiniones:
+    # SCRUM-26, bloque A. Como mucho N opiniones por navegador en la ventana; luego 429.
+    limite-envios: 5
+    ventana-minutos: 10
+    # Largo maximo del comentario; la pantalla muestra el mismo contador.
+    texto-maximo: 500
   cors:
     # Vacio a proposito: hoy no hay ningun origen habilitado. Lo llena SCRUM-274.
     origenes-permitidos: ${CORS_ORIGENES:}
@@ -101,6 +120,12 @@ ecoruta:
     por-ip-ventana-segundos: 60
     por-dispositivo-capacidad: 60
     por-dispositivo-ventana-segundos: 60
+    # SCRUM-26: opiniones y sesion del pasajero crean filas por cada peticion y
+    # el limite por dispositivo depende de una cabecera que pone el cliente.
+    # Aparte del general, cada IP tiene este cupo propio por ruta. Holgado para
+    # varios telefonos detras del mismo NAT, pero corta una rafaga automatizada.
+    por-ip-estricto-capacidad: 30
+    por-ip-estricto-ventana-segundos: 600
   panel-admin:
     # SCRUM-173. Sin actividad durante este plazo, la sesion del panel se cierra.
     inactividad-minutos: ${PANEL_ADMIN_INACTIVIDAD_MINUTOS:30}
@@ -110,6 +135,10 @@ ecoruta:
     # La contrasena vive solo en Firebase; nunca en el repositorio.
     firebase-uid-inicial: ${ECORUTA_ADMIN_FIREBASE_UID:}
     usuario-inicial: ${ECORUTA_ADMIN_USUARIO:admin}
+    # SCRUM-26, bloque D. La cuenta de SuperAdmin la crea la migracion V21 sin
+    # identidad; con esta variable el arranque le enlaza su uid de Firebase.
+    # Vacio = nadie puede entrar como SuperAdmin en este entorno.
+    superadmin-firebase-uid: ${ECORUTA_SUPERADMIN_FIREBASE_UID:}
   admin:
     # PROVISIONAL de SCRUM-142 - TODO(SCRUM-134). Concede ROLE_ADMIN por la
     # cabecera X-Admin-Token mientras no exista la autenticacion de personas con

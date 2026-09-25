@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,12 +34,15 @@ public class AbordajeConductorController {
             @ApiResponse(responseCode = "200", description = "ABORDO o CANCELADA"),
             @ApiResponse(responseCode = "401", description = "Sin JWT de conductor",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "403", description = "La reserva es de otra ruta",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "422", description = "La reserva no admite correccion",
                     content = @Content(schema = @Schema(implementation = ApiError.class)))
     })
     @PostMapping("/{id}/abordaje")
     public AbordajeResponse abordar(@PathVariable Long id,
-                                    @Valid @RequestBody AbordajeRequest peticion) {
-        return abordaje.registrarConductor(id, peticion.subio());
+                                    @Valid @RequestBody AbordajeRequest peticion,
+                                    Authentication autenticado) {
+        return abordaje.registrarConductor(id, peticion.subio(), autenticado.getName());
     }
 }

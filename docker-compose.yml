@@ -1,7 +1,8 @@
 # Entorno de DESARROLLO local. Produccion se despliega en AKS (ver /infra futura).
 services:
   db:
-    image: postgis/postgis:17-3.5
+    # PostGIS + pgRouting (SCRUM-26, bloque C: desvio por calles).
+    image: pgrouting/pgrouting:17-3.5-3.8
     environment:
       POSTGRES_DB: ecoruta
       POSTGRES_USER: ecoruta
@@ -40,6 +41,8 @@ services:
       # cabecera X-Admin-Token para poder provisionar equipos en local. En
       # produccion esta variable NO se define: sin ella nadie es admin.
       ECORUTA_ADMIN_TOKEN: solo-para-desarrollo-local-no-usar-en-produccion
+      TRACCAR_TOKEN: solo-para-desarrollo-local-traccar-32chars
+      TRACCAR_UNIDAD_VELOCIDAD: NUDOS
     ports:
       - "${API_PUERTO:-8080}:8080"
     depends_on:

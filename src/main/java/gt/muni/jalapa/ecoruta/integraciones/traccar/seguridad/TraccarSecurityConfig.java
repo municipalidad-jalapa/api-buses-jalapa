@@ -13,13 +13,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-/**
- * Cadena de seguridad propia de la integracion con Traccar (SCRUM-24).
- *
- * <p>Separada de la cadena de la API a proposito: aqui solo corre el filtro del
- * token de integracion. Asi un {@code Bearer eq_...} en esta ruta no autentica
- * a nadie (401, no 403), y el token de Traccar no existe para el resto de la API.
- */
 @Configuration
 @Slf4j
 public class TraccarSecurityConfig {
@@ -49,13 +42,10 @@ public class TraccarSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/integraciones/traccar/posiciones")
                         .hasRole("INTEGRACION_TRACCAR")
                         .anyRequest().denyAll())
-                // Toda falta de credencial valida es 401: aqui no hay otro rol posible.
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(entryPoint)
                         .accessDeniedHandler((peticion, respuesta, ex) ->
                                 entryPoint.commence(peticion, respuesta, null)))
-                // Se construye aqui y no como @Bean: un Filter @Bean lo instalaria
-                // Boot tambien en la cadena de servlets, para todas las rutas.
                 .addFilterBefore(new TraccarTokenFilter(traccar.token()), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
