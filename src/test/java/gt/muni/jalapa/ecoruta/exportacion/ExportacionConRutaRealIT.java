@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * HU Desarrollo-86 con DATOS REALES: la geometria de las rutas sembradas por
- * Flyway (V6 y V12), cuyos vertices salen de OpenStreetMap enrutados sobre las
+ * Flyway (V6 y V12, renombradas por V26 a RUTA PRINCIPAL y RUTA SECUNDARIA), cuyos vertices salen de OpenStreetMap enrutados sobre las
  * calles de Jalapa. Las posiciones del bus son los propios vertices del trazado,
  * asi que la distancia que exporta la API tiene una respuesta independiente y
  * exacta: el largo de la linea, medido por PostGIS (ST_Length sobre geography).
@@ -43,7 +43,7 @@ class ExportacionConRutaRealIT extends IntegracionPostgisTest {
     void la_distancia_exportada_de_cada_ruta_real_coincide_con_el_largo_de_su_trazado() throws Exception {
         Map<String, Object> ruta1 = jdbc.queryForMap("SELECT id, nombre FROM rutas WHERE id = 1");
         Map<String, Object> ruta2 = jdbc.queryForMap(
-                "SELECT id, nombre FROM rutas WHERE nombre LIKE 'Ruta de prueba - Parque Central a Metroplaza'");
+                "SELECT id, nombre FROM rutas WHERE nombre = 'RUTA SECUNDARIA'");
 
         int lecturas1 = simularUnaVuelta((Long) ruta1.get("id"), "BUS-01");
         int lecturas2 = simularUnaVuelta((Long) ruta2.get("id"), "BUS-02");
