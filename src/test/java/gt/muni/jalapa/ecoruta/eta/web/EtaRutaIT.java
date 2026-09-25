@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class EtaRutaIT extends IntegracionPostgisTest {
 
-    /** Vertice del trazado de V6 en la 1a Calle, antes de la parada 2 (Mercado). */
+    /** En la 1a Calle, entre la parada 1 y la 2 del trazado real (V26). */
     private static final double LAT_ANTES_DE_PARADA_2 = 14.633161;
     private static final double LON_ANTES_DE_PARADA_2 = -89.985636;
 
@@ -156,15 +156,15 @@ class EtaRutaIT extends IntegracionPostgisTest {
 
     @Test
     void dos_rutas_se_calculan_a_la_vez_cada_una_con_su_bus() throws Exception {
-        // Ruta de prueba a la Metroplaza y su BUS-02, sembrados por V12.
+        // RUTA SECUNDARIA y su BUS-02 (V12, con los datos reales de V26).
         Vehiculo bus1 = vehiculos.findByIdentificador("BUS-01").orElseThrow();
         Vehiculo bus2 = vehiculos.findByIdentificador("BUS-02").orElseThrow();
         long ruta1 = bus1.getRutaId();
         long ruta2 = bus2.getRutaId();
 
         ingestar("BUS-01", lectura(LAT_ANTES_DE_PARADA_2, LON_ANTES_DE_PARADA_2, 30, Instant.now()));
-        // BUS-02 en su parada 2 (Avenida Chipilapa - 4a Calle).
-        ingestar("BUS-02", lectura(14.638392, -89.987701, 20, Instant.now()));
+        // BUS-02 en su parada 2.
+        ingestar("BUS-02", lectura(14.632317, -89.988729, 20, Instant.now()));
 
         JsonNode eta1 = eta(ruta1);
         JsonNode eta2 = eta(ruta2);
@@ -172,6 +172,8 @@ class EtaRutaIT extends IntegracionPostgisTest {
         assertThat(eta1.get("vehiculoId").asLong()).isEqualTo(bus1.getId());
         assertThat(eta2.get("vehiculoId").asLong()).isEqualTo(bus2.getId());
         assertThat(eta1.get("paradas").size()).isEqualTo(8);
+        // RUTA SECUNDARIA es un tramo abierto de 6 paradas: con el bus en la 2,
+        // la 1 ya quedo atras y no lleva ETA.
         assertThat(eta2.get("paradas").size()).isEqualTo(5);
         assertThat(minutos(eta2, 2)).isZero();
         assertThat(minutos(eta2, 3)).isPositive();

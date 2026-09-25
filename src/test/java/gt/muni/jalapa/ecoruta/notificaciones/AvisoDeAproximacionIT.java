@@ -40,12 +40,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class AvisoDeAproximacionIT extends IntegracionPostgisTest {
 
-    /** Parque Central despues de V6. */
-    private static final double PARQUE_LAT = 14.634878;
-    private static final double PARQUE_LON = -89.981202;
+    /** Parada 1 de RUTA PRINCIPAL (levantamiento SCRUM-136). */
+    private static final double PARQUE_LAT = 14.634922;
+    private static final double PARQUE_LON = -89.981133;
     /** ~100 m al norte: dentro del radio de aproximacion (250 m), fuera del de llegada (40 m). */
-    private static final double APROX_LAT = 14.635776;
-    private static final double APROX_LON = -89.981202;
+    private static final double APROX_LAT = 14.635820;
+    private static final double APROX_LON = -89.981133;
     private static final double LEJOS_LAT = 14.50;
     private static final double LEJOS_LON = -90.20;
 
@@ -78,9 +78,11 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
         reset(enviador);
         credencialEquipo = bearer(equipoService.emitir(busPiloto(), "Tableta HU-57"));
         paradaParque = jdbc.queryForObject(
-                "SELECT id FROM paradas WHERE nombre = 'Parque Central' AND ruta_id = 1", Long.class);
+                "SELECT id FROM paradas WHERE nombre = 'Parada 1' AND ruta_id = (SELECT id FROM rutas WHERE nombre = 'RUTA PRINCIPAL')",
+                Long.class);
         paradaLejana = jdbc.queryForObject(
-                "SELECT id FROM paradas WHERE nombre = 'Llano Grande' AND ruta_id = 1", Long.class);
+                "SELECT id FROM paradas WHERE nombre = 'Parada 5' AND ruta_id = (SELECT id FROM rutas WHERE nombre = 'RUTA PRINCIPAL')",
+                Long.class);
     }
 
     @Test

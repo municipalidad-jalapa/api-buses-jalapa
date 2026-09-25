@@ -14,8 +14,8 @@ Característica: Consultar rutas y paradas
   @criterio-2
   Escenario: Las paradas vienen en el orden del recorrido
     Cuando alguien consulta las rutas
-    Entonces la primera parada del recorrido es "Parque Central"
-    Y la última parada del recorrido es "Transito Rojas - Chipilapa"
+    Entonces la primera parada del recorrido es "Parada 1"
+    Y la última parada del recorrido es "Parada 8"
 
   @criterio-2
   Escenario: Las coordenadas se exponen con nombre y sin invertirse
