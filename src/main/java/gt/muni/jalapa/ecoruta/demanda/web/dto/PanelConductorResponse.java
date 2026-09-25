@@ -15,13 +15,19 @@ import java.util.List;
  *
  * @param estadoBus   situacion del bus con la que se calculo el ETA
  * @param calculadoEn cuando se armo esta respuesta
+ * @param subieronHoy suma de lo que conto el piloto al cerrar paradas hoy
+ * @param bajaronHoy  idem, los que bajaron
+ * @param aBordo      subieron menos bajaron hoy, nunca negativo
  */
 public record PanelConductorResponse(
         @Schema(example = "1") Long rutaId,
         @Schema(example = "Ruta de ejemplo - Centro de Jalapa") String rutaNombre,
         @Schema(example = "EN_RUTA") EstadoDelBus estadoBus,
         @Schema(example = "2026-09-23T15:30:00Z") Instant calculadoEn,
-        List<Parada> paradas) {
+        List<Parada> paradas,
+        @Schema(example = "21") int subieronHoy,
+        @Schema(example = "9") int bajaronHoy,
+        @Schema(example = "12") int aBordo) {
 
     /**
      * @param reservasActivas personas esperando (reservas ACTIVA o RENOVADA)

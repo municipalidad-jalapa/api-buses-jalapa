@@ -80,6 +80,19 @@ public class PanelConductorService {
                 },
                 rutaId);
 
-        return new PanelConductorResponse(rutaId, rutaNombre, eta.estado(), Instant.now(reloj), paradas);
+        // Lo que conto el piloto al cerrar cada parada hoy (botones Subio y Bajo).
+        int[] conteo = jdbc.queryForObject("""
+                        SELECT coalesce(sum(subieron), 0) AS subieron,
+                               coalesce(sum(bajaron), 0)  AS bajaron
+                          FROM paradas_atendidas
+                         WHERE ruta_id = ?
+                           AND fecha_servicio = CURRENT_DATE
+                        """,
+                (rs, i) -> new int[] {rs.getInt("subieron"), rs.getInt("bajaron")},
+                rutaId);
+        int aBordo = Math.max(0, conteo[0] - conteo[1]);
+
+        return new PanelConductorResponse(rutaId, rutaNombre, eta.estado(), Instant.now(reloj), paradas,
+                conteo[0], conteo[1], aBordo);
     }
 }

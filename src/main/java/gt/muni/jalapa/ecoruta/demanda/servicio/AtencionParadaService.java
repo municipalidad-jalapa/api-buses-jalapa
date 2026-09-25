@@ -9,6 +9,7 @@ import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
 import gt.muni.jalapa.ecoruta.demanda.dominio.Reserva;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.AtencionParadaRepository;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ReservaRepository;
+import gt.muni.jalapa.ecoruta.demanda.web.dto.AtenderParadaRequest;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.AtenderParadaResponse;
 import gt.muni.jalapa.ecoruta.seguridad.repositorio.ConductorRutaRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +36,8 @@ public class AtencionParadaService {
     public AtenderParadaResponse atender(
             Long rutaId,
             Long paradaId,
-            String conductor
+            String conductor,
+            AtenderParadaRequest conteo
     ) {
         rutas.findById(rutaId)
                 .orElseThrow(() ->
@@ -74,7 +76,9 @@ public class AtencionParadaService {
                     rutaId,
                     paradaId,
                     conductor,
-                    ahora
+                    ahora,
+                    conteo.subieron(),
+                    conteo.bajaron()
             );
         } catch (DataIntegrityViolationException ex) {
             throw new ConflictoException(

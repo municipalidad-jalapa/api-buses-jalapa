@@ -4,6 +4,7 @@ import gt.muni.jalapa.ecoruta.IntegracionPostgisTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.UUID;
@@ -69,6 +70,29 @@ class PanelConductorIT extends IntegracionPostgisTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paradas[0].atendidaEn", notNullValue()))
                 .andExpect(jsonPath("$.paradas[0].reservasActivas").value(0));
+    }
+
+    @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void suma_lo_que_conto_el_piloto_hoy_y_calcula_cuantos_van_a_bordo() throws Exception {
+        mockMvc.perform(get(PANEL))
+                .andExpect(jsonPath("$.subieronHoy").value(0))
+                .andExpect(jsonPath("$.aBordo").value(0));
+
+        mockMvc.perform(post("/api/v1/rutas/1/paradas/1/atendida")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":5,\"bajaron\":0}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/rutas/1/paradas/2/atendida")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":1,\"bajaron\":2}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(PANEL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subieronHoy").value(6))
+                .andExpect(jsonPath("$.bajaronHoy").value(2))
+                .andExpect(jsonPath("$.aBordo").value(4));
     }
 
     @Test

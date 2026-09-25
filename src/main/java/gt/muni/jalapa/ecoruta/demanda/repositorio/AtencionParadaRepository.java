@@ -18,7 +18,9 @@ public class AtencionParadaRepository {
             Long rutaId,
             Long paradaId,
             String conductor,
-            Instant marcadaEn
+            Instant marcadaEn,
+            int subieron,
+            int bajaron
     ) {
 
         MapSqlParameterSource parametros =
@@ -29,7 +31,9 @@ public class AtencionParadaRepository {
                         .addValue(
                                 "marcadaEn",
                                 Timestamp.from(marcadaEn)
-                        );
+                        )
+                        .addValue("subieron", subieron)
+                        .addValue("bajaron", bajaron);
 
         jdbc.update("""
                 INSERT INTO paradas_atendidas (
@@ -37,14 +41,18 @@ public class AtencionParadaRepository {
                     parada_id,
                     conductor_username,
                     fecha_servicio,
-                    marcada_en
+                    marcada_en,
+                    subieron,
+                    bajaron
                 )
                 VALUES (
                     :rutaId,
                     :paradaId,
                     :conductor,
                     CURRENT_DATE,
-                    :marcadaEn
+                    :marcadaEn,
+                    :subieron,
+                    :bajaron
                 )
                 """,
                 parametros);
