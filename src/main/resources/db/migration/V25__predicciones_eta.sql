@@ -2,7 +2,7 @@
 -- el error por ruta, parada y franja. El registro queda activo desde el primer
 -- dia del piloto: no hay bandera que lo apague.
 --
--- V14: en develop V8 ya es identidad Firebase del conductor.
+-- Originalmente V14; renumerada a V25 porque develop ya ocupa V1-V23.
 
 CREATE TABLE predicciones_eta (
     id                BIGSERIAL PRIMARY KEY,

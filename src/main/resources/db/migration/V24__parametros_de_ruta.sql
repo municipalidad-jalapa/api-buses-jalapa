@@ -1,7 +1,6 @@
 -- HU-72: parametros de tiempo estimado por ruta.
 --
--- En develop V7-V12 ya existen (reservas, identidad, avisos, segunda ruta).
--- Esta migracion es V13 para no chocar con esas.
+-- Originalmente V13; renumerada a V24 porque develop ya ocupa V1-V23.
 --
 -- Horarios oficiales del Bus Electrico Municipal de Jalapa:
 --   * Entre semana: 06:20 y 10:15
