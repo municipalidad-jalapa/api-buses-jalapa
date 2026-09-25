@@ -177,6 +177,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/admin/catalogo/vehiculos")
                                 .hasAnyRole("ADMIN", "SUPERADMIN")
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        // HU-79: el panel municipal ve la operacion de todas las
+                        // rutas. Mismo ROLE_ADMIN que /admin (el SuperAdmin tambien lo lleva).
+                        .requestMatchers("/api/v1/panel/**").hasRole("ADMIN")
 
                         /*
                          * Cualquier endpoint que no tenga
