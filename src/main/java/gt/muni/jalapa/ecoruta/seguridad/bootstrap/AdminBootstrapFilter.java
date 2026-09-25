@@ -60,7 +60,10 @@ public class AdminBootstrapFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(
                     UsernamePasswordAuthenticationToken.authenticated(
                             "admin-bootstrap", null,
-                            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
+                            // SCRUM-26, bloque D: es la llave maestra provisional
+                            // del entorno local, asi que tambien administra.
+                            List.of(new SimpleGrantedAuthority("ROLE_ADMIN"),
+                                    new SimpleGrantedAuthority("ROLE_SUPERADMIN"))));
         }
 
         // Igual que el filtro del equipo: no lanza nunca, decide la autorizacion.

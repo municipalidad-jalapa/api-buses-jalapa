@@ -48,7 +48,7 @@ class ReservaCancelacionTest {
 
     @BeforeEach
     void armarServicio() {
-        DemandaProperties demanda = new DemandaProperties(10, 5, 150);
+        DemandaProperties demanda = new DemandaProperties(5, 60, 10, 150, 5);
         servicio = new ReservaService(reservas, paradas, demanda, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 

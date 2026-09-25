@@ -48,7 +48,21 @@ public class Usuario {
     @Column(name = "firebase_uid", unique = true, length = 128)
     private String firebaseUid;
 
+    /** Ruta asignada al piloto. Los demas roles no estan atados a ninguna. */
+    @Column(name = "ruta_id")
+    private Long rutaId;
+
     public boolean puedeIniciarSesionComoConductor() {
         return activo && rol.esConductor();
+    }
+
+    /** SCRUM-173. El rol de administrador no esta atado a ninguna ruta. */
+    public boolean puedeEntrarAlPanelMunicipal() {
+        return activo && rol.entraAlPanelMunicipal();
+    }
+
+    /** SCRUM-26, bloque D: solo el SuperAdmin administra cuentas y catalogo. */
+    public boolean puedeAdministrarElSistema() {
+        return activo && rol.administraElSistema();
     }
 }

@@ -83,7 +83,9 @@ class PanelRutasIT extends IntegracionPostgisTest {
 
     @Test
     void marca_transmitiendo_true_cuando_la_posicion_es_reciente() throws Exception {
-        Instant ahora = Instant.now();
+        // timestamptz guarda microsegundos y REDONDEA los nanos: truncar antes de
+        // guardar deja un valor que la base conserva exacto.
+        Instant ahora = Instant.now().truncatedTo(ChronoUnit.MICROS);
         ingestarPosicion("BUS-01", 14.6335, -89.9885, ahora);
 
         JsonNode ruta = rutaDe(leerPanel(), 1L);
@@ -92,7 +94,7 @@ class PanelRutasIT extends IntegracionPostgisTest {
         assertThat(ruta.get("posicion").get("latitud").asDouble()).isEqualTo(14.6335);
         assertThat(ruta.get("posicion").get("longitud").asDouble()).isEqualTo(-89.9885);
         assertThat(Instant.parse(ruta.get("posicion").get("registradaEn").asText()))
-                .isEqualTo(ahora.truncatedTo(ChronoUnit.MICROS));
+                .isEqualTo(ahora);
     }
 
     @Test
