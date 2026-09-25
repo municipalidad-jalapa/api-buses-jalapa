@@ -82,6 +82,14 @@ ecoruta:
     # recta por el factor.
     desvio-metros: 60
     factor-desvio: 1.3
+  exportacion:
+    # HU Desarrollo-86. Zona en la que se interpretan y agrupan los dias del reporte.
+    zona-horaria: America/Guatemala
+    # Tope de dias por exportacion, inclusive.
+    rango-maximo-dias: 366
+    # Entre dos lecturas GPS seguidas, un intervalo mayor a este es un hueco de
+    # datos y no suma distancia recorrida.
+    salto-maximo-segundos: 300
   red-de-calles:
     # SCRUM-26, bloque C. Camino real por las calles de Jalapa (OpenStreetMap
     # importado en la base, migraciones V19/V20) para estimar la vuelta al

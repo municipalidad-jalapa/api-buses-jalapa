@@ -268,10 +268,15 @@ public class SecurityConfig {
                 )
         );
 
+        /*
+         * Content-Disposition: sin exponerla, el panel (otro origen) no puede
+         * leer el nombre del archivo que sugiere la exportacion (HU Desarrollo-86).
+         */
         configuracion.setExposedHeaders(
                 List.of(
                         "Cache-Control",
-                        "Content-Type"
+                        "Content-Type",
+                        "Content-Disposition"
                 )
         );
 

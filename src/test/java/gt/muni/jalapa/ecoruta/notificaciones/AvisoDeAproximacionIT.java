@@ -297,7 +297,7 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
                 porVencer.equals(a.dispositivoId())
                         && a.tipo() == TipoAviso.POR_VENCER
                         && "t-vence".equals(a.tokenNotificacion())
-                        && a.cuerpo().contains("Parque Central")));
+                        && a.cuerpo().contains("Parada 1")));
         verify(enviador, times(0)).enviar(argThat(a -> conTiempo.equals(a.dispositivoId())));
 
         // La siguiente pasada no repite el aviso del mismo vencimiento.
