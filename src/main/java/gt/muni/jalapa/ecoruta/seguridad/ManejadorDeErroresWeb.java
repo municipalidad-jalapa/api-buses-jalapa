@@ -7,7 +7,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -53,21 +52,6 @@ public class ManejadorDeErroresWeb {
                 HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(),
                 "El parametro '" + excepcion.getName() + "' tiene un formato invalido",
-                peticion.getRequestURI()));
-    }
-
-    /**
-     * Falta un parametro obligatorio de la URL, p. ej. {@code desde} en la
-     * exportacion del panel (HU Desarrollo-86). Sin esto Spring responde 400 con el
-     * cuerpo generico de {@code /error}, no con ApiError.
-     */
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiError> parametroFaltante(MissingServletRequestParameterException excepcion,
-                                                      HttpServletRequest peticion) {
-        return ResponseEntity.badRequest().body(ApiError.of(
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "Falta el parametro '" + excepcion.getParameterName() + "'",
                 peticion.getRequestURI()));
     }
 }
