@@ -34,5 +34,5 @@ public interface ParadaRepository extends JpaRepository<Parada, Long> {
     boolean estaDentroDeGeocerca(@Param("paradaId") Long paradaId,
                                  @Param("latitud") double latitud,
                                  @Param("longitud") double longitud,
-                                 @Param("geocercaMetros") double geocercaMetros);
+                                 @Param("geocercaMetros") double geocercaMetros); 
 }

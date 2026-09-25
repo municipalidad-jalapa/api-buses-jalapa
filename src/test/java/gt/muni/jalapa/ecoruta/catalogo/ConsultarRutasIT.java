@@ -13,7 +13,7 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void devuelve_las_rutas_activas_con_sus_paradas() throws Exception {
-        // V13 siembra RUTA PRINCIPAL (8 paradas) y RUTA SECUNDARIA parcial (6).
+        // V26 siembra RUTA PRINCIPAL (8 paradas) y RUTA SECUNDARIA parcial (6).
         mockMvc.perform(get("/api/v1/rutas"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(2)))
@@ -67,7 +67,7 @@ class ConsultarRutasIT extends IntegracionPostgisTest {
 
     @Test
     void una_ruta_inactiva_no_aparece_en_el_listado() throws Exception {
-        // Todas: con la ruta secundaria de V13 hay mas de una.
+        // Todas: con la ruta secundaria de V26 hay mas de una.
         jdbc.update("UPDATE rutas SET activa = false");
         try {
             mockMvc.perform(get("/api/v1/rutas"))

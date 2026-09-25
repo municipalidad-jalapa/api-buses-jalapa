@@ -208,7 +208,7 @@ class DatosRealesRutasIT extends IntegracionPostgisTest {
                 SELECT v.identificador, v.placa, r.nombre AS ruta
                   FROM vehiculos v
                   JOIN rutas r ON r.id = v.ruta_id
-                 WHERE v.identificador = 'BUS-1'
+                 WHERE v.identificador = 'BUS-01'
                 """);
         assertThat(bus1.get("placa")).isEqualTo("MIBUS-001");
         assertThat(bus1.get("ruta")).isEqualTo("RUTA PRINCIPAL");
@@ -217,7 +217,7 @@ class DatosRealesRutasIT extends IntegracionPostgisTest {
                 SELECT v.identificador, v.placa, r.nombre AS ruta
                   FROM vehiculos v
                   JOIN rutas r ON r.id = v.ruta_id
-                 WHERE v.identificador = 'BUS-2'
+                 WHERE v.identificador = 'BUS-02'
                 """);
         assertThat(bus2.get("placa")).isEqualTo("MIBUS-002");
         assertThat(bus2.get("ruta")).isEqualTo("RUTA SECUNDARIA");

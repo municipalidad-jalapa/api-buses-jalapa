@@ -5,7 +5,9 @@ import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva;
 import gt.muni.jalapa.ecoruta.demanda.dominio.FuenteAbordaje;
 import gt.muni.jalapa.ecoruta.demanda.dominio.Reserva;
+import gt.muni.jalapa.ecoruta.catalogo.dominio.Ruta;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ReservaRepository;
+import gt.muni.jalapa.ecoruta.seguridad.repositorio.ConductorRutaRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +27,9 @@ class AbordajeServiceTest {
 
     @Mock
     private ReservaRepository reservas;
+
+    @Mock
+    private ConductorRutaRepository conductorRuta;
 
     @InjectMocks
     private AbordajeService abordaje;
@@ -47,7 +52,9 @@ class AbordajeServiceTest {
         when(reservas.findById(8L)).thenReturn(Optional.of(reserva));
         abordaje.registrarPasajero(8L, "dev", true);
 
-        var respuesta = abordaje.registrarConductor(8L, false);
+        when(conductorRuta.estaAsignadoARuta("piloto1", 1L)).thenReturn(true);
+
+        var respuesta = abordaje.registrarConductor(8L, false, "piloto1");
 
         assertThat(respuesta.estado()).isEqualTo("CANCELADA");
         assertThat(reserva.getSubio()).isFalse();
@@ -76,12 +83,26 @@ class AbordajeServiceTest {
         assertThat(reserva.getEstado()).isEqualTo(EstadoReserva.ACTIVA);
     }
 
+    @Test
+    void el_piloto_no_toca_las_reservas_de_otra_ruta() {
+        Reserva reserva = activa(11L);
+        when(reservas.findById(11L)).thenReturn(Optional.of(reserva));
+        when(conductorRuta.estaAsignadoARuta("piloto2", 1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> abordaje.registrarConductor(11L, true, "piloto2"))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThat(reserva.getEstado()).isEqualTo(EstadoReserva.ACTIVA);
+    }
+
     private static Reserva activa(Long id) {
         Reserva reserva = new Reserva();
         reserva.setId(id);
         reserva.setDispositivoId("dev");
         Parada parada = new Parada();
         parada.setId(1L);
+        Ruta ruta = new Ruta();
+        ruta.setId(1L);
+        parada.setRuta(ruta);
         reserva.setParada(parada);
         reserva.setEstado(EstadoReserva.ACTIVA);
         reserva.setExpiraEn(Instant.now().plusSeconds(3600));

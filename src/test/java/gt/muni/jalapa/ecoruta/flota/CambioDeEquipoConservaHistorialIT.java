@@ -35,7 +35,7 @@ class CambioDeEquipoConservaHistorialIT extends IntegracionPostgisTest {
     @Test
     void dar_de_baja_un_equipo_y_dar_de_alta_otro_no_pierde_el_historico_del_vehiculo()
             throws Exception {
-        Vehiculo bus = vehiculos.findByIdentificador("BUS-1").orElseThrow();
+        Vehiculo bus = vehiculos.findByIdentificador("BUS-01").orElseThrow();
         AltaDeEquipo equipoA = equipoService.emitir(bus.getId(), "Tableta A");
 
         ingestar(equipoA, 14.6300, -89.9800, Instant.now().minus(Duration.ofMinutes(10)));
@@ -66,7 +66,7 @@ class CambioDeEquipoConservaHistorialIT extends IntegracionPostgisTest {
                         .content(lote(14.6330, -89.9830, Instant.now())))
                 .andExpect(status().isAccepted());
 
-        // El historico del BUS-1 tiene los tres tramos, los de antes y el de ahora.
+        // El historico del BUS-01 tiene los tres tramos, los de antes y el de ahora.
         assertThat(posiciones.countByVehiculoId(bus.getId())).isEqualTo(3);
 
         // Y las filas viejas siguen atribuidas al equipo A: ni nulas ni huerfanas.
@@ -81,10 +81,10 @@ class CambioDeEquipoConservaHistorialIT extends IntegracionPostgisTest {
 
     @Test
     void cada_posicion_se_atribuye_al_vehiculo_de_su_propio_equipo() throws Exception {
-        Vehiculo bus1 = vehiculos.findByIdentificador("BUS-1").orElseThrow();
+        Vehiculo bus1 = vehiculos.findByIdentificador("BUS-01").orElseThrow();
         Vehiculo bus2 = vehiculos.save(new Vehiculo("BUS-99", "P-999XXX"));
 
-        AltaDeEquipo equipo1 = equipoService.emitir(bus1.getId(), "Tableta BUS-1");
+        AltaDeEquipo equipo1 = equipoService.emitir(bus1.getId(), "Tableta BUS-01");
         AltaDeEquipo equipo2 = equipoService.emitir(bus2.getId(), "Tableta BUS-99");
 
         ingestar(equipo1, 14.6300, -89.9800, Instant.now().minus(Duration.ofMinutes(2)));
@@ -96,7 +96,7 @@ class CambioDeEquipoConservaHistorialIT extends IntegracionPostgisTest {
         mockMvc.perform(get("/api/v1/telemetria/posicion").param("vehiculoId", bus1.getId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.latitud").value(14.6300))
-                .andExpect(jsonPath("$.vehiculo").value("BUS-1"));
+                .andExpect(jsonPath("$.vehiculo").value("BUS-01"));
 
         mockMvc.perform(get("/api/v1/telemetria/posicion").param("vehiculoId", bus2.getId().toString()))
                 .andExpect(status().isOk())
@@ -108,9 +108,9 @@ class CambioDeEquipoConservaHistorialIT extends IntegracionPostgisTest {
     void un_equipo_no_puede_reportar_a_nombre_de_otro_bus() throws Exception {
         // El vehiculo sale de la credencial, no del cuerpo: aunque el equipo mande
         // un vehiculoId, se ignora.
-        Vehiculo bus1 = vehiculos.findByIdentificador("BUS-1").orElseThrow();
+        Vehiculo bus1 = vehiculos.findByIdentificador("BUS-01").orElseThrow();
         Vehiculo bus2 = vehiculos.save(new Vehiculo("BUS-98", "P-988XXX"));
-        AltaDeEquipo equipo1 = equipoService.emitir(bus1.getId(), "Tableta BUS-1");
+        AltaDeEquipo equipo1 = equipoService.emitir(bus1.getId(), "Tableta BUS-01");
 
         mockMvc.perform(post("/api/v1/telemetria/posiciones")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + equipo1.credencial().credencialCompleta())

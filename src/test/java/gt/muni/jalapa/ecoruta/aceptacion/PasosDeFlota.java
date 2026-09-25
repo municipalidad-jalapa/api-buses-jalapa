@@ -51,7 +51,7 @@ public class PasosDeFlota {
 
     @Dado("el vehículo {string} registrado en la flota")
     public void el_vehiculo_registrado(String identificador) {
-        // BUS-1 lo siembra V13; los demas los crea el escenario.
+        // BUS-01 lo siembra V5; los demas los crea el escenario.
         vehiculos.findByIdentificador(identificador).orElseGet(() ->
                 vehiculos.save(new Vehiculo(identificador, "P-" + identificador.hashCode())));
     }
@@ -77,7 +77,7 @@ public class PasosDeFlota {
                 .header("X-Admin-Token", ADMIN)
                 .contentType(APPLICATION_JSON)
                 .content("{\"vehiculoId\": %d, \"etiqueta\": \"Segunda tableta\"}"
-                        .formatted(idDe("BUS-1")))));
+                        .formatted(idDe("BUS-01")))));
     }
 
     @Cuando("cada equipo reporta su posición")
@@ -133,19 +133,19 @@ public class PasosDeFlota {
         contexto.ultimaRespuesta()
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.message")
-                        .value(org.hamcrest.Matchers.containsString("BUS-1")));
+                        .value(org.hamcrest.Matchers.containsString("BUS-01")));
     }
 
     @Entonces("cada posición queda atribuida a su propio vehículo")
     public void cada_posicion_queda_en_su_vehiculo() {
-        assertThat(posiciones.countByVehiculoId(idDe("BUS-1"))).isEqualTo(1);
-        assertThat(posiciones.countByVehiculoId(idDe("BUS-2"))).isEqualTo(1);
+        assertThat(posiciones.countByVehiculoId(idDe("BUS-01"))).isEqualTo(1);
+        assertThat(posiciones.countByVehiculoId(idDe("BUS-02"))).isEqualTo(1);
     }
 
     @Entonces("la posición queda atribuida al {string}, no al que dijo el equipo")
     public void la_posicion_queda_en_el_bus_de_la_credencial(String identificador) {
         assertThat(posiciones.countByVehiculoId(idDe(identificador))).isEqualTo(1);
-        assertThat(posiciones.countByVehiculoId(idDe("BUS-2"))).isZero();
+        assertThat(posiciones.countByVehiculoId(idDe("BUS-02"))).isZero();
     }
 
     @Entonces("el {string} conserva sus {int} posiciones")

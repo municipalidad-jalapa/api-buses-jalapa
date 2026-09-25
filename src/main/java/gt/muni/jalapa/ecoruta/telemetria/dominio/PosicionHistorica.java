@@ -61,6 +61,14 @@ public class PosicionHistorica {
     @JoinColumn(name = "vehiculo_id")
     private Vehiculo vehiculo;
 
+    /**
+     * Identidad de la lectura en su sistema de origen (SCRUM-24), p. ej.
+     * "traccar:1234". Null para el equipo a bordo. Unica cuando existe: un
+     * reenvio repetido no genera una segunda fila.
+     */
+    @Column(name = "clave_origen", length = 100, updatable = false)
+    private String claveOrigen;
+
     public PosicionHistorica(Point ubicacion, Double velocidadKmh, Instant registradoEn,
                              Equipo equipo, Vehiculo vehiculo) {
         this.ubicacion = ubicacion;
@@ -68,5 +76,11 @@ public class PosicionHistorica {
         this.registradoEn = registradoEn;
         this.equipo = equipo;
         this.vehiculo = vehiculo;
+    }
+
+    public PosicionHistorica(Point ubicacion, Double velocidadKmh, Instant registradoEn,
+                             Equipo equipo, Vehiculo vehiculo, String claveOrigen) {
+        this(ubicacion, velocidadKmh, registradoEn, equipo, vehiculo);
+        this.claveOrigen = claveOrigen;
     }
 }

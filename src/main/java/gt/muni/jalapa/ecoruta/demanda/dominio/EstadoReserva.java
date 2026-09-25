@@ -4,7 +4,16 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Estados oficiales de una reserva en la parada (SCRUM-306).
+ *
+ *
+ * <ul>
+ *   <li>{@code ACTIVA}    recien creada, con vigencia por delante.
+ *   <li>{@code RENOVADA}  se renovo antes de vencer; conserva su identificador.
+ *   <li>{@code ABORDO}    el pasajero ya subio al bus.
+ *   <li>{@code CANCELADA} el pasajero la solto a mano.
+ *   <li>{@code EXPIRADA}  vencio la vigencia; la marca la tarea programada.
+ * </ul>
+
  *
  * <ul>
  *   <li>{@code ACTIVA}    recien creada, con vigencia por delante.

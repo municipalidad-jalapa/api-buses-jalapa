@@ -12,6 +12,15 @@
 -- Coordenadas WKT y ST_MakePoint usan (longitud, latitud) — orden PostGIS/JTS,
 -- nunca (latitud, longitud).
 --
+-- Los vehiculos conservan su identificador (BUS-01, BUS-02): el resto del
+-- sistema, el simulador y las pruebas los buscan por ese nombre. Solo cambian
+-- placa, ruta y estado.
+--
+-- Originalmente V13; renumerada a V26 porque develop ya ocupa V1-V23 y las
+-- PRs de ETA (V24/V25) van antes. Si QA ya no tiene la ruta o el bus
+-- esperado (por ejemplo, se edito desde el panel), la migracion avisa con
+-- NOTICE y no toca nada, en vez de impedir que el backend arranque.
+--
 -- MIBUS-001 y MIBUS-002 son placas PROVISIONALES: el esquema exige placa NOT NULL
 -- UNIQUE y aun no hay placas oficiales asignadas.
 --
@@ -31,9 +40,10 @@ BEGIN
       FROM rutas
      WHERE nombre = 'Ruta de ejemplo - Centro de Jalapa';
     IF v_cnt <> 1 THEN
-        RAISE EXCEPTION
-            'SCRUM-136: se esperaba exactamente 1 ruta ''Ruta de ejemplo - Centro de Jalapa'', se encontraron %',
+        RAISE NOTICE
+            'SCRUM-136: se esperaba exactamente 1 ruta ''Ruta de ejemplo - Centro de Jalapa'', se encontraron %. No se cargan los datos reales.',
             v_cnt;
+        RETURN;
     END IF;
     SELECT id INTO v_principal_id
       FROM rutas
@@ -43,9 +53,10 @@ BEGIN
       FROM rutas
      WHERE nombre = 'Ruta de prueba - Parque Central a Metroplaza';
     IF v_cnt <> 1 THEN
-        RAISE EXCEPTION
-            'SCRUM-136: se esperaba exactamente 1 ruta ''Ruta de prueba - Parque Central a Metroplaza'', se encontraron %',
+        RAISE NOTICE
+            'SCRUM-136: se esperaba exactamente 1 ruta ''Ruta de prueba - Parque Central a Metroplaza'', se encontraron %. No se cargan los datos reales.',
             v_cnt;
+        RETURN;
     END IF;
     SELECT id INTO v_secundaria_id
       FROM rutas
@@ -226,34 +237,24 @@ BEGIN
             ubicacion = EXCLUDED.ubicacion;
 
     -- ------------------------------------------------------------------
-    -- Vehiculos: renombrar identificadores y placas provisionales.
-    -- Conserva IDs y ruta_id (BUS-01 -> principal, BUS-02 -> secundaria).
+    -- Vehiculos: placas provisionales. Conserva IDs e identificadores
+    -- (BUS-01 -> principal, BUS-02 -> secundaria).
     -- ------------------------------------------------------------------
-    SELECT COUNT(*) INTO v_cnt FROM vehiculos WHERE identificador = 'BUS-01';
-    IF v_cnt <> 1 THEN
-        RAISE EXCEPTION
-            'SCRUM-136: se esperaba exactamente 1 vehiculo ''BUS-01'', se encontraron %',
-            v_cnt;
-    END IF;
-
-    SELECT COUNT(*) INTO v_cnt FROM vehiculos WHERE identificador = 'BUS-02';
-    IF v_cnt <> 1 THEN
-        RAISE EXCEPTION
-            'SCRUM-136: se esperaba exactamente 1 vehiculo ''BUS-02'', se encontraron %',
-            v_cnt;
-    END IF;
-
     UPDATE vehiculos
-       SET identificador = 'BUS-1',
-           placa = 'MIBUS-001',
+       SET placa = 'MIBUS-001',
            ruta_id = v_principal_id,
            activo = TRUE
      WHERE identificador = 'BUS-01';
+    IF NOT FOUND THEN
+        RAISE NOTICE 'SCRUM-136: no existe el vehiculo BUS-01; no se le asigna placa ni ruta.';
+    END IF;
 
     UPDATE vehiculos
-       SET identificador = 'BUS-2',
-           placa = 'MIBUS-002',
+       SET placa = 'MIBUS-002',
            ruta_id = v_secundaria_id,
            activo = TRUE
      WHERE identificador = 'BUS-02';
+    IF NOT FOUND THEN
+        RAISE NOTICE 'SCRUM-136: no existe el vehiculo BUS-02; no se le asigna placa ni ruta.';
+    END IF;
 END $$;

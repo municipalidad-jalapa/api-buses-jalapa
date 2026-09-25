@@ -136,7 +136,7 @@ class ResumenRutaIT extends IntegracionPostgisTest {
     }
 
     private void ingestarPosicion(double latitud, double longitud, int velocidadKmh) throws Exception {
-        Long bus = vehiculos.findByIdentificador("BUS-1").orElseThrow().getId();
+        Long bus = vehiculos.findByIdentificador("BUS-01").orElseThrow().getId();
         AltaDeEquipo equipo = equipoService.emitir(bus, "Tableta IT resumen");
 
         mockMvc.perform(post("/api/v1/telemetria/posiciones")

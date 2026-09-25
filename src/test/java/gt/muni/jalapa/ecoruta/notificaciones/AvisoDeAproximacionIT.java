@@ -191,7 +191,8 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
                         .content("{\"subio\":true}"))
                 .andExpect(jsonPath("$.estado").value("ABORDO"));
 
-        String jwt = emisor.emitirParaConductor("uid-hu57").token();
+        // SCRUM-26, bloque D: el piloto solo toca reservas de su ruta asignada.
+        String jwt = emisor.emitirParaConductor("conductor1").token();
         mockMvc.perform(post("/api/v1/conductor/reservas/" + id + "/abordaje")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt)
                         .contentType(APPLICATION_JSON)
@@ -270,7 +271,7 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
     }
 
     private Long busPiloto() {
-        return vehiculos.findByIdentificador("BUS-1").orElseThrow().getId();
+        return vehiculos.findByIdentificador("BUS-01").orElseThrow().getId();
     }
 
     private static String bearer(AltaDeEquipo alta) {

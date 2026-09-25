@@ -36,7 +36,7 @@ class StreamDePosicionesIT extends IntegracionPostgisTest {
     private VehiculoRepository vehiculos;
 
     private AltaDeEquipo equipoDelBusPiloto() {
-        Long bus = vehiculos.findByIdentificador("BUS-1").orElseThrow().getId();
+        Long bus = vehiculos.findByIdentificador("BUS-01").orElseThrow().getId();
         return equipoService.emitir(bus, "Tableta de pruebas");
     }
 
@@ -75,7 +75,7 @@ class StreamDePosicionesIT extends IntegracionPostgisTest {
         assertThat(cuerpo(stream))
                 .contains("event:posicion")
                 .contains("14.6335")
-                .contains("BUS-1");
+                .contains("BUS-01");
     }
 
     @Test

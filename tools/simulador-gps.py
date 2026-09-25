@@ -6,7 +6,7 @@ entrando la pantalla del pasajero no se puede ver ni demostrar: el mapa sale con
 el marcador quieto o directamente vacio.
 
 No inventa el recorrido. Lo pide a GET /api/v1/rutas y camina el `trazado`, cuyos
-vertices salen del levantamiento GPS de campo (V13__datos_reales_de_las_rutas_de_jalapa.sql).
+vertices salen del levantamiento GPS de campo (V26__datos_reales_de_las_rutas_de_jalapa.sql).
 Asi las coordenadas viven en un solo sitio: si la ruta cambia en la base, el
 simulador cambia con ella y no hay dos verdades que se puedan desincronizar.
 
@@ -192,7 +192,7 @@ def main():
                      f"Disponibles: {', '.join(str(r['id']) for r in rutas)}.")
     if not ruta.get("trazado"):
         sys.exit(f"La ruta '{ruta['nombre']}' no tiene trazado cargado. "
-                 "Aplica V13__datos_reales_de_las_rutas_de_jalapa.sql.")
+                 "Aplica V26__datos_reales_de_las_rutas_de_jalapa.sql.")
 
     recorrido = Recorrido(ruta["trazado"], ruta["paradas"])
     credencial = args.credencial or aprovisionar(api, os.environ.get("ECORUTA_ADMIN_TOKEN"),

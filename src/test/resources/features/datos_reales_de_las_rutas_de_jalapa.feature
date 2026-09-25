@@ -29,8 +29,8 @@ Característica: Datos reales de las rutas de Jalapa
 
   Escenario: Cada ruta utiliza su propio vehículo
     Dado que existen las dos rutas activas
-    Entonces "RUTA PRINCIPAL" está vinculada con "BUS-1"
-    Y "RUTA SECUNDARIA" está vinculada con "BUS-2"
+    Entonces "RUTA PRINCIPAL" está vinculada con "BUS-01"
+    Y "RUTA SECUNDARIA" está vinculada con "BUS-02"
 
   Escenario: El catálogo trata ambas rutas con el mismo contrato
     Cuando alguien consulta las rutas disponibles
