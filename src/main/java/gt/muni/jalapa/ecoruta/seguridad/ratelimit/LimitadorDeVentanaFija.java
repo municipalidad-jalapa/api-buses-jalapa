@@ -52,6 +52,11 @@ public final class LimitadorDeVentanaFija {
         return new Resultado(permitido, Math.max(segundosParaReintentar, 1));
     }
 
+    /** Olvida todas las ventanas. */
+    public void reiniciar() {
+        ventanas.clear();
+    }
+
     /** Descarta las ventanas cuya ultima actividad ya quedo atras por dos ventanas completas. */
     public void limpiar() {
         long ahora = Instant.now(reloj).getEpochSecond();

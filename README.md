@@ -41,11 +41,12 @@ problema de tu configuración.
 
 | Herramienta | Versión | Para qué |
 |---|---|---|
-| **Docker Desktop** | Cualquiera reciente | Base de datos, backend y pruebas de integración |
+| **Docker Desktop** | Cualquiera reciente | Base de datos (PostGIS + pgRouting), backend y pruebas de integración |
 | **JDK** | 21 (LTS) | Compilar el backend |
 | **Maven** | 3.9+ | Build del backend |
 | **Node.js** | 20.19+ o 22.12+ | App web (Vite 7 no arranca con menos) |
 | **Git** | Cualquiera reciente | — |
+| **Python** | 3.10+ | Solo para regenerar la red de calles desde OpenStreetMap |
 
 Verificá todo de una vez:
 
@@ -94,14 +95,117 @@ mvn spring-boot:run
 | `POST` | `/api/v1/telemetria/posiciones` | **credencial de equipo** (`Authorization: Bearer eq_…`) |
 | `GET` | `/api/v1/telemetria/posicion` | público |
 | `GET` | `/api/v1/telemetria/stream` | público (SSE) |
-| `POST` `GET` | `/api/v1/admin/vehiculos` | `ROLE_ADMIN` |
-| `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_ADMIN` — cambia el equipo del bus |
-| `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_ADMIN` |
-| `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_ADMIN` |
+| `POST` `GET` | `/api/v1/admin/vehiculos` | `ROLE_SUPERADMIN` |
+| `POST` | `/api/v1/admin/vehiculos/{id}/equipos` | `ROLE_SUPERADMIN` — cambia el equipo del bus |
+| `POST` `GET` | `/api/v1/admin/equipos` | `ROLE_SUPERADMIN` |
+| `POST` | `/api/v1/admin/equipos/{id}/revocacion` | `ROLE_SUPERADMIN` |
 | `POST` | `/api/v1/auth/admin` | público — idToken de Firebase → JWT de administrador (SCRUM-173) |
 | `POST` | `/api/v1/admin/sesion/renovacion` | `ROLE_ADMIN` — renueva la sesión mientras hay actividad |
 | `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
 | `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
+| `POST` | `/api/v1/opiniones` | público — queja, comentario o calificación (SCRUM-26) |
+| `GET` `PATCH` | `/api/v1/opiniones`, `/api/v1/opiniones/{id}/atendida` | `ROLE_ADMIN` — panel municipal |
+| `POST` | `/api/v1/sesion/pasajero` | público — idToken de Google → JWT de pasajero (SCRUM-26) |
+| `POST` | `/api/v1/sesion/pasajero/vincular` | **sesión de pasajero** — adopta lo hecho como invitado |
+| `GET` | `/api/v1/reservas/mias` | **sesión de pasajero** — sus reservas desde cualquier teléfono |
+| `GET` `POST` | `/api/v1/superadmin/cuentas` | `ROLE_SUPERADMIN` — cuentas de operación (SCRUM-26) |
+| `PATCH` | `/api/v1/superadmin/cuentas/{id}` | `ROLE_SUPERADMIN` — rol, ruta, uid o estado |
+| `POST` | `/api/v1/superadmin/cuentas/{id}/desactivacion` | `ROLE_SUPERADMIN` |
+| `GET` `POST` `PATCH` | `/api/v1/superadmin/rutas`, `/api/v1/superadmin/paradas` | `ROLE_SUPERADMIN` |
+| `POST` `GET` `DELETE` | `/api/v1/conductor/atrasos`, `/api/v1/conductor/atrasos/vigente` | `ROLE_CONDUCTOR` — aviso de demora (SCRUM-26) |
+| `GET` | `/api/v1/admin/abordajes` | `ROLE_ADMIN` — pasajeros subidos por ruta, vehículo y periodo |
+
+## Roles y permisos
+
+El sistema tiene **cuatro roles**. Tres son cuentas de operación y viven en `usuarios.rol`; el
+cuarto, el pasajero, no es una cuenta de operación: vive en `pasajeros` y su rol viaja en su propio
+JWT, así que puede no existir (modo invitado).
+
+| Rol | Quién es | Qué puede hacer |
+|---|---|---|
+| **Pasajero** | Quien usa la app, con cuenta de Google o como invitado | Mapa, ETA, reservar, opinar y ver lo suyo |
+| **Piloto** (`CONDUCTOR`) | El conductor del bus | Su panel y **solo su ruta asignada** (`usuarios.ruta_id`) |
+| **Municipalidad** (`ADMIN`) | Quien supervisa el servicio | Panel municipal y opiniones. **No** administra |
+| **SuperAdmin** (`SUPERADMIN`) | Quien administra el sistema | Todo lo anterior, más cuentas, rutas, paradas y vehículos |
+
+Cada endpoint declara qué roles lo pueden invocar en `SecurityConfig`; un rol que no corresponde
+recibe **403**, y eso está fijado con pruebas (`RolesYPermisosIT` y `roles_y_permisos.feature`).
+
+La cuenta inicial de SuperAdmin la crea la migración `V21` **sin identidad**: la contraseña y el uid
+viven en Firebase y no pueden quedar en el repositorio. Para que pueda entrar, al desplegar se
+define su uid:
+
+```bash
+ECORUTA_SUPERADMIN_FIREBASE_UID=<uid de Firebase>
+```
+
+Sin esa variable la cuenta existe pero nadie puede iniciar sesión como SuperAdmin, que es el fallo
+correcto: cerrado. Desde ahí se crean las demás cuentas con `POST /api/v1/superadmin/cuentas`, cada
+una con su propio uid. El sistema no deja desactivar ni degradar al último SuperAdmin activo.
+
+## Métricas del panel municipal
+
+**Pasajeros subidos.** `GET /api/v1/admin/abordajes` cuenta los abordajes **que marcó el piloto**,
+desglosados por ruta, por vehículo y por periodo (`granularidad` = `dia`, `semana` o `mes`). Lo que
+respondió el pasajero no entra en el conteo: si se sumaran las dos fuentes, el número dejaría de ser
+comparable entre rutas. La pantalla lo dice, para que nadie lea la cifra como "cuánta gente viajó".
+
+**Tres valoraciones, no una.** Además de la calificación general del bloque A, la opinión acepta
+`calidad`, `limpieza` y `conduccion`, cada una de 1 a 5 y **todas opcionales**: el servicio puede ser
+puntual con la unidad sucia, o la unidad impecable y el piloto manejando mal. El panel promedia cada
+dimensión por separado, por ruta y por vehículo; una dimensión que nadie puntuó se muestra como
+**"sin datos"**, nunca como un cero que parezca mala nota.
+
+## Aviso de atraso del piloto
+
+El piloto avisa que viene demorado desde su panel: motivo (**tráfico** o **incidente**) y demora
+estimada en minutos. No elige ruta — es la que tiene asignada su cuenta, así que no puede reportar
+un atraso en la ruta de otro.
+
+El aviso viaja al pasajero dentro del ETA, en el campo `atraso` de
+`GET /api/v1/rutas/{rutaId}/eta`, y la app lo muestra junto al tiempo estimado. **Los minutos y la
+demora no se suman**: el cálculo mide lo que viene haciendo el bus y el aviso dice lo que el piloto
+espera que pase. Mezclarlos daría un número que nadie midió.
+
+El aviso se retira solo al cumplirse la demora más unos minutos de margen, o antes si el piloto
+usa "Ya se normalizó". Nunca se borra la fila: queda el historial de lo que pasó en la ruta.
+
+**Marcar quién abordó** ya lo resolvió SCRUM-171 y aquí se reutiliza tal cual: el pasajero responde
+en `POST /api/v1/reservas/{id}/abordaje` y el piloto corrige en
+`POST /api/v1/conductor/reservas/{id}/abordaje`, donde **el dato del piloto prevalece**. Desde
+SCRUM-26 el piloto solo puede corregir reservas de su propia ruta.
+
+## Red de calles de Jalapa (desvío por calles)
+
+Cuando el bus se sale del trazado, el ETA ya no estima la vuelta como una línea recta multiplicada
+por un factor: calcula el **camino más corto real por las calles**, respetando el sentido de las
+vías. Eso necesita dos cosas.
+
+**1. La base tiene que traer pgRouting.** La imagen es `pgrouting/pgrouting:17-3.5-3.8` (es la de
+PostGIS más la extensión) en `docker-compose.yml`, en Testcontainers y en el despliegue. Si la base
+de un entorno todavía no la tiene, la migración `V19` falla al crear la extensión.
+
+**2. Las calles viven en la base, no en un servicio externo.** En ejecución no se llama a OSRM, ni
+a Google, ni a Mapbox: solo se consulta `calles` con `pgr_dijkstra`. Los datos vienen de
+OpenStreetMap (© colaboradores de OpenStreetMap, ODbL) y los trae la migración generada
+`V20__red_de_calles_de_jalapa.sql`.
+
+Para regenerarla (por ejemplo, si OSM se actualizó o hay que ampliar el área):
+
+```bash
+python herramientas/importar_calles_osm.py
+# o con otro recuadro:
+python herramientas/importar_calles_osm.py --bbox 14.60,-90.03,14.68,-89.95
+```
+
+El script descarga las vías con la API de Overpass, las parte en los cruces (una arista entre cruce
+y cruce, como haría `osm2pgrouting`) y reescribe la migración. Al cambiarla hay que recrear la base
+local: `docker compose down -v && docker compose up -d db`.
+
+Si en algún entorno no conviene enrutar por calles, `ecoruta.red-de-calles.habilitada: false`
+(o `RED_DE_CALLES_HABILITADA=false`) vuelve a la estimación por factor sin tocar código. Lo mismo
+pasa solo, y queda en el log, cuando el bus está lejos de cualquier calle importada o no hay camino
+posible.
 
 ## Cuenta de administrador del panel municipal
 
@@ -157,14 +261,16 @@ Cada una solo abre su propia ruta.
    TRACCAR_UNIDAD_VELOCIDAD=NUDOS
    ```
 
-2. Configurar el reenvío en `traccar.xml`:
+2. Configurar el reenvío en `traccar.xml` (Traccar 6.14+: `forward.type=json`; `forward.json=true` ya no aplica):
 
    ```xml
-   <entry key='forward.enable'>true</entry>
    <entry key='forward.url'>https://<api>/api/v1/integraciones/traccar/posiciones</entry>
-   <entry key='forward.json'>true</entry>
+   <entry key='forward.type'>json</entry>
    <entry key='forward.header'>X-Traccar-Token: <secreto-largo></entry>
    ```
+
+   El cuerpo real es `{ "position": {...}, "device": {...} }`. No es un objeto plano.
+   Detalle de campos y la muestra versionada: `docs/integraciones/traccar-formato-reenvio.md`.
 
 3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el equipo del bus:
 
@@ -173,9 +279,19 @@ Cada una solo abre su propia ruta.
    VALUES ('860000000000001', <id del equipo ACTIVO del bus>);
    ```
 
+En desarrollo local, `docker-compose` ya define `TRACCAR_TOKEN`. Tras levantar la API y asociar el IMEI:
+
+```bash
+API_BASE=http://localhost:8080 TRACCAR_TOKEN=solo-para-desarrollo-local-traccar-32chars \
+  python3 tools/probar-reenvio-traccar.py --caso 202
+```
+
+Otros casos: `--caso 401`, `--caso 400`, `--caso 422-dispositivo`, `--caso 422-coordenadas`.
+
 Respuestas: `202 {"recibidas", "aceptadas", "descartadas"}` — un 202 no implica que todas se
 guardaron: se descartan las lecturas fuera de la ventana de 12 h y los reenvíos repetidos (se
-deduplican por `position.id`). `400` cuerpo mal formado, `401` token ausente o inválido, `422`
+deduplican por la clave de origen: `position.id` cuando es mayor que 0, o `uniqueId` y fecha
+si Traccar reenvia `id=0` antes de persistir). `400` cuerpo mal formado, `401` token ausente o inválido, `422`
 dispositivo sin equipo asociado (o con el equipo revocado o sin vehículo), o datos inválidos; en
 ese caso no se registra nada del reenvío.
 

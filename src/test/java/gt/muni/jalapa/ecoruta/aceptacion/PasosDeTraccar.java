@@ -25,7 +25,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-/** Pasos de {@code recibir_posiciones_de_traccar.feature} (SCRUM-24). */
 public class PasosDeTraccar {
 
     private static final String RUTA = "/api/v1/integraciones/traccar/posiciones";
@@ -104,7 +103,6 @@ public class PasosDeTraccar {
                 """, String.class)).isEqualTo(bus);
     }
 
-    // {double} con el idioma "es" leeria "18.52" como 1852: se parsea a mano.
     @Entonces("la velocidad registrada es {word} km\\/h")
     public void velocidad_registrada(String kmh) {
         assertThat(jdbc.queryForObject("SELECT velocidad_kmh FROM posiciones_historicas", Double.class))

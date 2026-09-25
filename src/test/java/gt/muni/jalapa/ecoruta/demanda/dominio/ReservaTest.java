@@ -8,7 +8,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Reglas de vigencia y transiciones de {@link Reserva} (HU-135). */
+/** Reglas de vigencia y transiciones de {@link Reserva} (Desarrollo-135 / HU-135). */
 class ReservaTest {
 
     private static final Instant AHORA = Instant.parse("2026-08-31T14:00:00Z");

@@ -7,17 +7,8 @@ import gt.muni.jalapa.ecoruta.telemetria.servicio.LecturaEntrante;
 
 import java.time.Instant;
 
-/**
- * Un reenvio de Traccar ya validado y traducido al modelo de EcoRuta.
- *
- * @param dispositivo uniqueId del dispositivo en Traccar
- */
 public record LecturaTraccar(String dispositivo, LecturaEntrante lectura) {
 
-    /**
-     * Valida y traduce. Datos invalidos lanzan {@link ReglaDeNegocioException}
-     * (422): el reenvio entero se rechaza sin registrar nada.
-     */
     public static LecturaTraccar de(ReenvioTraccar reenvio, UnidadVelocidad unidad) {
         if (reenvio == null || reenvio.position() == null) {
             throw new ReglaDeNegocioException("El reenvio no trae la posicion.");
@@ -34,19 +25,21 @@ public record LecturaTraccar(String dispositivo, LecturaEntrante lectura) {
 
         Double latitud = posicion.latitude();
         Double longitud = posicion.longitude();
-        if (latitud == null || latitud < -90 || latitud > 90) {
+        if (latitud == null || !Double.isFinite(latitud) || latitud < -90 || latitud > 90) {
             throw new ReglaDeNegocioException("latitud ausente o fuera de rango");
         }
-        if (longitud == null || longitud < -180 || longitud > 180) {
+        if (longitud == null || !Double.isFinite(longitud) || longitud < -180 || longitud > 180) {
             throw new ReglaDeNegocioException("longitud ausente o fuera de rango");
+        }
+        Double nudos = posicion.speed();
+        if (nudos != null && (!Double.isFinite(nudos) || nudos < 0)) {
+            throw new ReglaDeNegocioException("velocidad ausente o invalida");
         }
         Instant fecha = posicion.fixTime() != null ? posicion.fixTime() : posicion.deviceTime();
         if (fecha == null) {
             throw new ReglaDeNegocioException("La posicion no trae fecha (fixTime).");
         }
 
-        // Sin id de Traccar (null o <= 0), la fecha del dispositivo identifica la lectura.
-        // Traccar 6.x reenvia position.id=0 antes de persistir (traccar/traccar#4529).
         String clave = posicion.id() != null && posicion.id() > 0
                 ? "traccar:" + posicion.id()
                 : "traccar:" + dispositivo + ":" + fecha.toEpochMilli();

@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta.seguridad.ratelimit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gt.muni.jalapa.ecoruta.seguridad.RutasPublicas;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -119,13 +120,47 @@ class RateLimitFilterTest {
         assertThat(status(filtro, get("/api/v1/rutas"))).isEqualTo(200);
     }
 
+    @Test
+    void las_rutas_de_cupo_estricto_se_cortan_por_ip_aunque_cambie_el_dispositivo() throws Exception {
+        RateLimitFilter filtro = filtro(new RateLimitProperties(true, 100, 60, 100, 60, 2, 600));
+
+        for (int i = 0; i < 2; i++) {
+            MockHttpServletRequest peticion = post("/api/v1/opiniones");
+            peticion.addHeader(CABECERA_DISPOSITIVO, "evasion-" + i);
+            assertThat(status(filtro, peticion)).isEqualTo(200);
+        }
+        MockHttpServletRequest tercera = post("/api/v1/opiniones");
+        tercera.addHeader(CABECERA_DISPOSITIVO, "evasion-nuevo");
+        assertThat(status(filtro, tercera)).isEqualTo(429);
+
+        // Cupo propio por ruta: iniciar sesion sigue disponible desde la misma IP.
+        assertThat(status(filtro, post("/api/v1/sesion/pasajero"))).isEqualTo(200);
+        // Y una ruta de cupo general no usa el estricto.
+        assertThat(status(filtro, post("/api/v1/reservas"))).isEqualTo(200);
+    }
+
+    @Test
+    void toda_ruta_del_catalogo_publico_queda_limitada() throws Exception {
+        for (RutasPublicas.Ruta ruta : RutasPublicas.TODAS) {
+            RateLimitFilter filtro = filtro(new RateLimitProperties(true, 1, 60, 100, 60, 100, 600));
+            String metodo = ruta.metodo() == null ? "GET" : ruta.metodo().name();
+            String uri = ruta.patron().replace("**", "x").replace("*", "1");
+
+            MockHttpServletRequest primera = new MockHttpServletRequest(metodo, uri);
+            MockHttpServletRequest segunda = new MockHttpServletRequest(metodo, uri);
+            assertThat(status(filtro, primera)).as(metodo + " " + uri).isEqualTo(200);
+            assertThat(status(filtro, segunda)).as(metodo + " " + uri).isEqualTo(429);
+        }
+    }
+
     private RateLimitFilter filtro(RateLimitProperties propiedades) {
         return new RateLimitFilter(propiedades, json, reloj);
     }
 
     private static RateLimitProperties propiedades(boolean habilitado, int capacidadIp, int ventanaIp,
                                                     int capacidadDispositivo, int ventanaDispositivo) {
-        return new RateLimitProperties(habilitado, capacidadIp, ventanaIp, capacidadDispositivo, ventanaDispositivo);
+        return new RateLimitProperties(habilitado, capacidadIp, ventanaIp, capacidadDispositivo, ventanaDispositivo,
+                1000, 600);
     }
 
     private int status(RateLimitFilter filtro, MockHttpServletRequest peticion) throws Exception {

@@ -22,6 +22,11 @@ import java.time.Instant;
 /**
  * Registro de un pasajero esperando en una parada ({@code registros_espera}).
  *
+ * <p>Nace {@link EstadoReserva#ACTIVA} con una vigencia de pocos minutos que
+ * viaja en {@link #expiraEn}. Renovarla la deja {@link EstadoReserva#RENOVADA}
+ * SIN cambiar su identificador; si la vigencia vence, la tarea programada la
+ * pasa a {@link EstadoReserva#EXPIRADA}.
+ *
  * <p>SCRUM-306 crea la reserva en estado {@link EstadoReserva#ACTIVA}. HU-135
  * la renueva, HU-124 la cancela y HU-57 registra si el pasajero logro subir.
  *
@@ -43,9 +48,17 @@ public class Reserva {
     @ToString.Include
     private Long id;
 
+    /** Identificador opaco del dispositivo del pasajero. No hay login. */
     @Column(name = "dispositivo_id", nullable = false, length = 36)
     @ToString.Include
     private String dispositivoId;
+
+    /**
+     * SCRUM-26, bloque B. Cuenta del pasajero, si la reserva quedo vinculada a
+     * una. Opcional a proposito: el uso anonimo sigue funcionando sin cuenta.
+     */
+    @Column(name = "pasajero_id")
+    private Long pasajeroId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "parada_id", nullable = false)
@@ -54,11 +67,12 @@ public class Reserva {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 20)
     @ToString.Include
-    private EstadoReserva estado;
+    private EstadoReserva estado = EstadoReserva.ACTIVA;
 
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
 
+    /** Momento en que la reserva deja de estar vigente. Lo fija el servicio. */
     @Column(name = "expira_en", nullable = false)
     @ToString.Include
     private Instant expiraEn;
@@ -140,6 +154,10 @@ public class Reserva {
         this.pasajeroDeclaroNoAbordo = false;
     }
 
+    public Reserva(String dispositivoId, Parada parada, Instant expiraEn) {
+        this(dispositivoId, parada, EstadoReserva.ACTIVA, Instant.now(), expiraEn);
+    }
+
     /**
      * Atajo para quien solo necesita
      * el identificador de la parada.
@@ -192,6 +210,18 @@ public class Reserva {
      */
     public boolean perteneceA(String dispositivoId) {
         return this.dispositivoId.equals(dispositivoId);
+    }
+
+    /**
+     * SCRUM-26, bloque B.2. La reserva es de quien la creo desde este
+     * navegador o de la cuenta a la que quedo vinculada. Asi el pasajero con
+     * sesion sigue viendo y cancelando lo suyo desde otro telefono.
+     *
+     * @param pasajeroId cuenta autenticada; null si entra como invitado
+     */
+    public boolean perteneceA(String dispositivoId, Long pasajeroId) {
+        return perteneceA(dispositivoId)
+                || (pasajeroId != null && pasajeroId.equals(this.pasajeroId));
     }
 
     /**
