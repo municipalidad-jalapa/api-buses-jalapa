@@ -1,5 +1,6 @@
 package gt.muni.jalapa.ecoruta.eta.servicio;
 
+import gt.muni.jalapa.ecoruta.atrasos.servicio.AvisosDeAtraso;
 import gt.muni.jalapa.ecoruta.eta.EtaProperties;
 import gt.muni.jalapa.ecoruta.eta.servicio.CalculadorDeEta.EtaCalculado;
 import gt.muni.jalapa.ecoruta.eta.servicio.CalculadorDeEta.Lectura;
@@ -217,7 +218,7 @@ class CalculadorDeEtaTest {
 
     @Test
     void una_posicion_mas_vieja_que_el_umbral_se_considera_vieja() {
-        CalculadorDeEta calculador = new CalculadorDeEta(null, null, null, PROPIEDADES,
+        CalculadorDeEta calculador = new CalculadorDeEta(null, null, null, PROPIEDADES, null, null,
                 Clock.fixed(T0, ZoneOffset.UTC));
 
         assertThat(calculador.esVieja(T0.minusSeconds(120), T0)).isFalse();
@@ -229,7 +230,8 @@ class CalculadorDeEtaTest {
         CalculadorDeEta calculador = mock(CalculadorDeEta.class);
         when(calculador.calcular(anyLong())).thenReturn(new EtaCalculado(
                 new EtaRutaResponse(1L, 1L, T0, EstadoDelBus.EN_RUTA, null, List.of()), T0));
-        EtaService servicio = new EtaService(calculador, PROPIEDADES, Clock.fixed(T0, ZoneOffset.UTC));
+        EtaService servicio = new EtaService(calculador, sinAtrasos(), PROPIEDADES,
+                Clock.fixed(T0, ZoneOffset.UTC));
 
         assertThat(servicio.recalcularSiCorresponde(1L, T0)).isTrue();
         assertThat(servicio.recalcularSiCorresponde(1L, T0.plusSeconds(9))).isFalse();
@@ -247,7 +249,7 @@ class CalculadorDeEtaTest {
                 List.of(new EtaParadaResponse(7L, 3, 6, true)));
         when(calculador.calcular(1L)).thenReturn(new EtaCalculado(fresca, T0));
         when(calculador.esVieja(T0, T0.plusSeconds(300))).thenReturn(true);
-        EtaService servicio = new EtaService(calculador, PROPIEDADES,
+        EtaService servicio = new EtaService(calculador, sinAtrasos(), PROPIEDADES,
                 Clock.fixed(T0.plusSeconds(300), ZoneOffset.UTC));
 
         EtaRutaResponse respuesta = servicio.consultar(1L);
@@ -256,4 +258,11 @@ class CalculadorDeEtaTest {
         assertThat(respuesta.paradas()).singleElement()
                 .isEqualTo(EtaParadaResponse.noDisponible(7L, 3));
     }
+    /** Sin aviso del piloto: el ETA sale tal cual lo calculo (SCRUM-26, bloque E). */
+    private static AvisosDeAtraso sinAtrasos() {
+        AvisosDeAtraso atrasos = mock(AvisosDeAtraso.class);
+        when(atrasos.vigente(anyLong())).thenReturn(java.util.Optional.empty());
+        return atrasos;
+    }
+
 }

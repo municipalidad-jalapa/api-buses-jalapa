@@ -9,3 +9,5 @@ google-services.json
 # Config local del IDE (rutas de maquina)
 .vscode/
 tools/fcm-token/local-config.js
+*firebase-adminsdk*.json
+docker-compose.override.yml

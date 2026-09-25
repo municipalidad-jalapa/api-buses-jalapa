@@ -102,7 +102,8 @@ public class SecurityConfig {
                                         "Content-Security-Policy",
                                         "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"))))
 
-                .authorizeHttpRequests(rutas -> rutas
+                .authorizeHttpRequests(rutas -> {
+                    rutas
 
                         /*
                          * Permitir que Spring procese correctamente
@@ -117,7 +118,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/actuator/health",
                                 "/actuator/health/**",
-                                "/actuator/info"
+                                "/actuator/info",
+                                "/actuator/prometheus",
+                                "/actuator/metrics",
+                                "/actuator/metrics/**"
                         )
                         .permitAll()
 
@@ -130,188 +134,60 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         )
-                        .permitAll()
+                        .permitAll();
 
+                    /*
+                     * Rutas publicas del pasajero, de inicio de sesion y de
+                     * las opiniones: salen de RutasPublicas, el mismo catalogo
+                     * que limita RateLimitFilter (SCRUM-26, correccion de QA).
+                     */
+                    RutasPublicas.abrir(rutas);
+
+                    rutas
                         /*
-                         * TELEMETRÍA PÚBLICA
+                         * HU-76. El conductor marca una parada como atendida.
                          */
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/telemetria/posicion"
-                        )
-                        .permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/telemetria/stream"
-                        )
-                        .permitAll()
-
-                        /*
-                         * CATÁLOGO DE RUTAS
-                         */
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/rutas",
-                                "/api/v1/rutas/**"
-                        )
-                        .permitAll()
-
-                        /*
-                         * RESERVAS DEL PASAJERO
-                         */
-
-                        /*
-                         * SCRUM-306 / HU-134.
-                         * Crear una reserva.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/reservas"
-                        )
-                        .permitAll()
-
-                        /*
-                         * HU-135.
-                         * Renovar su propia reserva.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/reservas/*/renovacion"
-                        )
-                        .permitAll()
-
-                        /*
-                         * HU-124.
-                         * Cancelar su propia reserva.
-                         */
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/v1/reservas/*"
-                        )
-                        .permitAll()
-
-                        /*
-                         * HU-76.
-                         * El pasajero consulta el estado de
-                         * una de sus reservas.
-                         */
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/v1/reservas/*"
-                        )
-                        .permitAll()
-
-                        /*
-                         * HU-76.
-                         * El pasajero declara que no abordó.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/reservas/*/declaracion-no-abordo"
-                        )
-                        .permitAll()
-
-                        /*
-                         * HU-57.
-                         * El pasajero responde al aviso
-                         * de abordaje.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/reservas/*/abordaje"
-                        )
-                        .permitAll()
-
-                        /*
-                         * Registro del dispositivo
-                         * para notificaciones.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/dispositivos/notificaciones"
-                        )
-                        .permitAll()
-
-                        /*
-                         * AUTENTICACIÓN DEL CONDUCTOR
-                         *
-                         * El conductor entrega aquí su
-                         * idToken de Firebase.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/auth/conductor"
-                        )
-                        .permitAll()
-
-                        /*
-                         * AUTENTICACIÓN DEL PANEL MUNICIPAL (SCRUM-173)
-                         *
-                         * Mismo mecanismo que el conductor: idToken de
-                         * Firebase a cambio del JWT de administrador.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/auth/admin"
-                        )
-                        .permitAll()
-
-                        /*
-                         * HU-76.
-                         *
-                         * El conductor marca una parada
-                         * como atendida.
-                         *
-                         * Requiere un JWT válido que otorgue
-                         * ROLE_CONDUCTOR.
-                         */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/rutas/*/paradas/*/atendida"
-                        )
-                        .hasRole("CONDUCTOR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/rutas/*/paradas/*/atendida").hasRole("CONDUCTOR")
 
                         /*
                          * INGESTA DE TELEMETRÍA
-                         *
-                         * Solo un equipo autenticado puede
-                         * registrar posiciones.
                          */
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/v1/telemetria/posiciones"
-                        )
-                        .hasRole("EQUIPO")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/telemetria/posiciones").hasRole("EQUIPO")
 
                         /*
                          * PANEL DEL CONDUCTOR
                          */
-                        .requestMatchers(
-                                "/api/v1/conductor/**"
-                        )
-                        .hasRole("CONDUCTOR")
+                        .requestMatchers("/api/v1/conductor/**").hasRole("CONDUCTOR")
 
                         /*
-                         * ADMINISTRACIÓN
+                         * ADMINISTRACIÓN DEL SISTEMA (SCRUM-26, bloque D)
+                         *
+                         * Solo el SuperAdmin crea, edita y desactiva cuentas y
+                         * administra rutas, paradas y vehiculos. La cuenta de
+                         * municipalidad mira el panel, pero no administra: en
+                         * estas rutas recibe 403.
                          */
-                        .requestMatchers(
-                                "/api/v1/admin/**"
-                        )
-                        .hasRole("ADMIN")
+                        .requestMatchers("/api/v1/superadmin/**").hasRole("SUPERADMIN")
+                        .requestMatchers("/api/v1/admin/vehiculos/**").hasRole("SUPERADMIN")
+                        .requestMatchers("/api/v1/admin/equipos/**").hasRole("SUPERADMIN")
+
+                        /*
+                         * PANEL MUNICIPAL (consulta)
+                         */
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/catalogo/vehiculos")
+                                .hasAnyRole("ADMIN", "SUPERADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         /*
                          * Cualquier endpoint que no tenga
                          * una regla explícita queda cerrado.
                          */
                         .anyRequest()
-                        .denyAll()
-                )
+                        .denyAll();
+                })
 
                 /*
-                 * Respuestas uniformes para:
-                 * 401 Unauthorized
-                 * 403 Forbidden
+                 * Respuestas uniformes para 401 y 403
                  */
                 .exceptionHandling(errores -> errores
                         .authenticationEntryPoint(entryPoint)
@@ -319,24 +195,16 @@ public class SecurityConfig {
                 )
 
                 /*
-                 * Autenticación del equipo GPS.
+                 * Filtros de autenticacion
                  */
                 .addFilterBefore(
                         equipoAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
-
-                /*
-                 * Autenticación JWT del conductor.
-                 */
                 .addFilterBefore(
                         conductorJwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
-
-                /*
-                 * Autenticación JWT del administrador municipal (SCRUM-173).
-                 */
                 .addFilterBefore(
                         adminJwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class
@@ -344,10 +212,6 @@ public class SecurityConfig {
 
         /*
          * BLOQUE PROVISIONAL.
-         *
-         * Permite ROLE_ADMIN mediante X-Admin-Token
-         * mientras no exista completamente el filtro
-         * definitivo de autenticación administrativa.
          */
         http.addFilterBefore(
                 adminBootstrapFilter,
@@ -355,10 +219,7 @@ public class SecurityConfig {
         );
 
         /*
-         * HU Desarrollo-95: antes que cualquier autenticacion, incluido el
-         * filtro provisional de arriba. Una peticion que ya viene mal de
-         * ritmo no necesita gastar trabajo de autenticacion ni de base de
-         * datos.
+         * HU Desarrollo-95: RateLimitFilter
          */
         http.addFilterBefore(
                 rateLimitFilter,
@@ -430,10 +291,6 @@ public class SecurityConfig {
         return fuente;
     }
 
-    /**
-     * EquipoAuthFilter solamente debe ejecutarse
-     * dentro de la cadena de Spring Security.
-     */
     @Bean
     public FilterRegistrationBean<EquipoAuthFilter>
     noRegistrarEquipoAuthFilter(
@@ -448,10 +305,6 @@ public class SecurityConfig {
         return registro;
     }
 
-    /**
-     * AdminJwtAuthFilter solamente debe ejecutarse
-     * dentro de la cadena de Spring Security (SCRUM-173).
-     */
     @Bean
     public FilterRegistrationBean<AdminJwtAuthFilter>
     noRegistrarAdminJwtAuthFilter(
@@ -466,10 +319,6 @@ public class SecurityConfig {
         return registro;
     }
 
-    /**
-     * ConductorJwtAuthFilter solamente debe ejecutarse
-     * dentro de la cadena de Spring Security.
-     */
     @Bean
     public FilterRegistrationBean<ConductorJwtAuthFilter>
     noRegistrarConductorJwtAuthFilter(
@@ -484,10 +333,6 @@ public class SecurityConfig {
         return registro;
     }
 
-    /**
-     * RateLimitFilter solamente debe ejecutarse
-     * dentro de la cadena de Spring Security.
-     */
     @Bean
     public FilterRegistrationBean<RateLimitFilter>
     noRegistrarRateLimitFilter(

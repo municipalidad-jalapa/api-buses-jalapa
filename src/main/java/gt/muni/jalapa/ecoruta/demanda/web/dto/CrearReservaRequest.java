@@ -10,17 +10,19 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Solicitud para indicar que el pasajero espera en una parada.
+ * Alta de una reserva de lugar en una parada (Desarrollo-135 / SCRUM-306).
  *
  * <p>Tipos envolventes a proposito: un primitivo no distingue "ausente" de
  * cero/falso y Bean Validation no podria responder 400.
  */
 public record CrearReservaRequest(
-        @NotBlank(message = "dispositivoId es obligatorio")
-        @Size(max = 36, message = "dispositivoId no puede pasar de 36 caracteres")
-        @Schema(example = "550e8400-e29b-41d4-a716-446655440000")
+
+        @NotBlank(message = "el dispositivo es obligatorio")
+        @Size(max = 36, message = "el identificador del dispositivo no puede pasar de 36 caracteres")
+        @Schema(example = "6f1c2b7e-8a3d-4e21-9c0f-2b5d7a1e4c88")
         String dispositivoId,
 
-        @NotNull(message = "paradaId es obligatorio")
+        @NotNull(message = "la parada es obligatoria")
         @Positive(message = "paradaId debe ser positivo")
         @Schema(example = "1")
         Long paradaId,
