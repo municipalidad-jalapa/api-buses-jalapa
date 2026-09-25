@@ -76,6 +76,7 @@ public abstract class IntegracionPostgisTest {
     protected void limpiarDatosDePrueba() {
         jdbc.execute("TRUNCATE fallos_de_aviso RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE dispositivos_notificacion");
+        jdbc.execute("TRUNCATE predicciones_eta RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE posiciones_historicas RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE registros_espera RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE equipos RESTART IDENTITY CASCADE");
