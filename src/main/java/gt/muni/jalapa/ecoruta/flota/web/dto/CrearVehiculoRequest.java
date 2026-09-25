@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CrearVehiculoRequest(
@@ -21,5 +22,11 @@ public record CrearVehiculoRequest(
         @Min(value = 1, message = "la capacidad tiene que ser mayor que 0")
         @Max(value = 300, message = "la capacidad no puede pasar de 300")
         @Schema(example = "30", nullable = true, description = "Personas que caben; opcional")
-        Integer capacidad) {
+        Integer capacidad,
+
+        @Size(max = 64, message = "el GPS no puede pasar de 64 caracteres")
+        @Pattern(regexp = VincularGpsRequest.FORMATO, message = VincularGpsRequest.MENSAJE)
+        @Schema(example = "860000000000001", nullable = true,
+                description = "uniqueId del GPS en Traccar (normalmente el IMEI); opcional")
+        String gps) {
 }

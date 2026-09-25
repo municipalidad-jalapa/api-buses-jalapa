@@ -302,12 +302,18 @@ Cada una solo abre su propia ruta.
    El cuerpo real es `{ "position": {...}, "device": {...} }`. No es un objeto plano.
    Detalle de campos y la muestra versionada: `docs/integraciones/traccar-formato-reenvio.md`.
 
-3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el equipo del bus:
+3. Asociar el dispositivo (su *uniqueId* en Traccar, normalmente el IMEI) con el bus. Desde el
+   panel municipal: **Vehículos → GPS (IMEI)**, al dar de alta el bus o en su fila. Por API:
 
-   ```sql
-   INSERT INTO dispositivos_externos (identificador, equipo_id)
-   VALUES ('860000000000001', <id del equipo ACTIVO del bus>);
+   ```bash
+   curl -X PUT localhost:8080/api/v1/admin/vehiculos/<id>/gps \
+        -H "Authorization: Bearer <jwt de admin>" -H 'Content-Type: application/json' \
+        -d '{"gps":"860000000000001"}'
    ```
+
+   Si el bus no tiene equipo a bordo, se emite uno (su credencial no se muestra: el GPS habla
+   con Traccar). Un GPS por bus y un bus por GPS; `DELETE` sobre la misma ruta lo quita.
+   Traccar tiene que conocer el dispositivo (alta en su UI o `database.registerUnknown=true`).
 
 En desarrollo local, `docker-compose` ya define `TRACCAR_TOKEN`. Tras levantar la API y asociar el IMEI:
 

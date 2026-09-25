@@ -166,6 +166,8 @@ public class SecurityConfig {
                          * emite las credenciales de los equipos a bordo. Crear
                          * vehiculos y rutas lo hace cualquier admin desde el panel
                          * municipal (/api/v1/admin/vehiculos y /api/v1/admin/rutas).
+                         * Ponerle GPS a un bus (/admin/vehiculos/{id}/gps) tambien:
+                         * puede emitir un equipo, pero su credencial nunca sale.
                          */
                         .requestMatchers("/api/v1/superadmin/**").hasRole("SUPERADMIN")
                         .requestMatchers("/api/v1/admin/vehiculos/*/equipos").hasRole("SUPERADMIN")
