@@ -27,6 +27,9 @@ public class AdminJwtAuthFilter extends OncePerRequestFilter {
 
     public static final String ROL = "ROLE_ADMIN";
 
+    /** SCRUM-26, bloque D: el SuperAdmin administra cuentas y catalogo. */
+    public static final String ROL_SUPERADMIN = "ROLE_SUPERADMIN";
+
     private final EmisorDeJwt emisor;
 
     @Override
@@ -43,12 +46,21 @@ public class AdminJwtAuthFilter extends OncePerRequestFilter {
             String bearer = cabecera.substring("Bearer ".length()).trim();
             if (!bearer.isEmpty() && !bearer.startsWith("eq_")) {
                 emisor.leer(bearer, EmisorDeJwt.ROL_ADMIN).ifPresent(sesion ->
-                        SecurityContextHolder.getContext().setAuthentication(
-                                UsernamePasswordAuthenticationToken.authenticated(
-                                        sesion.subject(), null, List.of(new SimpleGrantedAuthority(ROL)))));
+                        autenticar(sesion.subject(), List.of(new SimpleGrantedAuthority(ROL))));
+                // El SuperAdmin puede todo lo del panel municipal y ademas
+                // administrar: lleva las dos autoridades.
+                emisor.leer(bearer, EmisorDeJwt.ROL_SUPERADMIN).ifPresent(sesion ->
+                        autenticar(sesion.subject(), List.of(new SimpleGrantedAuthority(ROL_SUPERADMIN),
+                                new SimpleGrantedAuthority(ROL))));
             }
         }
 
         cadena.doFilter(peticion, respuesta);
+    }
+
+    private static void autenticar(String subject,
+                                   List<SimpleGrantedAuthority> autoridades) {
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(subject, null, autoridades));
     }
 }

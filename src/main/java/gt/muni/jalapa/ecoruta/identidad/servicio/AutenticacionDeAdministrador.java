@@ -36,7 +36,7 @@ public class AutenticacionDeAdministrador {
                 .filter(Usuario::puedeEntrarAlPanelMunicipal)
                 .orElseThrow(() -> new AccessDeniedException(SIN_PERMISO));
 
-        return sesionPara(usuario.getFirebaseUid());
+        return sesionPara(usuario);
     }
 
     /**
@@ -45,14 +45,21 @@ public class AutenticacionDeAdministrador {
      */
     @Transactional(readOnly = true)
     public SesionAdminResponse renovar(String firebaseUid) {
-        usuarios.findByFirebaseUid(firebaseUid)
+        Usuario usuario = usuarios.findByFirebaseUid(firebaseUid)
                 .filter(Usuario::puedeEntrarAlPanelMunicipal)
                 .orElseThrow(() -> new AccessDeniedException(SIN_PERMISO));
-        return sesionPara(firebaseUid);
+        return sesionPara(usuario);
     }
 
-    private SesionAdminResponse sesionPara(String firebaseUid) {
-        SesionJwt sesion = emisor.emitir(firebaseUid, EmisorDeJwt.ROL_ADMIN, panel.inactividad());
+    /**
+     * SCRUM-26, bloque D: el rol del token es el de la cuenta. El SuperAdmin
+     * entra al mismo panel, con un token que ademas abre la administracion.
+     */
+    private SesionAdminResponse sesionPara(Usuario usuario) {
+        String rol = usuario.getRol().administraElSistema()
+                ? EmisorDeJwt.ROL_SUPERADMIN
+                : EmisorDeJwt.ROL_ADMIN;
+        SesionJwt sesion = emisor.emitir(usuario.getFirebaseUid(), rol, panel.inactividad());
         return new SesionAdminResponse(sesion.token(), sesion.expiraEn(), sesion.rol(),
                 panel.inactividadMinutos());
     }

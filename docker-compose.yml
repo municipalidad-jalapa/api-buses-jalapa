@@ -1,7 +1,8 @@
 # Entorno de DESARROLLO local. Produccion se despliega en AKS (ver /infra futura).
 services:
   db:
-    image: postgis/postgis:17-3.5
+    # PostGIS + pgRouting (SCRUM-26, bloque C: desvio por calles).
+    image: pgrouting/pgrouting:17-3.5-3.8
     environment:
       POSTGRES_DB: ecoruta
       POSTGRES_USER: ecoruta

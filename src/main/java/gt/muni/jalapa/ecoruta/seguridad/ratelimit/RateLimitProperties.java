@@ -21,6 +21,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param porIpVentanaSegundos       duracion de la ventana del limite por IP
  * @param porDispositivoCapacidad    maximo de peticiones por dispositivo dentro de la ventana
  * @param porDispositivoVentanaSegundos duracion de la ventana del limite por dispositivo
+ * @param porIpEstrictoCapacidad     maximo por IP en las rutas de cupo estricto
+ *                                   ({@code RutasPublicas.Cupo.ESTRICTO}), aparte del general
+ * @param porIpEstrictoVentanaSegundos duracion de la ventana del cupo estricto
  */
 @ConfigurationProperties("ecoruta.rate-limit")
 public record RateLimitProperties(
@@ -28,12 +31,16 @@ public record RateLimitProperties(
         int porIpCapacidad,
         int porIpVentanaSegundos,
         int porDispositivoCapacidad,
-        int porDispositivoVentanaSegundos) {
+        int porDispositivoVentanaSegundos,
+        int porIpEstrictoCapacidad,
+        int porIpEstrictoVentanaSegundos) {
 
     public RateLimitProperties {
         porIpCapacidad = porIpCapacidad <= 0 ? 300 : porIpCapacidad;
         porIpVentanaSegundos = porIpVentanaSegundos <= 0 ? 60 : porIpVentanaSegundos;
         porDispositivoCapacidad = porDispositivoCapacidad <= 0 ? 60 : porDispositivoCapacidad;
         porDispositivoVentanaSegundos = porDispositivoVentanaSegundos <= 0 ? 60 : porDispositivoVentanaSegundos;
+        porIpEstrictoCapacidad = porIpEstrictoCapacidad <= 0 ? 30 : porIpEstrictoCapacidad;
+        porIpEstrictoVentanaSegundos = porIpEstrictoVentanaSegundos <= 0 ? 600 : porIpEstrictoVentanaSegundos;
     }
 }

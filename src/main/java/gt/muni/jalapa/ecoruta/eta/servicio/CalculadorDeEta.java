@@ -1,5 +1,7 @@
 package gt.muni.jalapa.ecoruta.eta.servicio;
 
+import gt.muni.jalapa.ecoruta.calles.RedDeCalles;
+import gt.muni.jalapa.ecoruta.calles.RedDeCallesProperties;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.PuntoResponse;
 import gt.muni.jalapa.ecoruta.common.Geo;
 import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
@@ -71,6 +73,8 @@ public class CalculadorDeEta {
     private final VehiculoRepository vehiculos;
     private final PosicionHistoricaRepository posiciones;
     private final EtaProperties propiedades;
+    private final RedDeCalles calles;
+    private final RedDeCallesProperties callesPropiedades;
     private final Clock reloj;
 
     @Transactional(readOnly = true)
@@ -404,17 +408,35 @@ public class CalculadorDeEta {
                 Geo.longitud(posicion.getUbicacion()), Geo.latitud(posicion.getUbicacion()),
                 fraccionSalida, rutaId);
 
-        Reincorporacion reincorporacion = new Reincorporacion(fraccionSalida, volver.fraccion(),
-                volver.metros() * propiedades.factorDesvio());
+        /*
+         * SCRUM-26, bloque C. La vuelta al trazado se mide por las calles de
+         * Jalapa (pgRouting sobre la red importada de OSM). Entre los puntos
+         * del trazado que quedan por delante gana el que da el camino por
+         * calles mas corto, que no siempre es el mas cercano en linea recta.
+         * Sin red, sin calle cerca o sin camino posible se vuelve al factor.
+         */
+        PuntoResponse posicionDelBus = new PuntoResponse(
+                Geo.latitud(posicion.getUbicacion()), Geo.longitud(posicion.getUbicacion()));
+        List<Punto> candidatos = candidatosDeReincorporacion(rutaId, fraccionSalida, volver);
+        Optional<RedDeCalles.Camino> porCalles = calles.caminoMasCorto(posicionDelBus,
+                candidatos.stream().map(c -> new PuntoResponse(c.latitud(), c.longitud())).toList());
+
+        Punto elegido = porCalles.map(camino -> candidatos.get(camino.destino())).orElse(volver);
+        double metrosHastaVolver = porCalles.map(RedDeCalles.Camino::metros)
+                .orElseGet(() -> volver.metros() * propiedades.factorDesvio());
+
+        Reincorporacion reincorporacion = new Reincorporacion(fraccionSalida, elegido.fraccion(),
+                metrosHastaVolver);
 
         List<PuntoResponse> recorrido = new ArrayList<>();
         Instant salioEn = salida.map(Salida::en).orElse(posicion.getRegistradoEn());
         lecturas.reversed().stream()
                 .filter(l -> !l.en().isBefore(salioEn))
                 .forEach(l -> recorrido.add(new PuntoResponse(l.latitud(), l.longitud())));
-        PuntoResponse puntoDeVuelta = new PuntoResponse(volver.latitud(), volver.longitud());
+        PuntoResponse puntoDeVuelta = new PuntoResponse(elegido.latitud(), elegido.longitud());
+        porCalles.ifPresent(camino -> recorrido.addAll(camino.trazo()));
         recorrido.add(puntoDeVuelta);
-        if (volver.fraccion() < 1) {
+        if (elegido.fraccion() < 1) {
             recorrido.addAll(jdbc.query("""
                             SELECT ST_Y(g.geom) AS latitud, ST_X(g.geom) AS longitud
                               FROM rutas r, ST_DumpPoints(ST_LineSubstring(r.trazado, ?, 1)) g
@@ -422,7 +444,7 @@ public class CalculadorDeEta {
                              ORDER BY g.path
                             """,
                     (rs, i) -> new PuntoResponse(rs.getDouble("latitud"), rs.getDouble("longitud")),
-                    volver.fraccion(), rutaId));
+                    elegido.fraccion(), rutaId));
         }
 
         DesvioResponse respuesta = new DesvioResponse(
@@ -430,6 +452,36 @@ public class CalculadorDeEta {
                 (int) Math.round(reincorporacion.metrosHastaReincorporar()),
                 puntoDeVuelta, recorrido);
         return new DesvioCalculado(reincorporacion, respuesta);
+    }
+
+    /**
+     * Puntos del trazado que quedan por delante y se prueban como
+     * reincorporacion. Se toma una muestra repartida a lo largo del tramo, mas
+     * el punto mas cercano al bus, para no pedirle a pgRouting cientos de
+     * destinos en cada posicion.
+     */
+    private List<Punto> candidatosDeReincorporacion(Long rutaId, double fraccionSalida, Punto cercano) {
+        List<Punto> delTrazado = jdbc.query("""
+                        SELECT ST_LineLocatePoint(r.trazado, g.geom) AS fraccion,
+                               ST_Y(g.geom) AS latitud, ST_X(g.geom) AS longitud
+                          FROM rutas r, ST_DumpPoints(ST_LineSubstring(r.trazado, ?, 1)) g
+                         WHERE r.id = ?
+                         ORDER BY g.path
+                        """,
+                (rs, i) -> new Punto(rs.getDouble("fraccion"), 0,
+                        rs.getDouble("latitud"), rs.getDouble("longitud")),
+                fraccionSalida, rutaId);
+
+        int maximo = Math.max(1, callesPropiedades.candidatos());
+        List<Punto> muestra = new ArrayList<>();
+        muestra.add(cercano);
+        if (!delTrazado.isEmpty()) {
+            int paso = Math.max(1, delTrazado.size() / maximo);
+            for (int i = 0; i < delTrazado.size() && muestra.size() <= maximo; i += paso) {
+                muestra.add(delTrazado.get(i));
+            }
+        }
+        return muestra;
     }
 
     private static EtaRutaResponse sinEstimacion(Long rutaId, Long vehiculoId, Instant ahora,

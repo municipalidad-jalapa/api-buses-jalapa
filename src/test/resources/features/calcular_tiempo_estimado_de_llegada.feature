@@ -107,6 +107,27 @@ Característica: Calcular el tiempo estimado de llegada
     Y las paradas pendientes tienen minutos calculados
     Y las paradas pendientes no son confiables
 
+  @SCRUM-26 @HU-146 @bloque-C
+  Escenario: El desvio se mide por las calles y no en linea recta
+    Dado que el vehiculo "BUS-01" sale del trazado unas cuadras al norte de la 1a Calle
+    Cuando consulto el ETA de la ruta 1
+    Entonces el estado del bus es "EN_DESVIO"
+    Y la vuelta al trazado es mas larga que la linea recta
+    Y el recorrido estimado sigue las calles
+    Y las paradas pendientes tienen minutos calculados
+
+  @SCRUM-26 @HU-146 @bloque-C
+  Escenario: La red de calles esta importada y respeta el sentido de las vias
+    Entonces la red de calles de Jalapa esta importada en la base
+    Y las vias de un solo sentido no se pueden recorrer al reves
+
+  @SCRUM-26 @HU-146 @bloque-C
+  Escenario: Sin camino por calles se vuelve a la estimacion por factor
+    Dado que el vehiculo "BUS-01" sale del trazado donde no hay ninguna calle importada
+    Cuando consulto el ETA de la ruta 1
+    Entonces el estado del bus es "EN_DESVIO"
+    Y la vuelta al trazado se estimo con el factor
+
   Escenario: Ruta inexistente
     Cuando consulto el ETA de la ruta 999999
     Entonces la respuesta tiene codigo 404
