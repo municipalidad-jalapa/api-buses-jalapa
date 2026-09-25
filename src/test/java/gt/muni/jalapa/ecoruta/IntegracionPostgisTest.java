@@ -69,13 +69,14 @@ public abstract class IntegracionPostgisTest {
      *
      * <p>El orden importa: las posiciones apuntan a equipos y los equipos a
      * vehiculos, asi que se borra de fuera hacia dentro para no violar las claves
-     * foraneas. Los buses sembrados se quedan (BUS-01 de V5 y BUS-02 de V12, uno
-     * por ruta); los vehiculos que cree una prueba se van.
+     * foraneas. Los buses sembrados se quedan (BUS-01 de V5 y BUS-02 de V12, uno por
+     * ruta); los vehiculos que cree una prueba se van.
      */
     @BeforeEach
     protected void limpiarDatosDePrueba() {
         jdbc.execute("TRUNCATE fallos_de_aviso RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE dispositivos_notificacion");
+        jdbc.execute("TRUNCATE predicciones_eta RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE posiciones_historicas RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE registros_espera RESTART IDENTITY CASCADE");
         jdbc.execute("TRUNCATE equipos RESTART IDENTITY CASCADE");

@@ -27,13 +27,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 /** Traduce los pasos de {@code calcular_tiempo_estimado_de_llegada.feature} (SCRUM-166). */
 public class PasosDeEta {
 
-    /** Vertice del trazado de V6 en la 1a Calle, antes de la parada 2 (Mercado). */
+    /** En la 1a Calle, entre la parada 1 y la 2 del trazado real (V26). */
     private static final double LAT_ANTES_DE_PARADA_2 = 14.633161;
     private static final double LON_ANTES_DE_PARADA_2 = -89.985636;
 
-    /** Parada 3 (El Calvario) de V6. */
-    private static final double LAT_PARADA_3 = 14.630328;
-    private static final double LON_PARADA_3 = -89.993654;
+    /** Parada 3 de RUTA PRINCIPAL (levantamiento GPS de V26). */
+    private static final double LAT_PARADA_3 = 14.630572;
+    private static final double LON_PARADA_3 = -89.992877;
 
     @Autowired
     private MockMvc mockMvc;
@@ -95,9 +95,9 @@ public class PasosDeEta {
 
     @Dado("que existe una segunda ruta con trazado y paradas")
     public void existe_una_segunda_ruta() {
-        // La ruta de prueba a la Metroplaza que siembra V12.
+        // La ruta de V12, con los datos reales de V26.
         segundaRuta = jdbc.queryForObject(
-                "SELECT id FROM rutas WHERE nombre = 'Ruta de prueba - Parque Central a Metroplaza'",
+                "SELECT id FROM rutas WHERE nombre = 'RUTA SECUNDARIA'",
                 Long.class);
         la_ruta_tiene_trazado_y_paradas(segundaRuta);
     }
@@ -111,7 +111,8 @@ public class PasosDeEta {
 
     @Dado("que el vehiculo {string} reporta posiciones recientes en la parada 2 de la segunda ruta")
     public void reporta_en_la_segunda_ruta(String identificador) {
-        insertarPosicion(identificador, 14.638392, -89.987701, 20d, Instant.now());
+        // Parada 2 de RUTA SECUNDARIA (V26).
+        insertarPosicion(identificador, 14.632317, -89.988729, 20d, Instant.now());
     }
 
     @Dado("que el vehiculo {string} reporta dos posiciones sin velocidad avanzando sobre el trazado")

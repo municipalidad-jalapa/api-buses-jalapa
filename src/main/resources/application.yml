@@ -52,6 +52,10 @@ ecoruta:
     sse-timeout-minutos: 30
     latido-segundos: 25
     reconexion-segundos: 3
+  panel:
+    # Si la ultima posicion es mas vieja que esto, el tablero marca la ruta
+    # como sin transmitir (HU-79).
+    umbral-sin-transmitir-minutos: 5
   eta:
     # SCRUM-166 (HU-71). Calculo propio sobre el trazado, sin servicios externos.
     # PROVISIONAL: 20 km/h hasta tener la velocidad promedio del estudio de campo.

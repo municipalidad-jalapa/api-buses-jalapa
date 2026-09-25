@@ -59,6 +59,18 @@ if [ "$FASE" = "ip" ]; then
     esperar_codigo 429 "$CODIGO" "intento 6, ya sin cupo"
     echo
 
+    echo "--- Criterio 1: el login del panel municipal comparte la bolsa de IP (defecto de QA, 19/09) ---"
+    # POST /api/v1/auth/admin es publico y cada peticion valida un idToken contra
+    # Firebase. Con la IP ya agotada tiene que dar 429; sin el limite daba 400
+    # (el cuerpo vacio llegaba al controlador y fallaba la validacion).
+    CODIGO=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B/api/v1/auth/admin" \
+        -H 'Content-Type: application/json' -d '{}')
+    esperar_codigo 429 "$CODIGO" "POST /api/v1/auth/admin con la IP agotada"
+    CODIGO=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$B/api/v1/auth/conductor" \
+        -H 'Content-Type: application/json' -d '{}')
+    esperar_codigo 429 "$CODIGO" "POST /api/v1/auth/conductor con la IP agotada"
+    echo
+
     echo "--- Criterio 1: una ruta pública fuera de la lista protegida no se limita ---"
     OK_SALUD=true
     for i in 1 2 3 4 5 6; do

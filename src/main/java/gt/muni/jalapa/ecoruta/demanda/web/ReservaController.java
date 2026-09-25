@@ -186,11 +186,13 @@ public class ReservaController {
     @Operation(
             summary = "Cancela una reserva vigente",
             description = """
-                    Solo el dispositivo que creo la reserva puede cancelarla.
+                    Solo el dispositivo que creo la reserva puede cancelarla
+                    (HU-124 / SCRUM-172).
 
                     La reserva no se elimina.
                     Pasa al estado CANCELADA y conserva la fecha
                     en que ocurrio la cancelacion.
+                    Una reserva en ABORDO no se puede cancelar.
                     """
     )
     @ApiResponses({
@@ -218,7 +220,7 @@ public class ReservaController {
             ),
             @ApiResponse(
                     responseCode = "422",
-                    description = "La reserva ya estaba cancelada o no esta vigente",
+                    description = "Ya estaba cancelada, abordada, expirada o no esta vigente",
                     content = @Content(
                             schema = @Schema(
                                     implementation = ApiError.class

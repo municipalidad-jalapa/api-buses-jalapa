@@ -22,7 +22,8 @@ Son **copias**. Maven ejecuta los originales, que tienen que vivir bajo `src/tes
 | `ReservaVigenciaIT.java` | `src/test/java/gt/muni/jalapa/ecoruta/demanda/ReservaVigenciaIT.java` | HU-135: Pruebas de integración sobre vigencia de reservas. |
 | `LimitadorDeVentanaFijaTest.java` | `src/test/java/.../seguridad/ratelimit/LimitadorDeVentanaFijaTest.java` | El contador de ventana fija en memoria, sin Spring. |
 | `RateLimitFilterTest.java` | `src/test/java/.../seguridad/ratelimit/RateLimitFilterTest.java` | El filtro de límite de peticiones aislado, sin Spring. |
-| `RateLimitPorIpIT.java` | `src/test/java/.../seguridad/RateLimitPorIpIT.java` | Límite por IP contra la app real. |
+| `RateLimitPorIpIT.java` | `src/test/java/.../seguridad/RateLimitPorIpIT.java` | Límite por IP contra la app real, incluido el login del panel municipal (`/api/v1/auth/admin`). |
+| `RutasPublicasProtegidasIT.java` | `src/test/java/.../seguridad/ratelimit/RutasPublicasProtegidasIT.java` | Guarda: todo endpoint público de `/api/**` debe estar en el filtro de límite. |
 | `RateLimitPorDispositivoIT.java` | `src/test/java/.../seguridad/RateLimitPorDispositivoIT.java` | Límite por dispositivo contra la app real. |
 | `SecurityHeadersIT.java` | `src/test/java/.../seguridad/SecurityHeadersIT.java` | Cabeceras de seguridad contra la app real. |
 | `ReservaServiceTest.java` | `src/test/java/.../demanda/servicio/ReservaServiceTest.java` | Regla del ritmo mínimo entre reservas (dominio, con mocks). |
@@ -40,4 +41,4 @@ docker info                                # Docker Desktop debe estar arriba
 mvn test
 
 # solo las de esta integración
-mvn test -Dtest='ReservaTest,DemandaServiceTest,ReservaVigenciaIT,EsquemaValidaTest,LimitadorDeVentanaFijaTest,RateLimitFilterTest,RateLimitPorIpIT,RateLimitPorDispositivoIT,SecurityHeadersIT,ReservaServiceTest,ReservaRenovacionTest,ReservaCancelacionTest,CrearReservaIT,CorsIT'
+mvn test -Dtest='ReservaTest,DemandaServiceTest,ReservaVigenciaIT,EsquemaValidaTest,LimitadorDeVentanaFijaTest,RateLimitFilterTest,RutasPublicasProtegidasIT,RateLimitPorIpIT,RateLimitPorDispositivoIT,SecurityHeadersIT,ReservaServiceTest,ReservaRenovacionTest,ReservaCancelacionTest,CrearReservaIT,CorsIT'
