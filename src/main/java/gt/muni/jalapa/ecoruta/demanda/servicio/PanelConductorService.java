@@ -47,6 +47,23 @@ public class PanelConductorService {
         Map<Long, EtaParadaResponse> etaPorParada = eta.paradas().stream()
                 .collect(Collectors.toMap(EtaParadaResponse::paradaId, Function.identity(), (a, b) -> a));
 
+        // Vuelta que se muestra: la de hoy en curso; si ya se cerraron todas sus
+        // paradas, la siguiente, con todo pendiente otra vez.
+        int vuelta = jdbc.queryForObject("""
+                        SELECT CASE
+                                 WHEN (SELECT count(*) FROM paradas WHERE ruta_id = ?) > 0
+                                  AND (SELECT count(DISTINCT parada_id) FROM paradas_atendidas
+                                        WHERE ruta_id = ? AND fecha_servicio = CURRENT_DATE AND vuelta = v.actual)
+                                      >= (SELECT count(*) FROM paradas WHERE ruta_id = ?)
+                                 THEN v.actual + 1
+                                 ELSE v.actual
+                               END
+                          FROM (SELECT coalesce(max(vuelta), 1) AS actual
+                                  FROM paradas_atendidas
+                                 WHERE ruta_id = ? AND fecha_servicio = CURRENT_DATE) v
+                        """,
+                Integer.class, rutaId, rutaId, rutaId, rutaId);
+
         var paradas = jdbc.query("""
                         SELECT p.id,
                                p.nombre,
@@ -60,7 +77,8 @@ public class PanelConductorService {
                                   FROM paradas_atendidas a
                                  WHERE a.parada_id = p.id
                                    AND a.ruta_id = p.ruta_id
-                                   AND a.fecha_servicio = CURRENT_DATE) AS atendida_en
+                                   AND a.fecha_servicio = CURRENT_DATE
+                                   AND a.vuelta = ?) AS atendida_en
                           FROM paradas p
                          WHERE p.ruta_id = ?
                          ORDER BY p.orden
@@ -78,7 +96,7 @@ public class PanelConductorService {
                             suEta != null && suEta.confiable(),
                             atendida != null ? atendida.toInstant() : null);
                 },
-                rutaId);
+                vuelta, rutaId);
 
         // Lo que conto el piloto al cerrar cada parada hoy (botones Subio y Bajo).
         int[] conteo = jdbc.queryForObject("""
@@ -93,6 +111,6 @@ public class PanelConductorService {
         int aBordo = Math.max(0, conteo[0] - conteo[1]);
 
         return new PanelConductorResponse(rutaId, rutaNombre, eta.estado(), Instant.now(reloj), paradas,
-                conteo[0], conteo[1], aBordo);
+                conteo[0], conteo[1], aBordo, vuelta);
     }
 }

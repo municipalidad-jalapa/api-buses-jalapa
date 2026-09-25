@@ -96,6 +96,29 @@ class PanelConductorIT extends IntegracionPostgisTest {
     }
 
     @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void al_cerrar_todas_las_paradas_empieza_otra_vuelta_con_todo_pendiente() throws Exception {
+        mockMvc.perform(get(PANEL)).andExpect(jsonPath("$.vuelta").value(1));
+
+        jdbc.update("""
+                INSERT INTO paradas_atendidas (ruta_id, parada_id, conductor_username, marcada_en, vuelta)
+                SELECT 1, id, 'conductor1', now() - interval '5 minutes', 1 FROM paradas WHERE ruta_id = 1
+                """);
+
+        mockMvc.perform(get(PANEL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.vuelta").value(2))
+                .andExpect(jsonPath("$.paradas[*].atendidaEn", everyItem(nullValue())));
+
+        mockMvc.perform(post("/api/v1/rutas/1/paradas/1/atendida")).andExpect(status().isOk());
+
+        mockMvc.perform(get(PANEL))
+                .andExpect(jsonPath("$.vuelta").value(2))
+                .andExpect(jsonPath("$.paradas[0].atendidaEn", notNullValue()))
+                .andExpect(jsonPath("$.paradas[1].atendidaEn").value(nullValue()));
+    }
+
+    @Test
     @WithMockUser(username = UID_FIREBASE, roles = "CONDUCTOR")
     void con_la_sesion_real_el_conductor_se_reconoce_por_su_uid_de_firebase() throws Exception {
         // El JWT de jornada lleva el uid de Firebase como subject, no el username.

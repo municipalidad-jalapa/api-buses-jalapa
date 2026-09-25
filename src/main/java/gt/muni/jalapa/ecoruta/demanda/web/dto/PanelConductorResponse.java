@@ -18,6 +18,7 @@ import java.util.List;
  * @param subieronHoy suma de lo que conto el piloto al cerrar paradas hoy
  * @param bajaronHoy  idem, los que bajaron
  * @param aBordo      subieron menos bajaron hoy, nunca negativo
+ * @param vuelta      vuelta del dia que se muestra; atendidaEn es de esta vuelta
  */
 public record PanelConductorResponse(
         @Schema(example = "1") Long rutaId,
@@ -27,13 +28,14 @@ public record PanelConductorResponse(
         List<Parada> paradas,
         @Schema(example = "21") int subieronHoy,
         @Schema(example = "9") int bajaronHoy,
-        @Schema(example = "12") int aBordo) {
+        @Schema(example = "12") int aBordo,
+        @Schema(example = "2") int vuelta) {
 
     /**
      * @param reservasActivas personas esperando (reservas ACTIVA o RENOVADA)
      * @param minutos         null si no hay estimacion confiable que mostrar
      * @param confiable       true solo con la velocidad observada del bus
-     * @param atendidaEn      cuando la marco atendida hoy; null si sigue pendiente
+     * @param atendidaEn      cuando la cerro en esta vuelta; null si sigue pendiente
      */
     public record Parada(
             @Schema(example = "3") Long paradaId,

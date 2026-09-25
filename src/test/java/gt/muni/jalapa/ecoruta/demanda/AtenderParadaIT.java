@@ -141,6 +141,29 @@ void limpiarDatosHu76() {
     }
 
     @Test
+    @WithMockUser(
+            username = "conductor1",
+            roles = "CONDUCTOR"
+    )
+    void volver_a_cerrar_la_parada_en_otra_pasada_empieza_la_vuelta_siguiente()
+            throws Exception {
+
+        // La vuelta 1 cerro esta parada hace media hora.
+        jdbc.update("""
+                INSERT INTO paradas_atendidas (ruta_id, parada_id, conductor_username, marcada_en, vuelta)
+                VALUES (1, 1, 'conductor1', now() - interval '30 minutes', 1)
+                """);
+
+        mockMvc.perform(post(RUTA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.vuelta").value(2));
+
+        Long vueltas = jdbc.queryForObject(
+                "SELECT count(*) FROM paradas_atendidas WHERE parada_id = 1", Long.class);
+        assertThat(vueltas).isEqualTo(2);
+    }
+
+    @Test
     void sin_autenticacion_responde_401()
             throws Exception {
 

@@ -18,12 +18,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AtencionParadaService {
+
+    /** Dos cierres de la misma parada en menos de esto son un doble toque. */
+    static final Duration DOBLE_TOQUE = Duration.ofMinutes(2);
 
     private final RutaRepository rutas;
     private final ParadaRepository paradas;
@@ -71,12 +75,27 @@ public class AtencionParadaService {
 
         Instant ahora = Instant.now(reloj);
 
+        // Varias vueltas por dia: cerrar una parada que ya se cerro en la vuelta
+        // en curso empieza la siguiente. Un segundo cierre de la misma parada en
+        // pocos minutos es un doble toque, no otra vuelta.
+        int vuelta = atenciones.vueltaActual(rutaId);
+        var cerradaEnEstaVuelta = atenciones.cerradaEn(rutaId, paradaId, vuelta);
+        if (cerradaEnEstaVuelta.isPresent()) {
+            if (cerradaEnEstaVuelta.get().isAfter(ahora.minus(DOBLE_TOQUE))) {
+                throw new ConflictoException(
+                        "La parada ya fue marcada como atendida."
+                );
+            }
+            vuelta++;
+        }
+
         try {
             atenciones.registrar(
                     rutaId,
                     paradaId,
                     conductor,
                     ahora,
+                    vuelta,
                     conteo.subieron(),
                     conteo.bajaron()
             );
@@ -103,7 +122,8 @@ public class AtencionParadaService {
 
         return new AtenderParadaResponse(
                 pendientes.size(),
-                ahora
+                ahora,
+                vuelta
         );
     }
 }
