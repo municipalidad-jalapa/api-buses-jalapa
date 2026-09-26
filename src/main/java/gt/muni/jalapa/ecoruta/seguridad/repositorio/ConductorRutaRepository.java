@@ -44,4 +44,23 @@ public class ConductorRutaRepository {
                 Long.class);
         return rutas.stream().findFirst();
     }
+
+    /**
+     * El conductor elige la ruta que va a manejar. Mismo filtro que
+     * {@link #rutaDe}: una cuenta que no es conductor activo no cambia nada.
+     *
+     * @return filas actualizadas; 0 si la identidad no es un conductor activo
+     */
+    public int asignar(String identidad, Long rutaId) {
+        return jdbc.update("""
+                        UPDATE usuarios
+                           SET ruta_id = :rutaId
+                         WHERE (username = :identidad OR firebase_uid = :identidad)
+                           AND rol = 'CONDUCTOR'
+                           AND activo = TRUE
+                        """,
+                new MapSqlParameterSource()
+                        .addValue("identidad", identidad)
+                        .addValue("rutaId", rutaId));
+    }
 }
