@@ -345,6 +345,7 @@ public class CalculadorDeEta {
                           FROM paradas p
                           JOIN rutas r ON r.id = p.ruta_id
                          WHERE r.id = ?
+                           AND p.retirada_en IS NULL
                          ORDER BY p.orden
                         """,
                 (rs, i) -> new ParadaEnTrazado(rs.getLong("id"), rs.getInt("orden"), rs.getDouble("fraccion"),

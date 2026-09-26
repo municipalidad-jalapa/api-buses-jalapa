@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.SQLRestriction;
 import org.locationtech.jts.geom.LineString;
 
 import java.util.ArrayList;
@@ -59,5 +60,6 @@ public class Ruta {
      */
     @OneToMany(mappedBy = "ruta", fetch = FetchType.LAZY)
     @OrderBy("orden ASC")
+    @SQLRestriction("retirada_en IS NULL")
     private List<Parada> paradas = new ArrayList<>();
 }

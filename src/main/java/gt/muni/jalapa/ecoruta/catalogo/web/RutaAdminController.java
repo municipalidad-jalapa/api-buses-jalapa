@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -92,6 +93,25 @@ public class RutaAdminController {
     public ResponseEntity<RutaResponse> agregarParada(@PathVariable Long rutaId,
                                                       @Valid @RequestBody CorregirParadaRequest peticion) {
         return ResponseEntity.status(HttpStatus.CREATED).body(alta.agregarParada(rutaId, peticion));
+    }
+
+    @Operation(summary = "Elimina una parada del recorrido",
+            description = """
+                    La parada deja de verse y de contar para el ETA y el conductor, y
+                    las siguientes suben un lugar. Su historial (reservas, atenciones)
+                    se conserva. Las reservas vigentes en ella se cancelan.""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "La ruta sin la parada"),
+            @ApiResponse(responseCode = "404", description = "La parada no existe o no es de esa ruta",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "422", description = "La ruta esta publicada y se quedaria con menos de 2 paradas",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    @DeleteMapping("/{rutaId}/paradas/{paradaId}")
+    public RutaResponse eliminarParada(@PathVariable Long rutaId,
+                                       @PathVariable Long paradaId,
+                                       Authentication autenticacion) {
+        return alta.eliminarParada(rutaId, paradaId, autenticacion.getName());
     }
 
     @Operation(summary = "Publica u oculta la ruta para el pasajero",

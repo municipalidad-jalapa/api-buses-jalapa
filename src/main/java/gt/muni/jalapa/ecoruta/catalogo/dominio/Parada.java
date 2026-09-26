@@ -15,6 +15,8 @@ import lombok.Setter;
 import lombok.ToString;
 import org.locationtech.jts.geom.Point;
 
+import java.time.Instant;
+
 /**
  * Una parada del recorrido.
  *
@@ -51,4 +53,15 @@ public class Parada {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ruta_id", nullable = false)
     private Ruta ruta;
+
+    /**
+     * Cuando se elimino del recorrido desde el panel (V30). La fila se queda
+     * porque el historial la referencia; null = vigente.
+     */
+    @Column(name = "retirada_en")
+    private Instant retiradaEn;
+
+    public boolean estaRetirada() {
+        return retiradaEn != null;
+    }
 }

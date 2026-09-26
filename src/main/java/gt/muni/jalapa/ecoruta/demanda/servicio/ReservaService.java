@@ -62,6 +62,7 @@ public class ReservaService {
 
         Parada parada = paradas
                 .findById(peticion.paradaId())
+                .filter(p -> !p.estaRetirada())
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException(
                                 "Parada",

@@ -51,6 +51,7 @@ public class DemandaService {
     public Reserva crear(String dispositivoId, Long paradaId) {
         // Se busca el objeto Parada completo para pasarlo a la Reserva
         Parada parada = paradas.findById(paradaId)
+                .filter(p -> !p.estaRetirada())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Parada", paradaId));
 
         // Se utilizan los estados explícitos en lugar de OCUPAN_CUPO
