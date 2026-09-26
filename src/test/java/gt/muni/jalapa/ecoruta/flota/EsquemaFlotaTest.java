@@ -36,7 +36,7 @@ class EsquemaFlotaTest extends IntegracionPostgisTest {
         assertThat(vehiculos.findByIdentificador("BUS-01"))
                 .get()
                 .satisfies(v -> {
-                    assertThat(v.getPlaca()).isEqualTo("P-000BBB");
+                    assertThat(v.getPlaca()).isEqualTo("MIBUS-001");
                     assertThat(v.isActivo()).isTrue();
                     assertThat(v.getCreadoEn()).isNotNull();
                 });

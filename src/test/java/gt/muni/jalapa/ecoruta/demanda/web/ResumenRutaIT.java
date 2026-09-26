@@ -173,4 +173,53 @@ class ResumenRutaIT extends IntegracionPostgisTest {
         }
         throw new AssertionError("La parada " + paradaId + " no aparece en el resumen");
     }
+
+    @org.junit.jupiter.api.AfterEach
+    void limpiarOcupacion() {
+        jdbc.update("DELETE FROM paradas_atendidas");
+        jdbc.update("UPDATE vehiculos SET capacidad = NULL");
+    }
+
+    @Test
+    void sin_conteo_del_conductor_hoy_la_ocupacion_viene_vacia() throws Exception {
+        jdbc.update("DELETE FROM paradas_atendidas");
+
+        mockMvc.perform(get("/api/v1/rutas/1/resumen"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ocupacion").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    void con_el_conteo_del_conductor_y_la_capacidad_dice_cuantos_van_y_si_hay_lugar() throws Exception {
+        jdbc.update("DELETE FROM paradas_atendidas");
+        jdbc.update("UPDATE vehiculos SET capacidad = 30 WHERE ruta_id = 1");
+        atender(1L, 15, 0);
+        atender(2L, 6, 2);
+
+        mockMvc.perform(get("/api/v1/rutas/1/resumen"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ocupacion.aBordo").value(19))
+                .andExpect(jsonPath("$.ocupacion.capacidad").value(30))
+                .andExpect(jsonPath("$.ocupacion.nivel").value("CASI_LLENO"))
+                .andExpect(jsonPath("$.ocupacion.actualizadaEn").exists());
+    }
+
+    @Test
+    void sin_capacidad_cargada_dice_cuantos_van_pero_no_el_nivel() throws Exception {
+        jdbc.update("DELETE FROM paradas_atendidas");
+        atender(1L, 4, 1);
+
+        mockMvc.perform(get("/api/v1/rutas/1/resumen"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ocupacion.aBordo").value(3))
+                .andExpect(jsonPath("$.ocupacion.capacidad").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.ocupacion.nivel").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    private void atender(Long paradaId, int subieron, int bajaron) {
+        jdbc.update("""
+                INSERT INTO paradas_atendidas (ruta_id, parada_id, conductor_username, marcada_en, subieron, bajaron)
+                VALUES (1, ?, 'conductor1', now(), ?, ?)
+                """, paradaId, subieron, bajaron);
+    }
 }

@@ -1,5 +1,6 @@
 package gt.muni.jalapa.ecoruta.eta.servicio;
 
+import gt.muni.jalapa.ecoruta.atrasos.servicio.AvisosDeAtraso;
 import gt.muni.jalapa.ecoruta.eta.EtaProperties;
 import gt.muni.jalapa.ecoruta.eta.servicio.CalculadorDeEta.EtaCalculado;
 import gt.muni.jalapa.ecoruta.eta.web.dto.EtaRutaResponse;
@@ -24,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EtaService {
 
     private final CalculadorDeEta calculador;
+    private final AvisosDeAtraso atrasos;
     private final EtaProperties propiedades;
     private final Clock reloj;
 
@@ -43,10 +45,17 @@ public class EtaService {
             eta = calculador.calcular(rutaId);
             ultimos.put(rutaId, eta);
         }
-        if (eta.posicionEn() != null && calculador.esVieja(eta.posicionEn(), reloj.instant())) {
-            return eta.respuesta().sinEstimacion();
-        }
-        return eta.respuesta();
+        EtaRutaResponse respuesta = eta.posicionEn() != null
+                && calculador.esVieja(eta.posicionEn(), reloj.instant())
+                ? eta.respuesta().sinEstimacion()
+                : eta.respuesta();
+        /*
+         * SCRUM-26, bloque E, criterio 3. El aviso del piloto se adjunta aqui y
+         * no en el calculo: asi aparece apenas lo reporta, y sigue apareciendo
+         * aunque el bus no este reportando posiciones, que es justo cuando el
+         * pasajero mas necesita saber que hay una demora avisada.
+         */
+        return atrasos.vigente(rutaId).map(respuesta::con).orElse(respuesta);
     }
 
     /**

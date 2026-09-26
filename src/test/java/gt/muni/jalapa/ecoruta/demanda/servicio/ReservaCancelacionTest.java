@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 /**
- * HU-124: cancelacion de la reserva, sin levantar Spring.
+ * HU-124 / SCRUM-172: cancelacion de la reserva, sin levantar Spring.
  *
  * <p>Portada de {@code DemandaServiceTest} de la rama de SCRUM-276, que cancelaba
  * sobre un dominio paralelo en {@code /api/v1/demanda/registros}. Se conservan
@@ -48,7 +48,7 @@ class ReservaCancelacionTest {
 
     @BeforeEach
     void armarServicio() {
-        DemandaProperties demanda = new DemandaProperties(10, 5, 150, 5);
+        DemandaProperties demanda = new DemandaProperties(5, 60, 10, 150, 5);
         servicio = new ReservaService(reservas, paradas, demanda, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
@@ -120,6 +120,19 @@ class ReservaCancelacionTest {
 
         assertThatThrownBy(() -> servicio.cancelar(1L, DUENO))
                 .isInstanceOf(ReglaDeNegocioException.class);
+    }
+
+    @Test
+    void no_permite_cancelar_una_reserva_ya_marcada_como_abordada() {
+        Reserva reserva = reserva(EstadoReserva.ABORDO, AHORA.plus(3, ChronoUnit.MINUTES));
+        when(reservas.findById(1L)).thenReturn(Optional.of(reserva));
+
+        assertThatThrownBy(() -> servicio.cancelar(1L, DUENO))
+                .isInstanceOf(ReglaDeNegocioException.class)
+                .hasMessage("No se puede cancelar una reserva ya marcada como abordada.");
+
+        assertThat(reserva.getEstado()).isEqualTo(EstadoReserva.ABORDO);
+        assertThat(reserva.getCanceladoEn()).isNull();
     }
 
     private static Reserva reserva(EstadoReserva estado, Instant expiraEn) {

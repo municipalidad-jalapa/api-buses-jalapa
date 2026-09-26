@@ -38,6 +38,7 @@ class ReservaRenovacionTest {
 
     private static final Instant AHORA = Instant.parse("2026-08-31T14:00:00Z");
     private static final int TTL_MINUTOS = 5;
+    private static final int RENOVACION_MINUTOS = 15;
 
     @Mock
     private ReservaRepository reservas;
@@ -49,19 +50,20 @@ class ReservaRenovacionTest {
 
     @BeforeEach
     void armarServicio() {
-        DemandaProperties demanda = new DemandaProperties(10, TTL_MINUTOS, 150, 5);
+        DemandaProperties demanda = new DemandaProperties(TTL_MINUTOS, 60, 10, 150, 5, RENOVACION_MINUTOS);
         servicio = new ReservaService(reservas, paradas, demanda, Clock.fixed(AHORA, ZoneOffset.UTC));
     }
 
     @Test
-    void renovar_una_reserva_vigente_la_extiende_otro_periodo_y_la_deja_renovada() {
+    void renovar_una_reserva_vigente_la_extiende_quince_minutos_y_la_deja_renovada() {
         Reserva reserva = reserva(EstadoReserva.ACTIVA, AHORA.plus(1, ChronoUnit.MINUTES));
         when(reservas.findById(7L)).thenReturn(Optional.of(reserva));
 
         ReservaResponse renovada = servicio.renovar(7L, "disp");
 
         assertThat(renovada.estado()).isEqualTo(EstadoReserva.RENOVADA);
-        assertThat(renovada.expiraEn()).isEqualTo(AHORA.plus(TTL_MINUTOS, ChronoUnit.MINUTES));
+        // QA 4.1: la renovacion da mas que los cinco minutos iniciales.
+        assertThat(renovada.expiraEn()).isEqualTo(AHORA.plus(RENOVACION_MINUTOS, ChronoUnit.MINUTES));
         // Conserva su identificador: no se crea una reserva nueva.
         assertThat(renovada.id()).isEqualTo(7L);
     }

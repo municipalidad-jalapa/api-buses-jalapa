@@ -1,0 +1,898 @@
+================================================================================================
+ RESULTADOS DE PRUEBAS - Backend EcoRuta (suite completa)
+ HU Desarrollo-86: Exportar los datos del servicio
+================================================================================================
+ Generado el       : 2026-09-19 15:53
+ Comando           : mvn test  (todas las clases *Test y *IT + escenarios Cucumber)
+ Java (mvn compila): Java version: 22, vendor: Oracle Corporation, runtime: C:\Program Files\Java\jdk-22   [el pom fija release 21]
+ Maven            : Apache Maven 3.9.6 (bc0240f3c744dd6b6ec2920b3cd08dcc295161ae)
+ Docker           : Docker version 29.6.2, build dfc4efb   (PostGIS 17-3.5 por Testcontainers)
+ Informes fuente   : target/surefire-reports/TEST-*.xml
+================================================================================================
+
+ VEREDICTO GLOBAL:  TODAS PASARON
+   Pruebas ejecutadas : 425
+   Pasaron            : 425
+   Fallaron           : 0
+   Omitidas           : 0
+   Clases de prueba   : 52
+
+================================================================================================
+ A) ESTADO POR CLASE   (marca * = pruebas nuevas o ajustadas por la HU Desarrollo-86)
+================================================================================================
+   HU   Clase                                                       Total  Pasan Fallan Segundos
+   ------------------------------------------------------------------------------------------------
+   *    PruebasDeAceptacionTest                                        81     81      0      9.2   PASS
+        ConsultarRutasIT                                                7      7      0     22.0   PASS
+        RutaRepositoryResumenIT                                         3      3      0      0.2   PASS
+        AtenderParadaIT                                                 4      4      0      0.5   PASS
+        CrearReservaIT                                                 19     19      0      1.0   PASS
+        DemandaCancelacionIT                                            6      6      0      0.2   PASS
+        ReservaTest                                                     6      6      0      0.0   PASS
+        ConsultaDemandaRepositoryIT                                     3      3      0      0.2   PASS
+        ReservaAbordajePasajeroIT                                       2      2      0      0.1   PASS
+        ReservaVigenciaIT                                              10     10      0      0.5   PASS
+        AbordajeServiceTest                                             4      4      0      0.5   PASS
+        ReservaCancelacionTest                                          7      7      0      0.2   PASS
+        ReservaRenovacionTest                                           7      7      0      0.0   PASS
+        ReservaServiceTest                                             15     15      0      0.1   PASS
+        ResumenRutaServiceTest                                         11     11      0      0.4   PASS
+        ResumenRutaIT                                                   8      8      0      1.7   PASS
+        EsquemaValidaTest                                               4      4      0      0.2   PASS
+        CalculadorDeEtaTest                                            18     18      0      0.2   PASS
+        EtaRutaIT                                                       9      9      0      2.2   PASS
+   *    ExportacionConDatosSimuladosIT                                  1      1      0      5.3   PASS
+   *    ExportacionConRutaRealIT                                        3      3      0      0.5   PASS
+   *    ExportacionServicioIT                                          13     13      0      1.1   PASS
+   *    ExportacionServiceTest                                          8      8      0      0.2   PASS
+   *    LibroDelServicioTest                                            8      8      0      0.3   PASS
+        CambioDeEquipoConservaHistorialIT                               3      3      0      1.4   PASS
+        EsquemaFlotaTest                                                5      5      0      0.2   PASS
+        TokenDeEquipoTest                                              13     13      0      0.0   PASS
+        CredencialesTest                                               13     13      0     14.7   PASS
+        AdminDeEquiposIT                                                6      6      0      0.4   PASS
+        AdministradorInicialTest                                        3      3      0      0.2   PASS
+        AccesoPanelConductorIT                                          3      3      0      0.2   PASS
+        ConductorJwtAuthFilterTest                                      3      3      0      0.1   PASS
+        AutenticacionDeConductorTest                                    5      5      0      0.1   PASS
+        EmisorDeJwtTest                                                 4      4      0      0.0   PASS
+        VerificadorFirebaseAdminTest                                    4      4      0      0.1   PASS
+        AuthAdminIT                                                     9      9      0      4.7   PASS
+        AuthConductorControllerTest                                     3      3      0      0.0   PASS
+        AuthConductorIT                                                 3      3      0      0.1   PASS
+        EventoTrasGuardarIT                                             2      2      0      3.2   PASS
+        RecepcionTraccarIT                                             13     13      0      1.6   PASS
+        LecturaTraccarTest                                              4      4      0      0.0   PASS
+        AvisoDeAproximacionIT                                          10     10      0      5.4   PASS
+   *    CorsIT                                                          6      6      0      2.2   PASS
+        LimitadorDeVentanaFijaTest                                      6      6      0      0.0   PASS
+        RateLimitFilterTest                                             6      6      0      0.0   PASS
+        RateLimitPorDispositivoIT                                       3      3      0      2.6   PASS
+        RateLimitPorIpIT                                                5      5      0      2.6   PASS
+        SecretoNoSeFiltraIT                                             4      4      0      0.8   PASS
+        SecurityHeadersIT                                               4      4      0      0.9   PASS
+        DifusorDePosicionesTest                                         6      6      0      0.0   PASS
+        IngestaConCredencialDeEquipoIT                                 14     14      0      2.5   PASS
+        StreamDePosicionesIT                                            8      8      0      1.4   PASS
+   ------------------------------------------------------------------------------------------------
+        TOTAL                                                         425    425      0
+
+================================================================================================
+ B) PRUEBAS QUE FALLARON
+================================================================================================
+   Ninguna.
+
+================================================================================================
+ C) DETALLE DE CADA PRUEBA DE LA HU DESARROLLO-86
+================================================================================================
+ ExportacionConDatosSimuladosIT   (1 pruebas, 0 fallos)
+   [PASS] un_mes_de_datos_simulados_da_los_mismos_totales_que_el_calculo_independiente   (5.20 s)
+
+ ExportacionConRutaRealIT   (3 pruebas, 0 fallos)
+   [PASS] la_distancia_exportada_de_cada_ruta_real_coincide_con_el_largo_de_su_trazado   (0.14 s)
+   [PASS] las_paradas_reales_de_una_ruta_aparecen_una_por_una_con_su_numero_y_nombre   (0.12 s)
+   [PASS] las_paradas_atendidas_por_el_conductor_se_cuentan_por_ruta_y_dia   (0.20 s)
+
+ ExportacionServicioIT   (13 pruebas, 0 fallos)
+   [PASS] un_rango_invertido_responde_422_con_ApiError   (0.04 s)
+   [PASS] la_demanda_sale_agrupada_por_dia_y_parada_con_el_conteo_de_cada_estado   (0.10 s)
+   [PASS] cada_fila_es_un_total_y_no_una_reserva_individual   (0.10 s)
+   [PASS] devuelve_un_xlsx_como_descarga_con_el_rango_en_el_nombre   (0.10 s)
+   [PASS] los_recorridos_suman_la_distancia_entre_lecturas_y_omiten_los_huecos_de_senal   (0.08 s)
+   [PASS] un_conductor_no_puede_exportar   (0.23 s)
+   [PASS] sin_fechas_o_con_formato_invalido_responde_400_con_ApiError   (0.03 s)
+   [PASS] el_archivo_no_contiene_ningun_identificador_de_dispositivo   (0.08 s)
+   [PASS] cambiar_el_rango_cambia_el_contenido   (0.13 s)
+   [PASS] un_rango_sin_datos_devuelve_el_archivo_con_los_encabezados   (0.07 s)
+   [PASS] un_rango_mayor_al_maximo_responde_422   (0.03 s)
+   [PASS] sin_sesion_responde_401   (0.02 s)
+   [PASS] solo_entra_lo_que_cae_dentro_del_rango_y_los_extremos_son_inclusivos   (0.07 s)
+
+ ExportacionServiceTest   (8 pruebas, 0 fallos)
+   [PASS] un_rango_invertido_se_rechaza_sin_consultar_la_base   (0.05 s)
+   [PASS] el_maximo_de_dias_es_inclusivo   (0.02 s)
+   [PASS] una_zona_horaria_invalida_falla_al_arrancar   (0.00 s)
+   [PASS] la_misma_ventana_se_usa_para_demanda_y_recorridos   (0.02 s)
+   [PASS] el_nombre_del_archivo_lleva_el_rango   (0.02 s)
+   [PASS] un_solo_dia_es_un_rango_valido   (0.02 s)
+   [PASS] las_propiedades_por_defecto_son_las_de_guatemala   (0.00 s)
+   [PASS] el_rango_es_inclusivo_y_va_de_la_medianoche_de_guatemala_a_la_del_dia_siguiente   (0.03 s)
+
+ LibroDelServicioTest   (8 pruebas, 0 fallos)
+   [PASS] la_hoja_de_recorridos_convierte_metros_a_km_y_las_horas_a_la_zona_de_guatemala   (0.04 s)
+   [PASS] un_bus_sin_ruta_ni_movimiento_se_ve_claro_y_no_rompe_el_archivo   (0.04 s)
+   [PASS] sin_datos_en_el_rango_el_archivo_sale_igual_con_encabezados_y_totales_en_cero   (0.03 s)
+   [PASS] trae_tres_hojas_en_el_orden_resumen_demanda_recorridos   (0.03 s)
+   [PASS] la_hoja_de_demanda_lleva_una_fila_por_dia_y_parada_con_numeros_y_fechas_reales   (0.04 s)
+   [PASS] el_resumen_suma_los_totales_y_muestra_el_periodo   (0.04 s)
+   [PASS] un_nombre_que_parece_formula_queda_como_texto_y_no_se_ejecuta   (0.04 s)
+   [PASS] ninguna_columna_del_archivo_nombra_a_un_pasajero_ni_su_dispositivo   (0.00 s)
+
+ CorsIT   (6 pruebas, 0 fallos)
+   [PASS] preflight_desde_origen_no_autorizado_es_rechazado   (0.03 s)
+   [PASS] preflight_desde_produccion_es_permitido   (0.02 s)
+   [PASS] preflight_permite_las_cabeceras_requeridas   (0.02 s)
+   [PASS] preflight_de_endpoint_protegido_no_pide_autenticacion   (0.02 s)
+   [PASS] preflight_desde_qa_es_permitido   (0.02 s)
+   [PASS] stream_expone_las_cabeceras_necesarias_para_el_navegador   (0.04 s)
+
+================================================================================================
+ D) ESCENARIOS GHERKIN (Cucumber, PruebasDeAceptacionTest)
+================================================================================================
+   81 escenarios, 0 fallos
+   [PASS] La distancia sigue el recorrido y no la línea recta
+   [PASS] Usa la velocidad observada del vehiculo
+   [PASS] Sin historial suficiente usa la velocidad promedio del recorrido
+   [PASS] El resultado se expresa en minutos para todas las paradas pendientes
+   [PASS] Se recalcula al llegar una posicion nueva respetando el limite de frecuencia
+   [PASS] Posicion vieja no inventa un numero
+   [PASS] Dos rutas se calculan a la vez de forma independiente
+   [PASS] No se consume ningun servicio externo
+   [PASS] Sin velocidad reportada se deduce de las posiciones del GPS
+   [PASS] Las paradas intermedias suman su espera, mayor si tienen reservas
+   [PASS] Detenido fuera de parada por mucho tiempo no proyecta un numero optimista
+   [PASS] Una detencion breve fuera de parada no anula la estimacion
+   [PASS] En desvio el tiempo se recalcula por el camino que sigue el bus
+   [PASS] Ruta inexistente
+   [PASS] Cancelar una reserva activa
+   [PASS] Cancelar una reserva inexistente
+   [PASS] Un dispositivo no puede cancelar la reserva de otro
+   [PASS] El mismo dispositivo puede reservar nuevamente despues de cancelar
+   [PASS] No se puede cancelar dos veces la misma reserva
+   [PASS] No se puede cancelar una reserva expirada
+   [PASS] La ruta se obtiene con sus paradas en el orden del recorrido
+   [PASS] El resumen se puede componer aunque el bus aún no tenga posición
+   [PASS] Solo las reservas vigentes se cuentan por parada
+   [PASS] Una parada sin reservas aparece con conteo cero
+   [PASS] No se puede componer el resumen de una ruta inexistente
+   [PASS] Se listan las rutas activas con sus paradas
+   [PASS] Las paradas vienen en el orden del recorrido
+   [PASS] Las coordenadas se exponen con nombre y sin invertirse
+   [PASS] La ruta trae el recorrido dibujado sobre las calles
+   [PASS] El pasajero anónimo puede consultar sin credencial
+   [PASS] La credencial del equipo no depende de ninguna cuenta de persona
+   [PASS] La credencial se muestra una sola vez
+   [PASS] La ingesta acepta la credencial del equipo
+   [PASS] Sin credencial la ingesta se rechaza
+   [PASS] Una credencial revocada deja de ser aceptada de inmediato
+   [PASS] Revocar un equipo no corta a los demás
+   [PASS] El secreto no queda escrito en los registros
+   [PASS] El secreto no sirve si viaja en la URL
+   [PASS] Example #1.1
+   [PASS] Example #1.1
+   [PASS] Example #1.2
+   [PASS] Example #1.2
+   [PASS] Example #1.3
+   [PASS] Example #1.3
+   [PASS] Example #1.4
+   [PASS] La autenticación reutiliza el mecanismo existente con rol de administrador
+   [PASS] El panel se usa desde el navegador con la API pública de login
+   [PASS] La sesión se cierra por inactividad con plazo configurable
+   [PASS] Un conductor que intenta entrar recibe 403
+   [PASS] Un pasajero anónimo que intenta entrar no pasa
+   [PASS] La cuenta de administrador no guarda contraseña en el sistema
+   [PASS] El administrador ve el servicio completo, no una sola ruta
+   [PASS] La exportación es una hoja de cálculo
+   [PASS] El rango de fechas limita lo que se exporta
+   [PASS] Un rango con la fecha final antes de la inicial se rechaza
+   [PASS] La exportación no expone datos que identifiquen a un pasajero
+   [PASS] Un pasajero sin sesión no puede exportar
+   [PASS] Sin la cabecera de integración se responde 401
+   [PASS] Con una cabecera de integración que no coincide se responde 401
+   [PASS] La posición se atribuye al vehículo del equipo asociado
+   [PASS] Un dispositivo no asociado responde 422 y no registra nada
+   [PASS] Una latitud fuera de rango se rechaza
+   [PASS] La velocidad en nudos se guarda en kilómetros por hora
+   [PASS] Una lectura fuera de la ventana de doce horas se descarta
+   [PASS] Un reenvío repetido no duplica la posición
+   [PASS] El registro no reenvía por HTTP al propio backend
+   [PASS] La base de datos impide posiciones duplicadas por clave de origen
+   [PASS] Crear una reserva estando cerca de la parada
+   [PASS] Rechazar una reserva cuando el pasajero está lejos
+   [PASS] Impedir dos reservas vigentes para el mismo dispositivo
+   [PASS] Informar que la parada no existe
+   [PASS] El stream es público y no pide credencial
+   [PASS] El stream emite Server-Sent Events
+   [PASS] La posición recién ingestada llega al pasajero
+   [PASS] La misma posición llega a todos los suscriptores
+   [PASS] Quien se conecta después ve de inmediato la posición vigente
+   [PASS] Una lectura descartada por reloj desfasado no se difunde
+   [PASS] Un bus lleva un solo equipo activo a la vez
+   [PASS] Cada posición se atribuye al bus de su propio equipo
+   [PASS] Un equipo no puede reportar a nombre de otro bus
+   [PASS] Dar de baja un equipo y dar de alta otro no pierde el histórico del bus
+
+================================================================================================
+ E) DETALLE DE TODAS LAS DEMAS PRUEBAS (por clase)
+================================================================================================
+ ConsultarRutasIT   (7 pruebas, 0 fallos)
+   [PASS] las_coordenadas_salen_con_nombre_y_sin_invertirse
+   [PASS] las_paradas_vienen_en_el_orden_del_recorrido
+   [PASS] devuelve_las_rutas_activas_con_sus_paradas
+   [PASS] se_puede_consultar_una_ruta_por_su_identificador
+   [PASS] es_publico_y_no_pide_credencial
+   [PASS] una_ruta_que_no_existe_responde_404_con_el_formato_ApiError
+   [PASS] una_ruta_inactiva_no_aparece_en_el_listado
+
+ RutaRepositoryResumenIT   (3 pruebas, 0 fallos)
+   [PASS] buscarConParadas_inicializa_las_paradas_sin_depender_de_open_session_in_view
+   [PASS] buscarConParadas_devuelve_las_paradas_ordenadas_por_secuencia
+   [PASS] buscarConParadas_encuentra_la_ruta_sembrada_con_ocho_paradas
+
+ AtenderParadaIT   (4 pruebas, 0 fallos)
+   [PASS] sin_autenticacion_responde_401
+   [PASS] conductor_marca_parada_y_cierra_reservas
+   [PASS] marcar_misma_parada_dos_veces_responde_409
+   [PASS] conductor_sin_ruta_asignada_responde_403
+
+ CrearReservaIT   (19 pruebas, 0 fallos)
+   [PASS] latitud_y_longitud_no_estan_invertidas
+   [PASS] el_pasajero_anonimo_puede_invocar_sin_credencial
+   [PASS] dispositivo_que_creo_una_reserva_hace_instantes_no_puede_crear_otra_aunque_ya_no_este_vigente(String)[1]
+   [PASS] dispositivo_que_creo_una_reserva_hace_instantes_no_puede_crear_otra_aunque_ya_no_este_vigente(String)[2]
+   [PASS] dispositivo_que_creo_una_reserva_hace_instantes_no_puede_crear_otra_aunque_ya_no_este_vigente(String)[3]
+   [PASS] el_indice_parcial_impide_combinaciones_vigentes(String, String)[1]
+   [PASS] el_indice_parcial_impide_combinaciones_vigentes(String, String)[2]
+   [PASS] el_indice_parcial_impide_combinaciones_vigentes(String, String)[3]
+   [PASS] dentro_de_la_geocerca_responde_201_con_el_contrato
+   [PASS] tras_un_estado_no_vigente_se_puede_crear_otra_reserva(String)[1]
+   [PASS] tras_un_estado_no_vigente_se_puede_crear_otra_reserva(String)[2]
+   [PASS] tras_un_estado_no_vigente_se_puede_crear_otra_reserva(String)[3]
+   [PASS] parada_inexistente_responde_404_con_ApiError
+   [PASS] segundo_registro_vigente_del_mismo_dispositivo_responde_422
+   [PASS] campo_faltante_responde_400_con_ApiError(String)[1]
+   [PASS] campo_faltante_responde_400_con_ApiError(String)[2]
+   [PASS] campo_faltante_responde_400_con_ApiError(String)[3]
+   [PASS] campo_faltante_responde_400_con_ApiError(String)[4]
+   [PASS] fuera_de_la_geocerca_responde_422
+
+ DemandaCancelacionIT   (6 pruebas, 0 fallos)
+   [PASS] no_permite_cancelar_registro_expirado
+   [PASS] cancelar_registro_inexistente_responde_404
+   [PASS] despues_de_cancelar_el_mismo_dispositivo_puede_registrarse_de_nuevo
+   [PASS] cancelar_registro_activo_responde_204_y_lo_deja_cancelado
+   [PASS] cancelar_dos_veces_responde_422
+   [PASS] no_permite_cancelar_registro_de_otro_dispositivo
+
+ ReservaTest   (6 pruebas, 0 fallos)
+   [PASS] una_reserva_que_no_esta_en_estado_renovable_no_esta_vigente_aunque_no_haya_expirado
+   [PASS] una_reserva_activa_con_expiracion_futura_esta_vigente
+   [PASS] una_reserva_cuya_expiracion_ya_paso_no_esta_vigente
+   [PASS] solo_activa_y_renovada_son_vigentes_abordo_no_ocupa_el_cupo
+   [PASS] expirar_pasa_la_reserva_a_expirada
+   [PASS] renovar_extiende_la_expiracion_y_deja_la_reserva_renovada
+
+ ConsultaDemandaRepositoryIT   (3 pruebas, 0 fallos)
+   [PASS] cuenta_solo_activa_y_renovada_en_una_sola_parada
+   [PASS] agrupa_varias_paradas_en_una_sola_consulta
+   [PASS] una_coleccion_vacia_no_ejecuta_sql_invalido
+
+ ReservaAbordajePasajeroIT   (2 pruebas, 0 fallos)
+   [PASS] otro_dispositivo_no_puede_consultar_la_reserva
+   [PASS] conductor_tiene_prioridad_y_pasajero_ve_que_fue_recogido
+
+ ReservaVigenciaIT   (10 pruebas, 0 fallos)
+   [PASS] una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva
+   [PASS] renovar_una_reserva_ya_expirada_responde_422
+   [PASS] renovar_una_reserva_vigente_extiende_la_expiracion_y_responde_200
+   [PASS] un_dispositivo_no_puede_renovar_la_reserva_de_otro
+   [PASS] crear_una_reserva_para_una_parada_que_no_existe_responde_404
+   [PASS] un_dispositivo_con_reserva_vigente_no_puede_crear_otra
+   [PASS] al_crearse_la_reserva_expira_cinco_minutos_despues
+   [PASS] renovar_una_reserva_que_no_esta_activa_responde_422
+   [PASS] la_tarea_programada_marca_expirada_toda_reserva_vencida
+   [PASS] renovar_una_reserva_inexistente_responde_404
+
+ AbordajeServiceTest   (4 pruebas, 0 fallos)
+   [PASS] el_pasajero_no_puede_responder_por_la_reserva_de_otro_dispositivo
+   [PASS] el_conductor_sobrescribe_la_respuesta_del_pasajero
+   [PASS] el_pasajero_que_sube_deja_la_reserva_en_ABORDO
+   [PASS] el_pasajero_no_puede_abordar_una_reserva_ya_cerrada
+
+ ReservaCancelacionTest   (7 pruebas, 0 fallos)
+   [PASS] no_permite_cancelar_la_reserva_de_otro_dispositivo
+   [PASS] no_permite_cancelar_una_reserva_ya_expirada
+   [PASS] no_permite_cancelar_una_reserva_cuya_vigencia_ya_vencio
+   [PASS] cancelar_una_reserva_inexistente_falla_con_404
+   [PASS] no_permite_cancelar_dos_veces_la_misma_reserva
+   [PASS] cancelar_una_reserva_vigente_la_deja_cancelada_con_su_fecha
+   [PASS] una_reserva_ya_renovada_tambien_se_puede_cancelar
+
+ ReservaRenovacionTest   (7 pruebas, 0 fallos)
+   [PASS] renovar_una_reserva_vigente_la_extiende_otro_periodo_y_la_deja_renovada
+   [PASS] renovar_una_reserva_ya_vencida_falla_con_422
+   [PASS] no_permite_renovar_la_reserva_de_otro_dispositivo
+   [PASS] expirar_vencidas_delega_el_barrido_masivo_sobre_los_estados_vigentes
+   [PASS] una_reserva_ya_renovada_se_puede_renovar_otra_vez
+   [PASS] renovar_una_reserva_que_no_esta_vigente_falla_con_422
+   [PASS] renovar_una_reserva_inexistente_falla_con_404
+
+ ReservaServiceTest   (15 pruebas, 0 fallos)
+   [PASS] dispositivo_con_reserva_activa_no_guarda
+   [PASS] violacion_concurrente_del_indice_unico_se_traduce_a_regla_de_negocio
+   [PASS] el_estado_persistido_siempre_es_activa
+   [PASS] estados_no_vigentes_no_bloquean_una_reserva_nueva(EstadoReserva)[1]
+   [PASS] estados_no_vigentes_no_bloquean_una_reserva_nueva(EstadoReserva)[2]
+   [PASS] estados_no_vigentes_no_bloquean_una_reserva_nueva(EstadoReserva)[3]
+   [PASS] expira_en_usa_ttl_configurable_y_no_un_numero_hardcodeado
+   [PASS] dispositivo_con_reserva_renovada_no_guarda
+   [PASS] parada_inexistente_no_consulta_geocerca_ni_guarda
+   [PASS] otra_violacion_de_integridad_no_se_traduce_a_reserva_duplicada
+   [PASS] dispositivo_lejos_de_la_parada_no_guarda
+   [PASS] el_ritmo_minimo_usa_la_ventana_configurada_y_no_un_numero_hardcodeado
+   [PASS] crea_una_reserva_activa_con_expiracion_segun_ttl
+   [PASS] dispositivo_que_creo_una_reserva_hace_poco_no_puede_crear_otra_aunque_no_tenga_vigente
+   [PASS] dispositivo_sin_creaciones_recientes_si_puede_crear_otra
+
+ ResumenRutaServiceTest   (11 pruebas, 0 fallos)
+   [PASS] resumir_propaga_recurso_no_encontrado_si_la_ruta_no_existe
+   [PASS] resumir_incluye_la_posicion_cuando_el_bus_ya_reporto
+   [PASS] consulta_demanda_una_sola_vez_para_todas_las_paradas
+   [PASS] resumir_lista_todas_las_paradas_con_su_conteo_incluidos_los_ceros
+   [PASS] resumir_mapea_la_ruta_con_sus_paradas_en_orden
+   [PASS] completa_con_cero_las_paradas_sin_reservas
+   [PASS] resumir_entrega_la_respuesta_aunque_el_bus_no_haya_reportado_posicion
+   [PASS] propaga_recurso_no_encontrado_si_la_ruta_no_existe
+   [PASS] tolera_que_el_bus_no_tenga_posicion
+   [PASS] consulta_telemetria_una_sola_vez
+   [PASS] compone_ruta_posicion_y_reservas
+
+ ResumenRutaIT   (8 pruebas, 0 fallos)
+   [PASS] devuelve_200_con_la_posicion_vacia_cuando_el_bus_aun_no_ha_reportado
+   [PASS] el_conteo_por_parada_solo_suma_reservas_activa_y_renovada
+   [PASS] los_datos_de_la_ruta_coinciden_con_el_endpoint_individual
+   [PASS] devuelve_200_con_ruta_posicion_y_reservas_en_una_sola_respuesta
+   [PASS] un_rutaId_con_formato_invalido_responde_400_con_el_formato_ApiError
+   [PASS] la_posicion_coincide_con_el_endpoint_individual_de_telemetria
+   [PASS] una_ruta_que_no_existe_responde_404_con_el_formato_ApiError
+   [PASS] cada_parada_aparece_con_conteo_cero_cuando_no_tiene_reservas
+
+ EsquemaValidaTest   (4 pruebas, 0 fallos)
+   [PASS] flyway_aplico_todas_las_migraciones_sin_fallar
+   [PASS] el_contexto_arranca_con_el_esquema_de_flyway_sobre_postgis
+   [PASS] la_ubicacion_de_las_posiciones_es_geometry_point_4326
+   [PASS] las_tablas_del_esquema_inicial_existen
+
+ CalculadorDeEtaTest   (18 pruebas, 0 fallos)
+   [PASS] la_parada_saltada_por_el_desvio_sale_sin_estimacion
+   [PASS] una_posicion_mas_vieja_que_el_umbral_se_considera_vieja
+   [PASS] la_velocidad_reportada_manda_sobre_la_deducida
+   [PASS] en_un_circuito_la_parada_rebasada_es_la_de_la_vuelta_siguiente
+   [PASS] con_velocidad_de_respaldo_el_resultado_no_es_confiable
+   [PASS] cada_parada_intermedia_suma_su_espera_y_mas_si_tiene_reservas
+   [PASS] una_parada_recien_alcanzada_por_ruido_del_gps_no_salta_a_la_vuelta_siguiente
+   [PASS] la_parada_cercana_respeta_el_radio
+   [PASS] no_recalcula_antes_del_intervalo_minimo
+   [PASS] en_movimiento_no_esta_detenido
+   [PASS] un_salto_del_gps_no_se_toma_como_velocidad
+   [PASS] la_cache_entrega_sin_estimacion_cuando_la_posicion_envejecio
+   [PASS] sin_velocidad_reportada_se_deduce_de_posiciones_seguidas
+   [PASS] el_tiempo_detenido_cuenta_desde_la_primera_lectura_lenta_de_la_racha
+   [PASS] detenido_en_una_parada_suma_lo_que_le_falta_de_espera
+   [PASS] en_desvio_la_distancia_pasa_por_el_punto_de_reincorporacion
+   [PASS] en_un_circuito_la_parada_saltada_por_el_desvio_queda_para_la_vuelta_siguiente
+   [PASS] los_minutos_salen_de_la_distancia_sobre_el_trazado_y_la_velocidad
+
+ EtaRutaIT   (9 pruebas, 0 fallos)
+   [PASS] dos_rutas_se_calculan_a_la_vez_cada_una_con_su_bus
+   [PASS] en_desvio_recalcula_por_la_reincorporacion_y_devuelve_el_recorrido_estimado
+   [PASS] con_la_posicion_vieja_no_se_inventa_un_numero
+   [PASS] sin_velocidad_de_ningun_tipo_usa_la_de_respaldo_y_no_es_confiable
+   [PASS] sin_velocidad_reportada_la_deduce_de_las_posiciones_y_es_confiable
+   [PASS] una_ruta_que_no_existe_responde_404
+   [PASS] detenido_fuera_de_parada_por_mas_del_maximo_no_proyecta_un_numero
+   [PASS] sin_posiciones_todas_las_paradas_salen_no_disponibles
+   [PASS] la_distancia_sigue_el_recorrido_y_no_la_linea_recta
+
+ CambioDeEquipoConservaHistorialIT   (3 pruebas, 0 fallos)
+   [PASS] dar_de_baja_un_equipo_y_dar_de_alta_otro_no_pierde_el_historico_del_vehiculo
+   [PASS] un_equipo_no_puede_reportar_a_nombre_de_otro_bus
+   [PASS] cada_posicion_se_atribuye_al_vehiculo_de_su_propio_equipo
+
+ EsquemaFlotaTest   (5 pruebas, 0 fallos)
+   [PASS] la_base_impide_dos_equipos_activos_en_el_mismo_vehiculo
+   [PASS] v5_sembro_el_vehiculo_piloto
+   [PASS] revocar_libera_el_vehiculo_para_un_equipo_nuevo
+   [PASS] revocar_dos_veces_no_mueve_la_fecha_de_la_primera_revocacion
+   [PASS] un_equipo_se_guarda_con_su_vehiculo_y_nace_activo
+
+ TokenDeEquipoTest   (13 pruebas, 0 fallos)
+   [PASS] una_cabecera_ausente_no_revienta
+   [PASS] parte_un_token_bien_formado_en_sus_dos_mitades
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[1]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[2]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[3]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[4]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[5]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[6]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[7]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[8]
+   [PASS] devuelve_vacio_sin_lanzar_ante_cualquier_cabecera_que_no_sea_nuestra(String)[9]
+   [PASS] una_cabecera_enorme_se_descarta_por_largo_antes_de_mirar_el_contenido
+   [PASS] el_toString_no_filtra_el_secreto
+
+ CredencialesTest   (13 pruebas, 0 fallos)
+   [PASS] una_credencial_recien_emitida_autentica
+   [PASS] la_credencial_emitida_no_filtra_el_secreto_en_su_toString
+   [PASS] un_codigo_que_no_existe_no_autentica
+   [PASS] cada_credencial_es_distinta
+   [PASS] la_credencial_generada_calza_con_el_formato_publicado
+   [PASS] revocar_un_equipo_no_afecta_a_los_demas
+   [PASS] las_migraciones_no_sembraron_ninguna_credencial
+   [PASS] revocar_un_equipo_inexistente_da_recurso_no_encontrado
+   [PASS] el_token_completo_cabe_en_el_limite_de_72_bytes_de_bcrypt
+   [PASS] un_codigo_valido_con_el_secreto_de_otro_no_autentica
+   [PASS] el_secreto_en_claro_no_se_guarda_en_la_base
+   [PASS] una_credencial_revocada_deja_de_autenticar_de_inmediato
+   [PASS] equipos_no_referencia_a_la_tabla_usuarios
+
+ AdminDeEquiposIT   (6 pruebas, 0 fallos)
+   [PASS] el_alta_devuelve_la_credencial_una_sola_vez
+   [PASS] revocar_un_equipo_inexistente_responde_404
+   [PASS] un_cuerpo_ilegible_responde_400_sin_devolver_lo_que_se_mando
+   [PASS] con_un_token_de_admin_equivocado_tampoco
+   [PASS] la_validacion_de_entrada_responde_400_con_el_campo_que_falta
+   [PASS] sin_token_de_admin_no_se_puede_emitir_una_credencial
+
+ AdministradorInicialTest   (3 pruebas, 0 fallos)
+   [PASS] es_idempotente_si_la_cuenta_ya_existe
+   [PASS] crea_la_cuenta_admin_con_el_uid_configurado_y_sin_contrasena
+   [PASS] sin_uid_configurado_no_crea_nada
+
+ AccesoPanelConductorIT   (3 pruebas, 0 fallos)
+   [PASS] un_jwt_inventado_no_abre_el_panel
+   [PASS] con_el_jwt_de_conductor_la_autorizacion_deja_pasar
+   [PASS] sin_token_el_panel_responde_401_con_ApiError
+
+ ConductorJwtAuthFilterTest   (3 pruebas, 0 fallos)
+   [PASS] un_jwt_invalido_no_lanza_y_deja_el_contexto_vacio
+   [PASS] un_bearer_eq_se_deja_para_el_filtro_del_equipo
+   [PASS] un_jwt_de_conductor_deja_ROLE_CONDUCTOR_en_el_contexto
+
+ AutenticacionDeConductorTest   (5 pruebas, 0 fallos)
+   [PASS] idToken_valido_con_rol_conductor_emite_jwt_propio_de_jornada
+   [PASS] idToken_invalido_o_vencido_es_401
+   [PASS] idToken_valido_pero_sin_usuario_local_es_401
+   [PASS] idToken_valido_con_rol_admin_no_obtiene_sesion_de_conductor
+   [PASS] conductor_inactivo_tampoco_obtiene_sesion
+
+ EmisorDeJwtTest   (4 pruebas, 0 fallos)
+   [PASS] el_token_lleva_rol_conductor_y_vence_en_la_jornada
+   [PASS] un_token_sin_rol_de_conductor_no_se_lee
+   [PASS] un_token_con_otra_firma_no_se_lee
+   [PASS] un_token_vencido_no_se_lee
+
+ VerificadorFirebaseAdminTest   (4 pruebas, 0 fallos)
+   [PASS] un_idToken_de_otro_proyecto_se_rechaza
+   [PASS] un_idToken_valido_del_proyecto_configurado_se_acepta
+   [PASS] un_idToken_que_el_sdk_rechaza_es_401
+   [PASS] sin_firebase_configurado_falla_cerrado
+
+ AuthAdminIT   (9 pruebas, 0 fallos)
+   [PASS] un_administrador_entra_y_recibe_una_sesion_que_vence_por_inactividad
+   [PASS] con_la_sesion_de_admin_ve_el_servicio_completo_sin_estar_atado_a_una_ruta
+   [PASS] un_idToken_invalido_responde_401
+   [PASS] con_actividad_la_sesion_se_renueva
+   [PASS] un_conductor_que_intenta_entrar_recibe_403
+   [PASS] el_jwt_de_un_conductor_no_abre_el_panel
+   [PASS] sin_sesion_el_panel_responde_401
+   [PASS] una_sesion_vencida_por_inactividad_responde_401
+   [PASS] una_cuenta_sin_registro_local_o_inactiva_recibe_403
+
+ AuthConductorControllerTest   (3 pruebas, 0 fallos)
+   [PASS] idToken_valido_sin_rol_de_conductor_responde_401
+   [PASS] idToken_valido_con_rol_conductor_responde_200
+   [PASS] idToken_invalido_o_vencido_responde_401_con_ApiError
+
+ AuthConductorIT   (3 pruebas, 0 fallos)
+   [PASS] idToken_valido_con_rol_conductor_responde_200_con_token_propio
+   [PASS] idToken_valido_sin_rol_de_conductor_responde_401
+   [PASS] idToken_invalido_o_vencido_responde_401_con_ApiError
+
+ EventoTrasGuardarIT   (2 pruebas, 0 fallos)
+   [PASS] el_reenvio_de_traccar_publica_la_posicion_despues_de_guardarla
+   [PASS] si_el_guardado_se_revierte_no_se_publica_nada
+
+ RecepcionTraccarIT   (13 pruebas, 0 fallos)
+   [PASS] latitud_fuera_de_rango_o_sin_fecha_responde_422
+   [PASS] una_posicion_valida_se_registra_para_el_vehiculo_del_equipo_asociado
+   [PASS] una_lectura_fuera_de_la_ventana_de_doce_horas_se_descarta
+   [PASS] si_un_dispositivo_del_lote_no_esta_asociado_no_se_registra_ninguno
+   [PASS] un_dispositivo_no_asociado_responde_422_y_no_registra_nada
+   [PASS] un_cuerpo_mal_formado_responde_400
+   [PASS] el_token_de_traccar_no_sirve_para_la_telemetria_del_equipo
+   [PASS] sin_cabecera_o_con_un_token_distinto_responde_401
+   [PASS] la_clave_de_origen_queda_registrada_y_la_base_impide_duplicarla
+   [PASS] la_velocidad_en_nudos_se_guarda_en_kilometros_por_hora
+   [PASS] un_reenvio_repetido_no_genera_una_posicion_duplicada
+   [PASS] la_credencial_del_equipo_a_bordo_no_sirve_para_la_integracion
+   [PASS] un_lote_mixto_resume_recibidas_aceptadas_y_descartadas
+
+ LecturaTraccarTest   (4 pruebas, 0 fallos)
+   [PASS] sin_id_de_posicion_la_clave_sale_del_dispositivo_y_la_fecha
+   [PASS] traduce_coordenadas_fecha_y_clave_de_origen
+   [PASS] rechaza_datos_invalidos_con_regla_de_negocio
+   [PASS] convierte_la_velocidad_a_kilometros_por_hora_segun_la_unidad
+
+ AvisoDeAproximacionIT   (10 pruebas, 0 fallos)
+   [PASS] ac6_un_fallo_de_envio_se_registra_y_no_detiene_la_telemetria
+   [PASS] ac4_abordaje_sobre_reserva_inactiva_responde_422
+   [PASS] ac2_un_mismo_acercamiento_no_duplica_el_aviso_pero_salir_y_volver_si
+   [PASS] registrar_token_de_dispositivo_responde_204
+   [PASS] ac7_no_existe_aviso_de_salida_por_juntar_diez_pasajeros
+   [PASS] ac4_el_pasajero_no_puede_responder_por_la_reserva_de_otro
+   [PASS] ac1_el_aviso_llega_solo_a_reservas_activas_de_esa_parada
+   [PASS] ac3_al_llegar_a_la_parada_se_manda_el_segundo_aviso
+   [PASS] ac5_el_dato_del_conductor_sobrescribe_al_del_pasajero
+   [PASS] ac4_el_pasajero_registra_si_subio
+
+ LimitadorDeVentanaFijaTest   (6 pruebas, 0 fallos)
+   [PASS] limpiar_no_rompe_una_clave_todavia_activa
+   [PASS] reinicia_el_cupo_cuando_la_ventana_termina
+   [PASS] permite_peticiones_hasta_la_capacidad
+   [PASS] cada_clave_tiene_su_propio_cupo
+   [PASS] rechaza_al_superar_la_capacidad_dentro_de_la_misma_ventana
+   [PASS] informa_cuanto_falta_para_poder_reintentar
+
+ RateLimitFilterTest   (6 pruebas, 0 fallos)
+   [PASS] deshabilitado_no_limita_nada
+   [PASS] ips_distintas_tienen_cupos_independientes
+   [PASS] sin_cabecera_de_dispositivo_solo_aplica_el_limite_por_ip
+   [PASS] una_ruta_no_protegida_nunca_se_limita
+   [PASS] dispositivos_distintos_tienen_cupos_independientes_aunque_compartan_ip
+   [PASS] una_ruta_protegida_responde_429_al_superar_el_limite_por_ip
+
+ RateLimitPorDispositivoIT   (3 pruebas, 0 fallos)
+   [PASS] supera_el_limite_por_dispositivo_y_responde_429
+   [PASS] otro_dispositivo_no_hereda_el_limite_ya_agotado_del_primero
+   [PASS] sin_cabecera_de_dispositivo_el_limite_por_dispositivo_no_aplica
+
+ RateLimitPorIpIT   (5 pruebas, 0 fallos)
+   [PASS] cancelar_tambien_esta_protegido_por_el_limite_de_ip
+   [PASS] otra_ip_no_hereda_el_limite_ya_agotado_de_la_primera
+   [PASS] una_ruta_publica_fuera_de_la_lista_protegida_no_se_limita
+   [PASS] un_429_conserva_las_cabeceras_cors_del_origen_permitido
+   [PASS] supera_el_limite_por_ip_en_una_ruta_publica_y_responde_429
+
+ SecretoNoSeFiltraIT   (4 pruebas, 0 fallos)
+   [PASS] el_alta_no_se_escribe_en_los_logs_al_serializarse(CapturedOutput)
+   [PASS] el_secreto_no_aparece_en_los_logs_ni_al_aceptar_ni_al_rechazar(CapturedOutput)
+   [PASS] el_secreto_no_aparece_en_el_cuerpo_de_ningun_error(CapturedOutput)
+   [PASS] el_hash_no_sale_por_ninguna_parte(CapturedOutput)
+
+ SecurityHeadersIT   (4 pruebas, 0 fallos)
+   [PASS] hsts_solo_viaja_en_una_conexion_que_el_servidor_considera_segura
+   [PASS] una_respuesta_publica_trae_las_cabeceras_de_seguridad
+   [PASS] un_error_de_negocio_tambien_trae_las_cabeceras_de_seguridad
+   [PASS] la_csp_no_se_aplica_fuera_de_la_api_para_no_romper_swagger_ui
+
+ DifusorDePosicionesTest   (6 pruebas, 0 fallos)
+   [PASS] un_suscriptor_queda_registrado_al_conectarse
+   [PASS] difundir_sin_suscriptores_no_revienta
+   [PASS] un_suscriptor_roto_no_impide_difundir_a_los_demas_y_sale_de_la_lista
+   [PASS] el_latido_no_revienta_sin_suscriptores
+   [PASS] quien_no_elige_ruta_recibe_toda_la_flota
+   [PASS] quien_sigue_una_ruta_no_recibe_el_bus_de_otra
+
+ IngestaConCredencialDeEquipoIT   (14 pruebas, 0 fallos)
+   [PASS] un_reloj_desfasado_se_descarta_pero_el_lote_sigue_dando_202
+   [PASS] un_codigo_valido_con_secreto_equivocado_se_rechaza
+   [PASS] las_coordenadas_se_guardan_en_el_orden_correcto
+   [PASS] la_posicion_vigente_responde_204_antes_de_la_primera_ingesta
+   [PASS] un_token_basura_se_rechaza_con_401_y_no_con_500
+   [PASS] falta_la_latitud_y_responde_400_nombrando_el_campo
+   [PASS] un_timestamp_ilegible_responde_400_sin_devolver_el_cuerpo_recibido
+   [PASS] sin_credencial_la_ingesta_se_rechaza_con_el_formato_ApiError
+   [PASS] la_posicion_vigente_es_la_del_timestamp_mas_reciente_y_no_la_ultima_del_array
+   [PASS] el_secreto_en_la_url_no_sirve_para_autenticarse
+   [PASS] con_la_credencial_del_equipo_la_ingesta_se_acepta_con_202
+   [PASS] revocar_un_equipo_no_corta_a_los_demas
+   [PASS] una_credencial_revocada_deja_de_ser_aceptada_de_inmediato
+   [PASS] la_posicion_vigente_es_publica_y_no_pide_credencial
+
+ StreamDePosicionesIT   (8 pruebas, 0 fallos)
+   [PASS] un_stream_abierto_sin_ninguna_posicion_todavia_no_envia_nada
+   [PASS] al_conectarse_recibe_de_inmediato_la_posicion_vigente
+   [PASS] cada_evento_lleva_id_y_tiempo_de_reconexion
+   [PASS] la_misma_posicion_llega_a_todos_los_suscriptores
+   [PASS] el_stream_es_publico_y_no_pide_credencial
+   [PASS] una_posicion_ingestada_llega_a_los_suscriptores
+   [PASS] una_posicion_descartada_por_reloj_desfasado_no_se_difunde
+   [PASS] el_stream_se_sirve_como_text_event_stream
+
+================================================================================================
+ F) PRUEBAS MANUALES END-TO-END (prueba-manual.sh contra la app real)
+================================================================================================
+ manual-1-simulado-base-vacia.log
+   === resumen modo=simulado: 36 comprobaciones, 0 fallo(s) ===
+
+ manual-2-simulado-repetido-misma-base.log
+   === resumen modo=simulado: 35 comprobaciones, 0 fallo(s) ===
+
+ manual-3-real.log
+   === resumen modo=real: 20 comprobaciones, 0 fallo(s) ===
+
+ Salida completa de cada corrida:
+
+------------------------------------------------------------------------------------------------
+ >> manual-1-simulado-base-vacia.log
+------------------------------------------------------------------------------------------------
+   ### HU Desarrollo-86 - prueba manual   (Sat Sep 19 15:46:00 HAC 2026)   modo=simulado
+   ### API: http://localhost:8086     hoy (Guatemala): 2026-09-19
+   
+   --- 0. La API esta arriba ---
+       [OK] GET /actuator/health -> 200
+   
+   --- 1. Datos SIMULADOS: demanda (pasajeros) por POST /api/v1/reservas ---
+       linea base de hoy: 0 reservas, 0 lecturas GPS
+       ruta 1 con 8 paradas (calles reales de Jalapa, circuito de ejemplo)
+       [OK] reservas creadas por la API (8 paradas con 1,2,3,1,2,3,1,2) -> 15
+       [OK] reservas canceladas -> 3
+       [OK] reservas con abordaje del pasajero -> 2
+   
+   --- 2. Datos SIMULADOS: el bus recorre la ruta real (tools/simulador-gps.py) ---
+          0.00 km  14.634878, -89.981202  -- parada: Parque Central (0 s)
+       
+       Detenido. 59 posiciones reportadas, 1 vueltas.
+       [OK] el simulador completo una vuelta
+   
+   --- 3. Acceso: solo el administrador ---
+       [OK] sin credencial -> 401
+       [OK] con credencial equivocada -> 401
+   
+   --- 4. Criterio: rango de fechas seleccionable (validaciones) ---
+       [OK] falta 'desde' -> 400
+       [OK] falta 'hasta' -> 400
+       [OK] formato de fecha distinto de AAAA-MM-DD -> 400
+       [OK] rango invertido (desde > hasta) -> 422
+       [OK] rango de mas de 366 dias -> 422
+       [OK] el 422 viene en el formato ApiError: La fecha 'desde' no puede ser posterior a la fecha 'hasta'
+   
+   --- 5. Criterio: exportacion en hoja de calculo ---
+       [OK] GET exportar hoy..hoy -> 200
+       [OK] Content-Type es el de .xlsx
+       [OK] se descarga como ecoruta-servicio_2026-09-19_a_2026-09-19.xlsx
+       [OK] Cache-Control: no-store (no se guarda el reporte)
+       [OK] el contenido es un ZIP (.xlsx real, 6452 bytes)
+       [OK] hojas del libro -> Resumen,Demanda,Recorridos,
+   
+       Resumen del archivo:
+         Desde	2026-09-19
+         Hasta (inclusive)	2026-09-19
+         Zona horaria de los días	America/Guatemala
+         Generado	2026-09-19 15:47:24
+         Reservas creadas	15
+         Abordaron	2
+         Canceladas	3
+         Expiradas	0
+         Vigentes al exportar	10
+         Declararon que no abordaron	0
+         Lecturas GPS	59
+         Distancia estimada (km)	4.9834
+   
+   --- 6. El archivo trae exactamente lo generado (datos simulados) ---
+       [OK] Resumen: reservas creadas (base + 15) -> 15
+       [OK] Resumen: abordaron (base + 2) -> 2
+       [OK] Resumen: canceladas (base + 3) -> 3
+       [OK] Resumen: vigentes -> 10
+       [OK] hoja Demanda: una fila por parada con demanda -> 8
+       [OK] hoja Recorridos: 59 lecturas GPS nuevas del simulador
+       [OK] distancia estimada: 4.9834 km en total, base 0 (la vuelta nueva mide unos 5.17 km)
+   
+       Hoja Demanda:
+         Fecha	Ruta	N.º de parada	Parada	Reservas creadas	Abordaron	Canceladas	Expiradas	Vigentes al exportar	Declararon que no abordaron
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	1	Parque Central	1	0	1	0	0	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	2	1a Calle - Mercado	2	0	2	0	0	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	3	1a Calle - El Calvario	3	2	0	0	1	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	4	1a Calle - Terminal	1	0	0	0	1	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	5	Llano Grande	2	0	0	0	2	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	6	Transito Rojas - Hospital	3	0	0	0	3	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	7	Transito Rojas - Instituto	1	0	0	0	1	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	8	Transito Rojas - Chipilapa	2	0	0	0	2	0
+   
+       Hoja Recorridos:
+         Fecha	Bus	Placa	Ruta	Lecturas GPS	Primera lectura	Última lectura	Distancia estimada (km)	Velocidad promedio en movimiento (km/h)	Paradas atendidas
+         2026-09-19	BUS-01	P-000BBB	Ruta de ejemplo - Centro de Jalapa	59	2026-09-19 15:46:15	2026-09-19 15:47:22	4.9834	300	0
+   
+   --- 7. El rango limita lo exportado ---
+       [OK] rango 'de hace 200 a hace 30 dias': la hoja Demanda queda solo con encabezado -> 0
+       [OK] rango 'de hace 200 a hace 30 dias': el Resumen dice 0 reservas -> 0
+       [OK] rango 'solo manana': la hoja Demanda queda solo con encabezado -> 0
+       [OK] rango 'solo manana': el Resumen dice 0 reservas -> 0
+   
+   --- 8. Criterio: no expone datos que identifiquen a un pasajero ---
+       [OK] identificadores con forma de UUID dentro del archivo (todas las partes del ZIP) -> 0
+       [OK] de los 15 dispositivos que reservaron, cuantos aparecen en el archivo -> 0
+       [OK] ningun encabezado de columna nombra a un pasajero, dispositivo, token o conductor
+   
+   --- 9. CORS: el navegador puede leer el nombre del archivo ---
+       [OK] Access-Control-Expose-Headers incluye Content-Disposition
+   
+   --- 10. Contraste con un SQL independiente (base: contenedor ecoruta-hu86-db) ---
+       [OK] reservas de hoy: SQL directo vs. Resumen del archivo -> 15
+       [OK] lecturas GPS de hoy: SQL directo vs. Resumen del archivo -> 59
+   
+   === resumen modo=simulado: 36 comprobaciones, 0 fallo(s) ===
+   TODO OK
+
+------------------------------------------------------------------------------------------------
+ >> manual-2-simulado-repetido-misma-base.log
+------------------------------------------------------------------------------------------------
+   ### HU Desarrollo-86 - prueba manual   (Sat Sep 19 15:47:32 HAC 2026)   modo=simulado
+   ### API: http://localhost:8086     hoy (Guatemala): 2026-09-19
+   
+   --- 0. La API esta arriba ---
+       [OK] GET /actuator/health -> 200
+   
+   --- 1. Datos SIMULADOS: demanda (pasajeros) por POST /api/v1/reservas ---
+       linea base de hoy: 15 reservas, 59 lecturas GPS
+       ruta 1 con 8 paradas (calles reales de Jalapa, circuito de ejemplo)
+       [OK] reservas creadas por la API (8 paradas con 1,2,3,1,2,3,1,2) -> 15
+       [OK] reservas canceladas -> 3
+       [OK] reservas con abordaje del pasajero -> 2
+   
+   --- 2. Datos SIMULADOS: el bus recorre la ruta real (tools/simulador-gps.py) ---
+          0.00 km  14.634878, -89.981202  -- parada: Parque Central (0 s)
+       
+       Detenido. 59 posiciones reportadas, 1 vueltas.
+       [OK] el simulador completo una vuelta
+   
+   --- 3. Acceso: solo el administrador ---
+       [OK] sin credencial -> 401
+       [OK] con credencial equivocada -> 401
+   
+   --- 4. Criterio: rango de fechas seleccionable (validaciones) ---
+       [OK] falta 'desde' -> 400
+       [OK] falta 'hasta' -> 400
+       [OK] formato de fecha distinto de AAAA-MM-DD -> 400
+       [OK] rango invertido (desde > hasta) -> 422
+       [OK] rango de mas de 366 dias -> 422
+       [OK] el 422 viene en el formato ApiError: La fecha 'desde' no puede ser posterior a la fecha 'hasta'
+   
+   --- 5. Criterio: exportacion en hoja de calculo ---
+       [OK] GET exportar hoy..hoy -> 200
+       [OK] Content-Type es el de .xlsx
+       [OK] se descarga como ecoruta-servicio_2026-09-19_a_2026-09-19.xlsx
+       [OK] Cache-Control: no-store (no se guarda el reporte)
+       [OK] el contenido es un ZIP (.xlsx real, 6454 bytes)
+       [OK] hojas del libro -> Resumen,Demanda,Recorridos,
+   
+       Resumen del archivo:
+         Desde	2026-09-19
+         Hasta (inclusive)	2026-09-19
+         Zona horaria de los días	America/Guatemala
+         Generado	2026-09-19 15:48:57
+         Reservas creadas	30
+         Abordaron	4
+         Canceladas	6
+         Expiradas	0
+         Vigentes al exportar	20
+         Declararon que no abordaron	0
+         Lecturas GPS	118
+         Distancia estimada (km)	10.0393
+   
+   --- 6. El archivo trae exactamente lo generado (datos simulados) ---
+       [OK] Resumen: reservas creadas (base + 15) -> 30
+       [OK] Resumen: abordaron (base + 2) -> 4
+       [OK] Resumen: canceladas (base + 3) -> 6
+       [OK] Resumen: vigentes -> 20
+       [--] hoja Demanda: no se cuentan filas porque la base ya tenia reservas de hoy
+       [OK] hoja Recorridos: 59 lecturas GPS nuevas del simulador
+       [OK] distancia estimada: 10.0393 km en total, base 4.9834 (la vuelta nueva mide unos 5.17 km)
+   
+       Hoja Demanda:
+         Fecha	Ruta	N.º de parada	Parada	Reservas creadas	Abordaron	Canceladas	Expiradas	Vigentes al exportar	Declararon que no abordaron
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	1	Parque Central	2	0	2	0	0	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	2	1a Calle - Mercado	4	0	4	0	0	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	3	1a Calle - El Calvario	6	4	0	0	2	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	4	1a Calle - Terminal	2	0	0	0	2	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	5	Llano Grande	4	0	0	0	4	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	6	Transito Rojas - Hospital	6	0	0	0	6	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	7	Transito Rojas - Instituto	2	0	0	0	2	0
+         2026-09-19	Ruta de ejemplo - Centro de Jalapa	8	Transito Rojas - Chipilapa	4	0	0	0	4	0
+   
+       Hoja Recorridos:
+         Fecha	Bus	Placa	Ruta	Lecturas GPS	Primera lectura	Última lectura	Distancia estimada (km)	Velocidad promedio en movimiento (km/h)	Paradas atendidas
+         2026-09-19	BUS-01	P-000BBB	Ruta de ejemplo - Centro de Jalapa	118	2026-09-19 15:46:15	2026-09-19 15:48:55	10.0393	300	0
+   
+   --- 7. El rango limita lo exportado ---
+       [OK] rango 'de hace 200 a hace 30 dias': la hoja Demanda queda solo con encabezado -> 0
+       [OK] rango 'de hace 200 a hace 30 dias': el Resumen dice 0 reservas -> 0
+       [OK] rango 'solo manana': la hoja Demanda queda solo con encabezado -> 0
+       [OK] rango 'solo manana': el Resumen dice 0 reservas -> 0
+   
+   --- 8. Criterio: no expone datos que identifiquen a un pasajero ---
+       [OK] identificadores con forma de UUID dentro del archivo (todas las partes del ZIP) -> 0
+       [OK] de los 15 dispositivos que reservaron, cuantos aparecen en el archivo -> 0
+       [OK] ningun encabezado de columna nombra a un pasajero, dispositivo, token o conductor
+   
+   --- 9. CORS: el navegador puede leer el nombre del archivo ---
+       [OK] Access-Control-Expose-Headers incluye Content-Disposition
+   
+   --- 10. Contraste con un SQL independiente (base: contenedor ecoruta-hu86-db) ---
+       [OK] reservas de hoy: SQL directo vs. Resumen del archivo -> 30
+       [OK] lecturas GPS de hoy: SQL directo vs. Resumen del archivo -> 118
+   
+   === resumen modo=simulado: 35 comprobaciones, 0 fallo(s) ===
+   TODO OK
+
+------------------------------------------------------------------------------------------------
+ >> manual-3-real.log
+------------------------------------------------------------------------------------------------
+   ### HU Desarrollo-86 - prueba manual   (Sat Sep 19 15:49:28 HAC 2026)   modo=real
+   ### API: http://localhost:8086     hoy (Guatemala): 2026-09-19
+   
+   --- 0. La API esta arriba ---
+       [OK] GET /actuator/health -> 200
+   
+   --- 3. Acceso: solo el administrador ---
+       [OK] sin credencial -> 401
+       [OK] con credencial equivocada -> 401
+   
+   --- 4. Criterio: rango de fechas seleccionable (validaciones) ---
+       [OK] falta 'desde' -> 400
+       [OK] falta 'hasta' -> 400
+       [OK] formato de fecha distinto de AAAA-MM-DD -> 400
+       [OK] rango invertido (desde > hasta) -> 422
+       [OK] rango de mas de 366 dias -> 422
+       [OK] el 422 viene en el formato ApiError: La fecha 'desde' no puede ser posterior a la fecha 'hasta'
+   
+   --- 5. Criterio: exportacion en hoja de calculo ---
+       [OK] GET exportar hoy..hoy -> 200
+       [OK] Content-Type es el de .xlsx
+       [OK] se descarga como ecoruta-servicio_2026-09-19_a_2026-09-19.xlsx
+       [OK] Cache-Control: no-store (no se guarda el reporte)
+       [OK] el contenido es un ZIP (.xlsx real, 6453 bytes)
+       [OK] hojas del libro -> Resumen,Demanda,Recorridos,
+   
+       Resumen del archivo:
+         Desde	2026-09-19
+         Hasta (inclusive)	2026-09-19
+         Zona horaria de los días	America/Guatemala
+         Generado	2026-09-19 15:49:30
+         Reservas creadas	30
+         Abordaron	4
+         Canceladas	6
+         Expiradas	0
+         Vigentes al exportar	20
+         Declararon que no abordaron	0
+         Lecturas GPS	118
+         Distancia estimada (km)	10.0393
+   
+   --- 8. Criterio: no expone datos que identifiquen a un pasajero ---
+       [OK] identificadores con forma de UUID dentro del archivo (todas las partes del ZIP) -> 0
+       [OK] ningun encabezado de columna nombra a un pasajero, dispositivo, token o conductor
+   
+   --- 9. CORS: el navegador puede leer el nombre del archivo ---
+       [OK] Access-Control-Expose-Headers incluye Content-Disposition
+   
+   --- 10. Contraste con un SQL independiente (base: contenedor ecoruta-hu86-db) ---
+       [OK] reservas de hoy: SQL directo vs. Resumen del archivo -> 30
+       [OK] lecturas GPS de hoy: SQL directo vs. Resumen del archivo -> 118
+   
+   === resumen modo=real: 20 comprobaciones, 0 fallo(s) ===
+   TODO OK
+
+================================================================================================
+ FIN - VEREDICTO: TODAS PASARON  (425/425 pruebas automaticas)
+================================================================================================

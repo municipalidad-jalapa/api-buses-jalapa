@@ -58,7 +58,7 @@ Al final debe decir `BUILD SUCCESS`.
 
 ### 2.2 Solo lo de esta HU
 ```bash
-mvn test -Dtest='LimitadorDeVentanaFijaTest,RateLimitFilterTest,RateLimitPorIpIT,RateLimitPorDispositivoIT,SecurityHeadersIT,ReservaServiceTest,ReservaRenovacionTest,ReservaCancelacionTest,CrearReservaIT,ReservaVigenciaIT,CorsIT'
+mvn test -Dtest='LimitadorDeVentanaFijaTest,RateLimitFilterTest,RutasPublicasProtegidasIT,RateLimitPorIpIT,RateLimitPorDispositivoIT,SecurityHeadersIT,ReservaServiceTest,ReservaRenovacionTest,ReservaCancelacionTest,CrearReservaIT,ReservaVigenciaIT,CorsIT'
 ```
 
 ### 2.3 Clase por clase
@@ -67,7 +67,8 @@ mvn test -Dtest='LimitadorDeVentanaFijaTest,RateLimitFilterTest,RateLimitPorIpIT
 |---|---|---|
 | `mvn test -Dtest=LimitadorDeVentanaFijaTest` | El contador de ventana fija (permite hasta la capacidad, rechaza al superarla, `Retry-After`, cupos independientes por clave, reinicio de ventana, limpieza) | No |
 | `mvn test -Dtest=RateLimitFilterTest` | El filtro aislado: rutas no protegidas nunca se limitan, 429 con el cuerpo `ApiError` correcto, IPs y dispositivos con cupos independientes, sin cabecera de dispositivo solo aplica el límite de IP, `habilitado=false` desactiva todo | No |
-| `mvn test -Dtest=RateLimitPorIpIT` | Límite por IP contra la app real: 429 al superarlo, IPs distintas no se contagian, una ruta pública fuera de la lista (`/actuator/health`) nunca se limita, un 429 conserva las cabeceras CORS, `DELETE` también está cubierto | **Sí** |
+| `mvn test -Dtest=RateLimitPorIpIT` | Límite por IP contra la app real: 429 al superarlo, IPs distintas no se contagian, una ruta pública fuera de la lista (`/actuator/health`) nunca se limita, un 429 conserva las cabeceras CORS, `DELETE` también está cubierto, y el login del panel municipal (`POST /api/v1/auth/admin`) corta con 429 aunque la IP la haya agotado otra ruta (defecto de QA del 19/09) | **Sí** |
+| `mvn test -Dtest=RutasPublicasProtegidasIT` | **Guarda de sincronización.** Recorre los endpoints reales de los controladores, pregunta a la autorización real de Spring Security si un anónimo puede entrar, y falla —nombrando el endpoint— si alguno público de `/api/**` no está en `RutasPublicas.TODAS`. Evita que una ruta nueva vuelva a quedar sin límite | **Sí** |
 | `mvn test -Dtest=RateLimitPorDispositivoIT` | Límite por dispositivo contra la app real: 429 al superarlo, otro dispositivo no se contagia, sin `X-Dispositivo-Id` el límite de dispositivo no aplica | **Sí** |
 | `mvn test -Dtest=SecurityHeadersIT` | Cabeceras de seguridad contra la app real: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Content-Security-Policy` (solo en `/api/**`, no rompe swagger-ui), `Strict-Transport-Security` (solo en conexión segura), y que un error también las trae | **Sí** |
 | `mvn test -Dtest=ReservaServiceTest` | Reglas de `ReservaService` con mocks, incluida la nueva: un dispositivo con una creación reciente no puede crear otra aunque no tenga reserva vigente, la ventana usa la configuración y no un número fijo | No |
@@ -183,6 +184,8 @@ Para verificar el comportamiento real sin acelerar nada:
 |---|---|---|---|
 | 1 | Límite de peticiones por IP en los endpoints públicos, con 429 al superarlo | `RateLimitPorIpIT.supera_el_limite_por_ip_...`, `RateLimitFilterTest.una_ruta_protegida_responde_429_...`, `LimitadorDeVentanaFijaTest` | fase `ip`, sección "límite por IP" |
 | 1 | Límite de peticiones por dispositivo, independiente del de IP | `RateLimitPorDispositivoIT`, `RateLimitFilterTest.dispositivos_distintos_tienen_cupos_independientes...` | fase `resto`, sección "límite por dispositivo" |
+| 1 | El login del panel municipal (`POST /api/v1/auth/admin`, SCRUM-173) está limitado: con la IP agotada responde 429, no 400 | `RateLimitPorIpIT.el_login_del_panel_municipal_tambien_esta_protegido_por_el_limite_de_ip`, `RateLimitPorIpIT.el_cupo_agotado_en_una_ruta_publica_tambien_corta_el_login_del_panel` | fase `ip`, sección "login del panel municipal" |
+| 1 | Ningún endpoint público de `/api/**` queda fuera del límite (hoy ni en el futuro) | `RutasPublicasProtegidasIT.todo_endpoint_publico_de_negocio_esta_cubierto_por_el_limite_de_peticiones` | — (se ejecuta solo con `mvn test`; falla nombrando el endpoint omitido) |
 | 1 | Una ruta pública que no es de negocio (`/actuator/health`) no se ve afectada | `RateLimitPorIpIT.una_ruta_publica_fuera_de_la_lista_protegida_no_se_limita` | fase `ip`, sección "ruta pública fuera de la lista protegida" |
 | 2 | CORS: preflight permitido desde orígenes conocidos, rechazado desde uno ajeno | `CorsIT` (SCRUM-274, sin cambios) | fase `resto`, sección "CORS" |
 | 3 | Cabeceras de seguridad presentes y correctas en una respuesta pública | `SecurityHeadersIT.una_respuesta_publica_trae_las_cabeceras_de_seguridad` | fase `resto`, sección "cabeceras de seguridad" |

@@ -6,6 +6,7 @@ import gt.muni.jalapa.ecoruta.flota.servicio.AltaDeEquipo;
 import gt.muni.jalapa.ecoruta.flota.servicio.EquipoService;
 import gt.muni.jalapa.ecoruta.identidad.servicio.EmisorDeJwt;
 import gt.muni.jalapa.ecoruta.notificaciones.dominio.TipoAviso;
+import gt.muni.jalapa.ecoruta.notificaciones.servicio.AvisadorDeVencimiento;
 import gt.muni.jalapa.ecoruta.notificaciones.servicio.EnviadorDeNotificaciones;
 import gt.muni.jalapa.ecoruta.notificaciones.servicio.EnvioDeAvisoException;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,12 +40,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 class AvisoDeAproximacionIT extends IntegracionPostgisTest {
 
-    /** Parque Central despues de V6. */
-    private static final double PARQUE_LAT = 14.634878;
-    private static final double PARQUE_LON = -89.981202;
+    /** Parada 1 de RUTA PRINCIPAL (levantamiento SCRUM-136). */
+    private static final double PARQUE_LAT = 14.634922;
+    private static final double PARQUE_LON = -89.981133;
     /** ~100 m al norte: dentro del radio de aproximacion (250 m), fuera del de llegada (40 m). */
-    private static final double APROX_LAT = 14.635776;
-    private static final double APROX_LON = -89.981202;
+    private static final double APROX_LAT = 14.635820;
+    private static final double APROX_LON = -89.981133;
     private static final double LEJOS_LAT = 14.50;
     private static final double LEJOS_LON = -90.20;
 
@@ -63,6 +64,9 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
     @Autowired
     private ObjectMapper json;
 
+    @Autowired
+    private AvisadorDeVencimiento avisadorDeVencimiento;
+
     private String credencialEquipo;
     private Long paradaParque;
     private Long paradaLejana;
@@ -74,9 +78,11 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
         reset(enviador);
         credencialEquipo = bearer(equipoService.emitir(busPiloto(), "Tableta HU-57"));
         paradaParque = jdbc.queryForObject(
-                "SELECT id FROM paradas WHERE nombre = 'Parque Central' AND ruta_id = 1", Long.class);
+                "SELECT id FROM paradas WHERE nombre = 'Parada 1' AND ruta_id = (SELECT id FROM rutas WHERE nombre = 'RUTA PRINCIPAL')",
+                Long.class);
         paradaLejana = jdbc.queryForObject(
-                "SELECT id FROM paradas WHERE nombre = 'Llano Grande' AND ruta_id = 1", Long.class);
+                "SELECT id FROM paradas WHERE nombre = 'Parada 5' AND ruta_id = (SELECT id FROM rutas WHERE nombre = 'RUTA PRINCIPAL')",
+                Long.class);
     }
 
     @Test
@@ -189,7 +195,8 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
                         .content("{\"subio\":true}"))
                 .andExpect(jsonPath("$.estado").value("ABORDO"));
 
-        String jwt = emisor.emitirParaConductor("uid-hu57").token();
+        // SCRUM-26, bloque D: el piloto solo toca reservas de su ruta asignada.
+        String jwt = emisor.emitirParaConductor("conductor1").token();
         mockMvc.perform(post("/api/v1/conductor/reservas/" + id + "/abordaje")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt)
                         .contentType(APPLICATION_JSON)
@@ -265,6 +272,67 @@ class AvisoDeAproximacionIT extends IntegracionPostgisTest {
         verify(enviador, times(0)).enviar(argThat(a ->
                 a.titulo().toLowerCase().contains("diez")
                         || a.cuerpo().toLowerCase().contains("diez")));
+    }
+
+    @Test
+    void los_tipos_viajan_con_el_codigo_que_entiende_la_web() {
+        // QA 4.2: el Service Worker y mensajeria.ts esperan estos valores en data.tipo.
+        assertThat(TipoAviso.APROXIMACION.codigoWeb()).isEqualTo("bus-cerca");
+        assertThat(TipoAviso.LLEGADA.codigoWeb()).isEqualTo("confirmar-abordaje");
+        assertThat(TipoAviso.POR_VENCER.codigoWeb()).isEqualTo("reserva-por-vencer");
+    }
+
+    @Test
+    void qa41_avisa_una_sola_vez_que_la_reserva_esta_por_vencer() throws Exception {
+        String porVencer = dispositivo();
+        String conTiempo = dispositivo();
+        registrarToken(porVencer, "t-vence");
+        registrarToken(conTiempo, "t-tiempo");
+        Long id = crearReserva(porVencer, paradaParque);
+        crearReserva(conTiempo, paradaParque);
+        jdbc.update("UPDATE registros_espera SET expira_en = now() + interval '60 seconds' WHERE id = ?", id);
+
+        assertThat(avisadorDeVencimiento.avisarLasPorVencer()).isEqualTo(1);
+        verify(enviador, times(1)).enviar(argThat(a ->
+                porVencer.equals(a.dispositivoId())
+                        && a.tipo() == TipoAviso.POR_VENCER
+                        && "t-vence".equals(a.tokenNotificacion())
+                        && a.cuerpo().contains("Parada 1")));
+        verify(enviador, times(0)).enviar(argThat(a -> conTiempo.equals(a.dispositivoId())));
+
+        // La siguiente pasada no repite el aviso del mismo vencimiento.
+        assertThat(avisadorDeVencimiento.avisarLasPorVencer()).isZero();
+    }
+
+    @Test
+    void qa41_al_renovar_se_vuelve_a_avisar_antes_del_nuevo_vencimiento() throws Exception {
+        String dispositivo = dispositivo();
+        registrarToken(dispositivo, "t-renueva");
+        Long id = crearReserva(dispositivo, paradaParque);
+        jdbc.update("UPDATE registros_espera SET expira_en = now() + interval '60 seconds' WHERE id = ?", id);
+        avisadorDeVencimiento.avisarLasPorVencer();
+
+        // Renovo hace 14 min y ahora el nuevo vencimiento vuelve a estar cerca.
+        jdbc.update("UPDATE avisos_de_proximidad SET ultimo_envio_en = now() - interval '14 minutes' "
+                + "WHERE reserva_id = ? AND tipo = 'POR_VENCER'", id);
+        jdbc.update("UPDATE registros_espera SET estado = 'RENOVADA', "
+                + "expira_en = now() + interval '50 seconds' WHERE id = ?", id);
+
+        assertThat(avisadorDeVencimiento.avisarLasPorVencer()).isEqualTo(1);
+        verify(enviador, times(2)).enviar(argThat(a -> a.tipo() == TipoAviso.POR_VENCER));
+    }
+
+    @Test
+    void qa41_sin_token_el_aviso_de_vencimiento_se_registra_como_fallo() throws Exception {
+        Long id = crearReserva(dispositivo(), paradaParque);
+        jdbc.update("UPDATE registros_espera SET expira_en = now() + interval '60 seconds' WHERE id = ?", id);
+        doThrow(new EnvioDeAvisoException("sin token")).when(enviador).enviar(org.mockito.ArgumentMatchers.any());
+
+        avisadorDeVencimiento.avisarLasPorVencer();
+
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM fallos_de_aviso WHERE reserva_id = ? AND tipo = 'POR_VENCER'",
+                Integer.class, id)).isEqualTo(1);
     }
 
     private Long busPiloto() {

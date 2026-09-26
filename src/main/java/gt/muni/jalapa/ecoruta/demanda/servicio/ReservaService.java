@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -79,7 +80,7 @@ public class ReservaService {
             );
         }
 
-        if (reservas.existeVigentePorDispositivo(
+        if (reservas.existsByDispositivoIdAndEstadoIn(
                 peticion.dispositivoId(),
                 ESTADOS_VIGENTES
         )) {
@@ -113,7 +114,7 @@ public class ReservaService {
                 parada,
                 EstadoReserva.ACTIVA,
                 ahora,
-                ahora.plus(demanda.ttl())
+                ahora.plus(demanda.vigencia())
         );
 
         try {
@@ -151,6 +152,19 @@ public class ReservaService {
             Long reservaId,
             String dispositivoId
     ) {
+        return renovar(reservaId, dispositivoId, null);
+    }
+
+    /**
+     * HU-135 con la cuenta del bloque B: renueva quien creo la reserva desde
+     * este navegador o el pasajero autenticado al que pertenece.
+     */
+    @Transactional
+    public ReservaResponse renovar(
+            Long reservaId,
+            String dispositivoId,
+            Long pasajeroId
+    ) {
 
         Reserva reserva = reservas
                 .findById(reservaId)
@@ -161,7 +175,7 @@ public class ReservaService {
                         )
                 );
 
-        if (!reserva.perteneceA(dispositivoId)) {
+        if (!reserva.perteneceA(dispositivoId, pasajeroId)) {
             throw new AccessDeniedException(
                     "Esta reserva no pertenece a este dispositivo."
             );
@@ -176,24 +190,40 @@ public class ReservaService {
         }
 
         reserva.renovar(
-                ahora.plus(demanda.ttl())
+                ahora.plus(demanda.renovacion())
         );
 
         return ReservaResponse.de(reserva);
     }
 
     /**
-     * HU-124.
+     * HU-124 / SCRUM-172.
      *
      * El pasajero cancela manualmente su reserva.
      *
      * La reserva no se elimina de la base de datos:
      * cambia a CANCELADA y conserva cuándo ocurrió.
+     *
+     * <p>Una reserva en {@link EstadoReserva#ABORDO} jamás pasa a CANCELADA por
+     * este flujo: el pasajero ya subió y el conteo de espera ya no la incluye.
      */
     @Transactional
     public void cancelar(
             Long reservaId,
             String dispositivoId
+    ) {
+        cancelar(reservaId, dispositivoId, null);
+    }
+
+    /**
+     * HU-124 con la cuenta del bloque B: cancela quien creo la reserva desde
+     * este navegador o el pasajero autenticado al que pertenece.
+     */
+    @Transactional
+    public void cancelar(
+            Long reservaId,
+            String dispositivoId,
+            Long pasajeroId
     ) {
 
         Reserva reserva = reservas
@@ -205,7 +235,7 @@ public class ReservaService {
                         )
                 );
 
-        if (!reserva.perteneceA(dispositivoId)) {
+        if (!reserva.perteneceA(dispositivoId, pasajeroId)) {
             throw new AccessDeniedException(
                     "Esta reserva no pertenece a este dispositivo."
             );
@@ -216,6 +246,14 @@ public class ReservaService {
 
             throw new ReglaDeNegocioException(
                     "Esta reserva ya estaba cancelada."
+            );
+        }
+
+        if (reserva.getEstado()
+                == EstadoReserva.ABORDO) {
+
+            throw new ReglaDeNegocioException(
+                    "No se puede cancelar una reserva ya marcada como abordada."
             );
         }
 
@@ -262,14 +300,43 @@ public class ReservaService {
             Long reservaId,
             String dispositivoId
     ) {
+        return consultar(reservaId, dispositivoId, null);
+    }
+
+    /**
+     * HU-76 con la cuenta del bloque B.
+     */
+    @Transactional(readOnly = true)
+    public DetalleReservaResponse consultar(
+            Long reservaId,
+            String dispositivoId,
+            Long pasajeroId
+    ) {
 
         Reserva reserva =
-                buscarReservaDelDispositivo(
+                buscarReservaDelPasajero(
                         reservaId,
-                        dispositivoId
+                        dispositivoId,
+                        pasajeroId
                 );
 
         return DetalleReservaResponse.de(reserva);
+    }
+
+    /**
+     * SCRUM-26, bloque B.2, criterio 4.
+     *
+     * Reservas de la cuenta autenticada, de la mas reciente a la mas antigua.
+     * Solo las suyas: lo anonimo de otro navegador no aparece aqui.
+     */
+    @Transactional(readOnly = true)
+    public List<DetalleReservaResponse> misReservas(Long pasajeroId) {
+
+        return reservas
+                .findByPasajeroIdOrderByCreadoEnDesc(pasajeroId)
+                .stream()
+                .map(DetalleReservaResponse::de)
+                .toList();
     }
 
     /**
@@ -288,11 +355,24 @@ public class ReservaService {
             Long reservaId,
             String dispositivoId
     ) {
+        return declararNoAbordo(reservaId, dispositivoId, null);
+    }
+
+    /**
+     * HU-76 con la cuenta del bloque B.
+     */
+    @Transactional
+    public DetalleReservaResponse declararNoAbordo(
+            Long reservaId,
+            String dispositivoId,
+            Long pasajeroId
+    ) {
 
         Reserva reserva =
-                buscarReservaDelDispositivo(
+                buscarReservaDelPasajero(
                         reservaId,
-                        dispositivoId
+                        dispositivoId,
+                        pasajeroId
                 );
 
         /*
@@ -320,15 +400,19 @@ public class ReservaService {
      * tanto si no existe como si pertenece
      * a otro dispositivo.
      */
-    private Reserva buscarReservaDelDispositivo(
+    private Reserva buscarReservaDelPasajero(
             Long reservaId,
-            String dispositivoId
+            String dispositivoId,
+            Long pasajeroId
     ) {
 
         return reservas
-                .findByIdAndDispositivoId(
-                        reservaId,
-                        dispositivoId
+                .findById(reservaId)
+                .filter(reserva ->
+                        reserva.perteneceA(
+                                dispositivoId,
+                                pasajeroId
+                        )
                 )
                 .orElseThrow(() ->
                         new RecursoNoEncontradoException(

@@ -1,13 +1,16 @@
 # Entorno de DESARROLLO local. Produccion se despliega en AKS (ver /infra futura).
 services:
   db:
-    image: postgis/postgis:17-3.5
+    # PostGIS + pgRouting (SCRUM-26, bloque C: desvio por calles).
+    image: pgrouting/pgrouting:17-3.5-3.8
     environment:
       POSTGRES_DB: ecoruta
       POSTGRES_USER: ecoruta
       POSTGRES_PASSWORD: ecoruta
     ports:
-      - "5432:5432"
+      # Puertos configurables para levantar dos ramas a la vez sin chocar
+      # (docs/qa/correcciones-develop/preparar-entorno-qa.md).
+      - "${DB_PUERTO:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -31,13 +34,17 @@ services:
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       FIREBASE_CREDENTIALS_PATH: ${FIREBASE_CREDENTIALS_PATH:-}
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON:-}
-      CORS_ORIGENES: http://localhost:5173
+      # localhost y 127.0.0.1 son origenes distintos para el navegador: se aceptan
+      # los dos para que abrir la app por cualquiera no deje el mapa sin rutas.
+      CORS_ORIGENES: http://localhost:5173,http://127.0.0.1:5173
       # PROVISIONAL de SCRUM-142 — TODO(SCRUM-134). Habilita ROLE_ADMIN por la
       # cabecera X-Admin-Token para poder provisionar equipos en local. En
       # produccion esta variable NO se define: sin ella nadie es admin.
       ECORUTA_ADMIN_TOKEN: solo-para-desarrollo-local-no-usar-en-produccion
+      TRACCAR_TOKEN: solo-para-desarrollo-local-traccar-32chars
+      TRACCAR_UNIDAD_VELOCIDAD: NUDOS
     ports:
-      - "8080:8080"
+      - "${API_PUERTO:-8080}:8080"
     depends_on:
       db:
         condition: service_healthy

@@ -65,10 +65,9 @@ class ReservaVigenciaIT extends IntegracionPostgisTest {
                 .andReturn().getResponse().getContentAsString();
 
         Instant nuevoExpiraEn = Instant.parse(JsonPath.read(cuerpo, "$.expiraEn"));
-        // El nuevo vencimiento esta ~5 min por delante, muy por encima de los 10 s
-        // a los que lo habiamos dejado.
-        assertThat(nuevoExpiraEn).isAfter(Instant.now().plus(Duration.ofMinutes(4)));
-        assertThat(nuevoExpiraEn).isBefore(Instant.now().plus(Duration.ofMinutes(6)));
+        // QA 4.1: la renovacion da ~15 min, no los 5 de la reserva nueva.
+        assertThat(nuevoExpiraEn).isAfter(Instant.now().plus(Duration.ofMinutes(14)));
+        assertThat(nuevoExpiraEn).isBefore(Instant.now().plus(Duration.ofMinutes(16)));
     }
 
     @Test

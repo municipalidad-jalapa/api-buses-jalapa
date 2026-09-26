@@ -49,6 +49,10 @@ public class Vehiculo {
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 
+    /** Personas que caben (V28); null si no se cargo. Da el nivel de ocupacion. */
+    @Column(name = "capacidad")
+    private Integer capacidad;
+
     @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
     @Generated(event = EventType.INSERT)
     private Instant creadoEn;

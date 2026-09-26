@@ -1,12 +1,15 @@
 package gt.muni.jalapa.ecoruta.demanda.web;
 
 import gt.muni.jalapa.ecoruta.demanda.servicio.AtencionParadaService;
+import gt.muni.jalapa.ecoruta.demanda.web.dto.AtenderParadaRequest;
 import gt.muni.jalapa.ecoruta.demanda.web.dto.AtenderParadaResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,13 +24,15 @@ public class AtencionParadaController {
     public ResponseEntity<AtenderParadaResponse> atender(
             @PathVariable Long rutaId,
             @PathVariable Long paradaId,
+            @Valid @RequestBody(required = false) AtenderParadaRequest conteo,
             Authentication autenticacion
     ) {
         AtenderParadaResponse respuesta =
                 servicio.atender(
                         rutaId,
                         paradaId,
-                        autenticacion.getName()
+                        autenticacion.getName(),
+                        conteo != null ? conteo : AtenderParadaRequest.SIN_CONTEO
                 );
 
         return ResponseEntity.ok(respuesta);

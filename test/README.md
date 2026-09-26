@@ -1,16 +1,15 @@
-# Carpeta `test/` — HU Desarrollo-95
+# Carpeta `test/` — HU Desarrollo-135 y Desarrollo-95
 
-Bundle de pruebas de la HU **"Endurecer la seguridad de la API"** (D4 + O4): límite
-de peticiones por dispositivo y por IP en los endpoints públicos, CORS restringido a
-orígenes conocidos, cabeceras de seguridad, y que un dispositivo no pueda registrar
-demanda a un ritmo imposible para una persona.
+Bundle de pruebas para las HU **"Vigencia de cinco minutos con renovación y expiración"** y **"Endurecer la seguridad de la API"**.
+
+Incluye: ciclo de vida de la reserva, límite de peticiones por dispositivo y por IP en los endpoints públicos, CORS restringido a orígenes conocidos, cabeceras de seguridad, y la regla que evita registrar demanda a un ritmo imposible para una persona.
 
 | Archivo | Qué es |
 |---|---|
-| [`MANUAL_DE_PRUEBAS.md`](MANUAL_DE_PRUEBAS.md) | Cómo ejecutar **todas** las pruebas: automáticas (`mvn test`) y las manuales end-to-end (con la API real, y simuladas con `curl` para no depender del tráfico de producción). Incluye trazabilidad criterio→prueba y solución de problemas. |
-| [`RESULTADOS.txt`](RESULTADOS.txt) | Salida real de la última ejecución: suite completa + pruebas manuales, con qué pasó y qué no. |
+| [`MANUAL_DE_PRUEBAS.md`](MANUAL_DE_PRUEBAS.md) | Cómo ejecutar **todas** las pruebas: automáticas (`mvn test`) y las manuales end-to-end (simuladas con `curl`). Incluye trazabilidad criterio→prueba y solución de problemas. |
+| [`RESULTADOS.txt`](RESULTADOS.txt) | Salida real de la última ejecución: suite completa + pruebas manuales. |
 | [`prueba-manual.sh`](prueba-manual.sh) | Script de las pruebas manuales end-to-end (`bash test/prueba-manual.sh` con la app y la BD arriba). |
-| [`casos/`](casos/) | **Copias para lectura** de los archivos de prueba nuevos o modificados por esta HU. |
+| [`casos/`](casos/) | **Copias para lectura** de los archivos de prueba nuevos o modificados. |
 
 ## Importante sobre `casos/`
 
@@ -18,23 +17,19 @@ Son **copias**. Maven ejecuta los originales, que tienen que vivir bajo `src/tes
 
 | Copia en `casos/` | Original que corre Maven | Qué prueba |
 |---|---|---|
+| `ReservaTest.java` | `src/test/java/gt/muni/jalapa/ecoruta/demanda/dominio/ReservaTest.java` | Reglas de dominio de `Reserva`: vigencia, renovación, expiración. |
+| `DemandaServiceTest.java` | `src/test/java/gt/muni/jalapa/ecoruta/demanda/servicio/DemandaServiceTest.java` | Servicio con mocks: cálculo de vigencia y barrido. |
+| `ReservaVigenciaIT.java` | `src/test/java/gt/muni/jalapa/ecoruta/demanda/ReservaVigenciaIT.java` | HU-135: Pruebas de integración sobre vigencia de reservas. |
 | `LimitadorDeVentanaFijaTest.java` | `src/test/java/.../seguridad/ratelimit/LimitadorDeVentanaFijaTest.java` | El contador de ventana fija en memoria, sin Spring. |
 | `RateLimitFilterTest.java` | `src/test/java/.../seguridad/ratelimit/RateLimitFilterTest.java` | El filtro de límite de peticiones aislado, sin Spring. |
-| `RateLimitPorIpIT.java` | `src/test/java/.../seguridad/RateLimitPorIpIT.java` | Límite por IP contra la app real. |
+| `RateLimitPorIpIT.java` | `src/test/java/.../seguridad/RateLimitPorIpIT.java` | Límite por IP contra la app real, incluido el login del panel municipal (`/api/v1/auth/admin`). |
+| `RutasPublicasProtegidasIT.java` | `src/test/java/.../seguridad/ratelimit/RutasPublicasProtegidasIT.java` | Guarda: todo endpoint público de `/api/**` debe estar en el filtro de límite. |
 | `RateLimitPorDispositivoIT.java` | `src/test/java/.../seguridad/RateLimitPorDispositivoIT.java` | Límite por dispositivo contra la app real. |
 | `SecurityHeadersIT.java` | `src/test/java/.../seguridad/SecurityHeadersIT.java` | Cabeceras de seguridad contra la app real. |
 | `ReservaServiceTest.java` | `src/test/java/.../demanda/servicio/ReservaServiceTest.java` | Regla del ritmo mínimo entre reservas (dominio, con mocks). |
 | `CrearReservaIT.java` | `src/test/java/.../demanda/CrearReservaIT.java` | Regla del ritmo mínimo contra la app real. |
-| `ReservaVigenciaIT.java` | `src/test/java/.../demanda/ReservaVigenciaIT.java` | HU-135, preexistente; se le ajustó un caso (`una_reserva_expirada_no_cuenta_como_activa_ni_impide_una_nueva`) para no chocar con la regla nueva del ritmo mínimo — ver `RESULTADOS.txt`. |
 
-`ReservaRenovacionTest.java` y `ReservaCancelacionTest.java` solo cambiaron en una
-línea (el nuevo parámetro de `DemandaProperties`); no se copian aquí porque no traen
-casos nuevos de esta HU. `CorsIT.java` (SCRUM-274) ya existía y no cambió: el
-criterio "CORS restringido a orígenes conocidos" ya estaba implementado antes de
-esta HU y solo se verificó que sigue vigente.
-
-No borres los originales: si esas clases salen de `src/test/java/` dejan de ejecutarse.
-Si editás una prueba, hacelo en el original y volvé a copiarla aquí.
+No borres los originales: si esas clases salen de `src/test/java/` dejan de ejecutarse. Si editás una prueba, hacelo en el original y volvé a copiarla aquí.
 
 ## Arranque rápido
 
@@ -45,6 +40,5 @@ docker info                                # Docker Desktop debe estar arriba
 # todas las pruebas automáticas
 mvn test
 
-# solo las de esta HU
-mvn test -Dtest='LimitadorDeVentanaFijaTest,RateLimitFilterTest,RateLimitPorIpIT,RateLimitPorDispositivoIT,SecurityHeadersIT,ReservaServiceTest,ReservaRenovacionTest,ReservaCancelacionTest,CrearReservaIT,ReservaVigenciaIT,CorsIT'
-```
+# solo las de esta integración
+mvn test -Dtest='ReservaTest,DemandaServiceTest,ReservaVigenciaIT,EsquemaValidaTest,LimitadorDeVentanaFijaTest,RateLimitFilterTest,RutasPublicasProtegidasIT,RateLimitPorIpIT,RateLimitPorDispositivoIT,SecurityHeadersIT,ReservaServiceTest,ReservaRenovacionTest,ReservaCancelacionTest,CrearReservaIT,CorsIT'
