@@ -253,8 +253,8 @@ public class OpinionService {
                 entero(rs, "calidad"),
                 entero(rs, "limpieza"),
                 entero(rs, "conduccion"),
-                texto == null ? null : HtmlUtils.htmlEscape(texto),
+                texto == null ? null : HtmlUtils.htmlEscape(texto, "UTF-8"),
                 atendida == null ? null : atendida.toInstant(),
-                rs.getString("atendida_por") == null ? null : HtmlUtils.htmlEscape(rs.getString("atendida_por")));
+                rs.getString("atendida_por") == null ? null : HtmlUtils.htmlEscape(rs.getString("atendida_por"), "UTF-8"));
     };
 }
