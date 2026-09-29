@@ -34,4 +34,10 @@ public interface RutaRepository extends JpaRepository<Ruta, Long> {
      */
     @Query("SELECT r FROM Ruta r LEFT JOIN FETCH r.paradas WHERE r.id = :id")
     Optional<Ruta> buscarConParadas(Long id);
+
+    /** Las rutas que no se eliminaron (V31), en orden de id. */
+    List<Ruta> findByEliminadaEnIsNullOrderByIdAsc();
+
+    /** Existe y no se elimino: la unica que se puede asignar o elegir. */
+    boolean existsByIdAndEliminadaEnIsNull(Long id);
 }

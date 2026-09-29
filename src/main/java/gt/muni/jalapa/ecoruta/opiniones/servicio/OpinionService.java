@@ -82,7 +82,7 @@ public class OpinionService {
             throw new ReglaDeNegocioException(
                     "El comentario admite hasta %d caracteres.".formatted(propiedades.textoMaximo()));
         }
-        if (peticion.rutaId() == null || !rutas.existsById(peticion.rutaId())) {
+        if (peticion.rutaId() == null || !rutas.existsByIdAndEliminadaEnIsNull(peticion.rutaId())) {
             throw new ReglaDeNegocioException("La ruta no existe.");
         }
         if (peticion.reservaId() != null
