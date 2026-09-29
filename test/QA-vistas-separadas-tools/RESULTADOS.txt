@@ -1,0 +1,97 @@
+================================================================================
+ RESULTADOS DE PRUEBAS  -  Vistas separadas para el pasajero y el personal
+ (backend: separacion de accesos por rol)
+================================================================================
+ Fecha de ejecucion : 2026-09-29 (America/Guatemala)
+ Ejecutado por      : mvn test dentro de Docker (maven:3.9-eclipse-temurin-21)
+                       + prueba manual con JWT firmados contra la app real
+ Entorno
+   - JDK            : Eclipse Temurin 21 (imagen maven:3.9-eclipse-temurin-21)
+   - Maven          : 3.9
+   - SO             : Windows 10 Pro 19045
+   - Docker         : Desktop 29.7.2 (motor Linux)
+   - Base de datos  : PostGIS en contenedor (Testcontainers para mvn test;
+                       docker-compose "db", pgrouting 17-3.5-3.8, para la
+                       prueba manual)
+   - Rama           : feature/qa-vistas-separadas-tools (sobre develop e5243d5)
+================================================================================
+
+NOTA: la rama salio primero de main (el clon traia main por defecto). Las
+corridas A y B son de esa base. Al notarlo se recreo la rama sobre develop,
+se reaplico el cambio sin conflictos y se volvio a correr todo (C).
+
+Cambios de codigo de produccion: NINGUNO. La API ya separaba los accesos por
+la parte final de la URL y exigia el rol en cada grupo. Se agrega la prueba
+src/test/java/gt/muni/jalapa/ecoruta/seguridad/AccesoPorRolIT.java.
+
+
+================================================================================
+ RESUMEN
+================================================================================
+  Suite completa (sobre develop) ........ 707 corridas, 0 fallos, 0 errores,
+                                          7 omitidas (preexistentes)
+                                          BUILD SUCCESS
+  Nueva de esta historia (AccesoPorRolIT) 22 / 22  PASARON
+  Prueba manual contra la app real ...... 20 / 20 combinaciones como se espera
+
+  ESTADO GENERAL: VERDE.
+
+
+================================================================================
+ A) PRUEBA NUEVA  ->  AccesoPorRolIT (sobre main)
+================================================================================
+  AccesoPorRolIT ............................ 22 / 22   PASARON
+  AccesoPanelConductorIT (existente) ........  3 / 3    PASARON
+  AuthAdminIT (existente) ...................  9 / 9    PASARON
+  AuthConductorIT (existente) ...............  3 / 3    PASARON
+
+  Detalle de AccesoPorRolIT:
+  cada_grupo_de_rutas_solo_se_abre_con_su_rol (20 casos)
+                        /conductor/**  /admin/**  /panel/**  /superadmin/**
+    anonimo              401 OK         401 OK     401 OK     401 OK
+    pasajero             403 OK         403 OK     403 OK     403 OK
+    conductor            404 OK(pasa)   403 OK     403 OK     403 OK
+    admin                403 OK         404 OK     404 OK     403 OK
+    superadmin           403 OK         404 OK     404 OK     404 OK
+  el_inicio_de_sesion_del_personal_se_alcanza_sin_credencial (2 casos)
+    POST /api/v1/auth/conductor  {}  -> 400 OK
+    POST /api/v1/auth/admin      {}  -> 400 OK
+
+
+================================================================================
+ B) SUITE COMPLETA  ->  mvn test (sobre main)
+================================================================================
+  Tests run: 698, Failures: 0, Errors: 0, Skipped: 7
+  BUILD SUCCESS
+
+
+================================================================================
+ C) SUITE COMPLETA  ->  mvn test (sobre develop, corrida final)
+================================================================================
+  Tests run: 707, Failures: 0, Errors: 0, Skipped: 7
+  BUILD SUCCESS
+  AccesoPorRolIT: tests=22 errors=0 skipped=0 failures=0
+
+  develop agrega /api/v1/conductor/ruta (elegir la ruta desde el
+  panel). Queda cubierto por la misma regla /api/v1/conductor/** -> CONDUCTOR;
+  verificado en vivo: sin token responde 401.
+
+
+================================================================================
+ D) PRUEBA MANUAL  ->  JWT firmados contra la app real (docker compose)
+================================================================================
+  Procedimiento: MANUAL_DE_PRUEBAS.md, seccion 3.
+
+  ruta                           anonimo  conductor  admin  superadmin  pasajero
+  GET /api/v1/conductor/panel    401      403*       403    403         403
+  GET /api/v1/admin/servicio     401      403        200    200         403
+  GET /api/v1/panel/rutas        401      403        200    200         403
+  GET /api/v1/superadmin/cuentas 401      403        403    200         403
+
+  * 403 de negocio, no de seguridad. Cuerpos de respuesta verificados:
+    conductor en /conductor/panel -> "No tenés una ruta asignada. Pedile a la
+                                      Municipalidad que te asigne una."
+    admin en /conductor/panel     -> "La credencial presentada no autoriza
+                                      esta operacion"   (seguridad)
+
+  Todas las combinaciones dieron el codigo esperado.
