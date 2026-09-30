@@ -13,9 +13,11 @@ import gt.muni.jalapa.ecoruta.demanda.dominio.EstadoReserva;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ReservaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 
 /**
@@ -33,6 +35,8 @@ public class AltaDeRutaService {
     private final RutaRepository rutas;
     private final ParadaRepository paradas;
     private final ReservaRepository reservas;
+    private final OrdenDeParadas orden;
+    private final JdbcTemplate jdbc;
 
     @Transactional
     public RutaResponse crear(String nombre) {
@@ -42,19 +46,54 @@ public class AltaDeRutaService {
         return RutaResponse.de(rutas.save(ruta));
     }
 
-    /** La parada va al final del recorrido; el orden se corrige arrastrando en el editor. */
+    /**
+     * La parada se crea donde la marco el administrador (clic derecho en el
+     * mapa) y toma su numero segun donde cae en el recorrido. Sin trazado va al
+     * final.
+     */
     @Transactional
     public RutaResponse agregarParada(Long rutaId, CorregirParadaRequest peticion) {
         Ruta ruta = buscar(rutaId);
-        int orden = ruta.getParadas().stream().mapToInt(Parada::getOrden).max().orElse(0) + 1;
+        int alFinal = ruta.getParadas().stream().mapToInt(Parada::getOrden).max().orElse(0) + 1;
         Parada parada = new Parada();
         parada.setNombre(peticion.nombre().strip());
         parada.setUbicacion(Geo.punto(peticion.latitud(), peticion.longitud()));
-        parada.setOrden(orden);
+        parada.setOrden(alFinal);
         parada.setRuta(ruta);
         paradas.save(parada);
-        ruta.getParadas().add(parada);
-        return RutaResponse.de(ruta);
+        orden.ubicar(rutaId, parada.getId());
+        return rutas.buscarConParadas(rutaId).map(RutaResponse::de).orElseThrow();
+    }
+
+    /**
+     * Elimina la ruta. No borra la fila: sus paradas, reservas, atenciones y
+     * opiniones son el historial y los reportes la siguen mostrando (V31).
+     *
+     * <p>Deja de verse en el panel, en el mapa del pasajero y en el selector del
+     * conductor: se oculta, el bus que la recorria queda libre, los conductores
+     * que la tenian eligen otra al entrar y las reservas vigentes en sus
+     * paradas se cancelan.
+     */
+    @Transactional
+    public void eliminar(Long rutaId, String quien) {
+        Ruta ruta = buscar(rutaId);
+        Instant ahora = Instant.now();
+        ruta.setEliminadaEn(ahora);
+        ruta.setActiva(false);
+        rutas.flush();
+
+        int canceladas = jdbc.update("""
+                UPDATE registros_espera r
+                   SET estado = 'CANCELADA', cancelado_en = ?
+                  FROM paradas p
+                 WHERE p.id = r.parada_id
+                   AND p.ruta_id = ?
+                   AND r.estado IN ('ACTIVA', 'RENOVADA')
+                """, Timestamp.from(ahora), rutaId);
+        int buses = jdbc.update("UPDATE vehiculos SET ruta_id = NULL WHERE ruta_id = ?", rutaId);
+        int conductores = jdbc.update("UPDATE usuarios SET ruta_id = NULL WHERE ruta_id = ?", rutaId);
+        log.info("Ruta {} ({}) eliminada por {}: {} reservas canceladas, {} buses y {} conductores sin ruta",
+                rutaId, ruta.getNombre(), quien, canceladas, buses, conductores);
     }
 
     /**
@@ -107,6 +146,8 @@ public class AltaDeRutaService {
     }
 
     private Ruta buscar(Long rutaId) {
-        return rutas.findById(rutaId).orElseThrow(() -> new RecursoNoEncontradoException("Ruta", rutaId));
+        return rutas.findById(rutaId)
+                .filter(r -> !r.estaEliminada())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", rutaId));
     }
 }

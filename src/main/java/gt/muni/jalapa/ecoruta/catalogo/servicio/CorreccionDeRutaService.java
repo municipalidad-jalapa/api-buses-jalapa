@@ -9,12 +9,13 @@ import gt.muni.jalapa.ecoruta.catalogo.web.dto.CorregirTrazadoRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.RutaResponse;
 import gt.muni.jalapa.ecoruta.common.Geo;
 import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
+import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -35,35 +36,68 @@ public class CorreccionDeRutaService {
 
     private final RutaRepository rutas;
     private final ParadaRepository paradas;
+    private final OrdenDeParadas orden;
 
-    /** Todas las rutas, activas o no, con sus paradas y su trazado. */
+    /** Todas las rutas no eliminadas, activas o no, con sus paradas y su trazado. */
     @Transactional(readOnly = true)
     public List<RutaResponse> listarTodas() {
-        return rutas.findAll().stream()
-                .sorted(Comparator.comparing(Ruta::getId))
+        return rutas.findByEliminadaEnIsNullOrderByIdAsc().stream()
                 .map(RutaResponse::de)
                 .toList();
     }
 
+    /**
+     * Reemplaza el trazado. El editor lo manda solo con cada cambio (guardado
+     * automatico), asi que sin puntos deja la ruta sin recorrido: es "empezar
+     * de nuevo".
+     *
+     * <p>En un borrador las paradas se renumeran segun el recorrido nuevo. Una
+     * ruta publicada conserva su orden: corregir el trazado de una ruta de ida
+     * y vuelta no puede desordenar paradas que ya usan los pasajeros.
+     */
     @Transactional
     public RutaResponse corregirTrazado(Long rutaId, CorregirTrazadoRequest peticion, String quien) {
         Ruta ruta = rutas.findById(rutaId)
+                .filter(r -> !r.estaEliminada())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", rutaId));
-        ruta.setTrazado(Geo.linea(peticion.puntos().stream()
+        int puntos = peticion.puntos().size();
+        if (puntos == 1) {
+            throw new ReglaDeNegocioException("El recorrido necesita al menos 2 puntos.");
+        }
+        if (puntos == 0 && ruta.isActiva()) {
+            throw new ReglaDeNegocioException(
+                    "Una ruta publicada necesita su recorrido. Ocultala primero para empezarlo de nuevo.");
+        }
+        ruta.setTrazado(puntos == 0 ? null : Geo.linea(peticion.puntos().stream()
                 .map(p -> new double[] {p.latitud(), p.longitud()})
                 .toList()));
-        log.info("Trazado de la ruta {} corregido por {}: {} puntos", rutaId, quien, peticion.puntos().size());
-        return RutaResponse.de(ruta);
+        log.info("Trazado de la ruta {} corregido por {}: {} puntos", rutaId, quien, puntos);
+        if (!ruta.isActiva()) {
+            orden.segunElRecorrido(rutaId);
+        }
+        return releer(rutaId);
     }
 
     @Transactional
     public RutaResponse corregirParada(Long rutaId, Long paradaId, CorregirParadaRequest peticion, String quien) {
         Parada parada = paradas.findById(paradaId)
                 .filter(p -> p.getRuta().getId().equals(rutaId))
+                .filter(p -> !p.estaRetirada() && !p.getRuta().estaEliminada())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Parada", paradaId));
+        Point nueva = Geo.punto(peticion.latitud(), peticion.longitud());
+        // Cambiarle solo el nombre no la mueve de lugar en el recorrido.
+        boolean seMovio = !parada.getUbicacion().equalsExact(nueva, 1e-7);
         parada.setNombre(peticion.nombre().trim());
-        parada.setUbicacion(Geo.punto(peticion.latitud(), peticion.longitud()));
+        parada.setUbicacion(nueva);
         log.info("Parada {} de la ruta {} corregida por {}", paradaId, rutaId, quien);
-        return RutaResponse.de(parada.getRuta());
+        if (seMovio) {
+            orden.ubicar(rutaId, paradaId);
+        }
+        return releer(rutaId);
+    }
+
+    private RutaResponse releer(Long rutaId) {
+        return rutas.buscarConParadas(rutaId).map(RutaResponse::de)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", rutaId));
     }
 }

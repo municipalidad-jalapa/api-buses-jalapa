@@ -82,7 +82,7 @@ public class OpinionService {
             throw new ReglaDeNegocioException(
                     "El comentario admite hasta %d caracteres.".formatted(propiedades.textoMaximo()));
         }
-        if (peticion.rutaId() == null || !rutas.existsById(peticion.rutaId())) {
+        if (peticion.rutaId() == null || !rutas.existsByIdAndEliminadaEnIsNull(peticion.rutaId())) {
             throw new ReglaDeNegocioException("La ruta no existe.");
         }
         if (peticion.reservaId() != null
@@ -253,8 +253,8 @@ public class OpinionService {
                 entero(rs, "calidad"),
                 entero(rs, "limpieza"),
                 entero(rs, "conduccion"),
-                texto == null ? null : HtmlUtils.htmlEscape(texto),
+                texto == null ? null : HtmlUtils.htmlEscape(texto, "UTF-8"),
                 atendida == null ? null : atendida.toInstant(),
-                rs.getString("atendida_por") == null ? null : HtmlUtils.htmlEscape(rs.getString("atendida_por")));
+                rs.getString("atendida_por") == null ? null : HtmlUtils.htmlEscape(rs.getString("atendida_por"), "UTF-8"));
     };
 }

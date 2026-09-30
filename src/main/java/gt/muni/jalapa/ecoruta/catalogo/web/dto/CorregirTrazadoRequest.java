@@ -10,10 +10,11 @@ import java.util.List;
 /**
  * El trazado corregido de una ruta, en el orden del recorrido (QA 5.6).
  *
- * @param puntos de 2 a 2000 vertices, cada uno dentro de Guatemala
+ * @param puntos hasta 10000 vertices, cada uno dentro de Guatemala; sin
+ *               puntos la ruta queda sin recorrido (empezar de nuevo)
  */
 public record CorregirTrazadoRequest(
         @Schema(description = "Vertices del recorrido, en orden")
-        @NotNull @Size(min = 2, max = 2000, message = "El trazado necesita entre 2 y 2000 puntos")
+        @NotNull @Size(max = 10000, message = "El trazado admite hasta 10000 puntos")
         List<@Valid @NotNull PuntoRequest> puntos) {
 }

@@ -1,12 +1,16 @@
 package gt.muni.jalapa.ecoruta.catalogo.web;
 
+import gt.muni.jalapa.ecoruta.calles.RedDeCalles;
 import gt.muni.jalapa.ecoruta.catalogo.servicio.AltaDeRutaService;
 import gt.muni.jalapa.ecoruta.catalogo.servicio.CorreccionDeRutaService;
+import gt.muni.jalapa.ecoruta.catalogo.web.dto.AjustarTrazoRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.CorregirParadaRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.CorregirTrazadoRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.CrearRutaRequest;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.PublicarRutaRequest;
+import gt.muni.jalapa.ecoruta.catalogo.web.dto.PuntoResponse;
 import gt.muni.jalapa.ecoruta.catalogo.web.dto.RutaResponse;
+import gt.muni.jalapa.ecoruta.catalogo.web.dto.TrazoAjustadoResponse;
 import gt.muni.jalapa.ecoruta.common.ApiError;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,6 +46,7 @@ public class RutaAdminController {
 
     private final CorreccionDeRutaService correccion;
     private final AltaDeRutaService alta;
+    private final RedDeCalles calles;
 
     @Operation(summary = "Todas las rutas con paradas y trazado, activas o no")
     @GetMapping
@@ -112,6 +117,38 @@ public class RutaAdminController {
                                        @PathVariable Long paradaId,
                                        Authentication autenticacion) {
         return alta.eliminarParada(rutaId, paradaId, autenticacion.getName());
+    }
+
+    @Operation(summary = "Ajusta a las calles un trazo dibujado a mano",
+            description = """
+                    El lapiz del editor: el trazo se engancha a los cruces de la red de
+                    calles de Jalapa (OpenStreetMap, en la base) y se une por el camino
+                    mas corto. No consulta ningun servicio externo. Si no hay calle cerca
+                    devuelve el mismo trazo con ajustado = false.""")
+    @PostMapping("/ajuste-a-calles")
+    public TrazoAjustadoResponse ajustarACalles(@Valid @RequestBody AjustarTrazoRequest peticion) {
+        List<PuntoResponse> trazo = peticion.puntos().stream()
+                .map(p -> new PuntoResponse(p.latitud(), p.longitud()))
+                .toList();
+        return calles.ajustar(trazo)
+                .map(ajustado -> new TrazoAjustadoResponse(ajustado, true))
+                .orElseGet(() -> new TrazoAjustadoResponse(trazo, false));
+    }
+
+    @Operation(summary = "Elimina una ruta",
+            description = """
+                    Deja de verse en el panel, en el mapa del pasajero y para el conductor.
+                    El bus y los conductores que la tenian quedan sin ruta y las reservas
+                    vigentes se cancelan. El historial se conserva en los reportes.""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Ruta eliminada"),
+            @ApiResponse(responseCode = "404", description = "No existe esa ruta o ya se elimino",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    @DeleteMapping("/{rutaId}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long rutaId, Authentication autenticacion) {
+        alta.eliminar(rutaId, autenticacion.getName());
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Publica u oculta la ruta para el pasajero",

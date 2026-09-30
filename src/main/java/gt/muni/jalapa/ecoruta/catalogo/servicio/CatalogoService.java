@@ -30,6 +30,7 @@ public class CatalogoService {
     @Transactional(readOnly = true)
     public RutaResponse buscar(Long rutaId) {
         return rutas.buscarConParadas(rutaId)
+                .filter(ruta -> !ruta.estaEliminada())
                 .map(RutaResponse::de)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Ruta", rutaId));
     }

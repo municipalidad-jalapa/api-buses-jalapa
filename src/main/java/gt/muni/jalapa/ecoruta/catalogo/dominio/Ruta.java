@@ -16,6 +16,7 @@ import lombok.ToString;
 import org.hibernate.annotations.SQLRestriction;
 import org.locationtech.jts.geom.LineString;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +54,17 @@ public class Ruta {
     @Column(name = "activa", nullable = false)
     @ToString.Include
     private boolean activa = true;
+
+    /**
+     * Cuando se elimino desde el panel (V31). La fila se queda porque el
+     * historial la referencia; null = vigente.
+     */
+    @Column(name = "eliminada_en")
+    private Instant eliminadaEn;
+
+    public boolean estaEliminada() {
+        return eliminadaEn != null;
+    }
 
     /**
      * Las paradas llegan ordenadas por el campo `orden`, no por id: es el orden
