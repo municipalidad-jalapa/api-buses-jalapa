@@ -145,6 +145,20 @@ class PanelConductorIT extends IntegracionPostgisTest {
 
     @Test
     @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void trae_la_capacidad_del_bus_o_25_si_no_esta_cargada() throws Exception {
+        try {
+            jdbc.update("UPDATE vehiculos SET capacidad = NULL WHERE ruta_id = 1");
+            mockMvc.perform(get(PANEL)).andExpect(jsonPath("$.capacidad").value(25));
+
+            jdbc.update("UPDATE vehiculos SET capacidad = 40 WHERE ruta_id = 1");
+            mockMvc.perform(get(PANEL)).andExpect(jsonPath("$.capacidad").value(40));
+        } finally {
+            jdbc.update("UPDATE vehiculos SET capacidad = NULL WHERE ruta_id = 1");
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
     void trae_todas_las_paradas_de_la_ruta() throws Exception {
         Integer total = jdbc.queryForObject("SELECT count(*) FROM paradas WHERE ruta_id = 1", Integer.class);
         mockMvc.perform(get(PANEL))

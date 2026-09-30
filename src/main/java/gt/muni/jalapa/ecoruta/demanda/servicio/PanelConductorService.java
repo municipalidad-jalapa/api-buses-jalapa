@@ -31,6 +31,7 @@ public class PanelConductorService {
 
     private final ConductorRutaRepository conductorRuta;
     private final EtaService etas;
+    private final CargaDelBus carga;
     private final JdbcTemplate jdbc;
     private final Clock reloj;
 
@@ -112,6 +113,6 @@ public class PanelConductorService {
         int aBordo = Math.max(0, conteo[0] - conteo[1]);
 
         return new PanelConductorResponse(rutaId, rutaNombre, eta.estado(), Instant.now(reloj), paradas,
-                conteo[0], conteo[1], aBordo, vuelta);
+                conteo[0], conteo[1], aBordo, vuelta, carga.capacidadDe(rutaId));
     }
 }

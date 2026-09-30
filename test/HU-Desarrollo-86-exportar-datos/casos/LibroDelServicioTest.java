@@ -117,7 +117,7 @@ class LibroDelServicioTest {
             assertThat(valorDe(resumen, "Abordaron").getNumericCellValue()).isEqualTo(8);
             assertThat(valorDe(resumen, "Canceladas").getNumericCellValue()).isEqualTo(3);
             assertThat(valorDe(resumen, "Expiradas").getNumericCellValue()).isEqualTo(2);
-            assertThat(valorDe(resumen, "Vigentes al exportar").getNumericCellValue()).isEqualTo(2);
+            assertThat(valorDe(resumen, "Reservas aún activas").getNumericCellValue()).isEqualTo(2);
             assertThat(valorDe(resumen, "Lecturas GPS").getNumericCellValue()).isEqualTo(1800);
             assertThat(valorDe(resumen, "Distancia estimada (km)").getNumericCellValue()).isEqualTo(41.25);
         }
