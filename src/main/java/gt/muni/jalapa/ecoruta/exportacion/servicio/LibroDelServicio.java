@@ -46,13 +46,13 @@ final class LibroDelServicio {
 
     static final List<String> COLUMNAS_DEMANDA = List.of(
             "Fecha", "Ruta", "N.º de parada", "Parada", "Reservas creadas", "Abordaron",
-            "Canceladas", "Expiradas", "Vigentes al exportar", "Declararon que no abordaron");
+            "Canceladas", "Expiradas", "Reservas aún activas", "Avisaron que no subieron");
 
     static final List<String> COLUMNAS_RECORRIDOS = List.of(
             "Fecha", "Bus", "Placa", "Ruta", "Lecturas GPS", "Primera lectura", "Última lectura",
             "Distancia estimada (km)", "Velocidad promedio en movimiento (km/h)", "Paradas atendidas");
 
-    private static final int[] ANCHOS_DEMANDA = {12, 42, 14, 38, 18, 12, 13, 12, 20, 28};
+    private static final int[] ANCHOS_DEMANDA = {12, 42, 14, 38, 18, 12, 13, 12, 22, 30};
     private static final int[] ANCHOS_RECORRIDOS = {12, 12, 12, 42, 14, 16, 16, 24, 34, 18};
 
     private LibroDelServicio() {
@@ -108,8 +108,8 @@ final class LibroDelServicio {
         total(hoja, fila++, "Abordaron", abordaron, estilos);
         total(hoja, fila++, "Canceladas", canceladas, estilos);
         total(hoja, fila++, "Expiradas", expiradas, estilos);
-        total(hoja, fila++, "Vigentes al exportar", vigentes, estilos);
-        total(hoja, fila++, "Declararon que no abordaron", noAbordaron, estilos);
+        total(hoja, fila++, "Reservas aún activas", vigentes, estilos);
+        total(hoja, fila++, "Avisaron que no subieron", noAbordaron, estilos);
         total(hoja, fila++, "Lecturas GPS", lecturas, estilos);
         Row filaKm = hoja.createRow(fila++);
         etiqueta(filaKm, "Distancia estimada (km)", estilos);
@@ -122,6 +122,12 @@ final class LibroDelServicio {
         for (String nota : List.of(
                 "Hoja Demanda: una fila por día, ruta y parada. Las reservas se cuentan en el día en que se crearon; "
                         + "su estado es el que tenían al generar este archivo.",
+                "Reservas aún activas: reservas de ese día que seguían vigentes en el momento de generar este "
+                        + "archivo. Las reservas duran poco y luego vencen, por eso en días anteriores casi siempre "
+                        + "es 0; solo suele tener datos el día de hoy.",
+                "Avisaron que no subieron: reservas donde el pasajero indicó desde la app que no pudo abordar. "
+                        + "Es un aviso aparte: la misma reserva también cuenta en Abordaron, Canceladas, Expiradas "
+                        + "o Reservas aún activas, por eso esta columna no entra en la suma de las demás.",
                 "Hoja Recorridos: una fila por día y bus, calculada con las lecturas del GPS. La distancia es una "
                         + "estimación: se omiten los tramos con huecos de señal y el GPS de un bus detenido varía un poco.",
                 "Privacidad: el archivo contiene solo totales. No incluye identificadores de dispositivos, de "

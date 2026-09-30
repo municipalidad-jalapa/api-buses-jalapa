@@ -6,6 +6,7 @@ import gt.muni.jalapa.ecoruta.catalogo.repositorio.RutaRepository;
 import gt.muni.jalapa.ecoruta.common.AccesoDenegadoException;
 import gt.muni.jalapa.ecoruta.common.ConflictoException;
 import gt.muni.jalapa.ecoruta.common.RecursoNoEncontradoException;
+import gt.muni.jalapa.ecoruta.common.ReglaDeNegocioException;
 import gt.muni.jalapa.ecoruta.demanda.dominio.Reserva;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.AtencionParadaRepository;
 import gt.muni.jalapa.ecoruta.demanda.repositorio.ReservaRepository;
@@ -34,6 +35,7 @@ public class AtencionParadaService {
     private final ReservaRepository reservas;
     private final AtencionParadaRepository atenciones;
     private final ConductorRutaRepository conductorRuta;
+    private final CargaDelBus carga;
     private final Clock reloj;
 
     @Transactional
@@ -89,6 +91,8 @@ public class AtencionParadaService {
             vuelta++;
         }
 
+        validarConteo(rutaId, conteo);
+
         try {
             atenciones.registrar(
                     rutaId,
@@ -125,5 +129,28 @@ public class AtencionParadaService {
                 ahora,
                 vuelta
         );
+    }
+
+    /**
+     * QA, panel del conductor: el conteo de la parada no puede dejar el bus con
+     * menos de 0 personas ni, si subio alguien, con mas de su capacidad. Solo se
+     * revisa el resultado de la parada: el orden de los toques lo cuida la app.
+     */
+    private void validarConteo(Long rutaId, AtenderParadaRequest conteo) {
+        int antes = carga.aBordoHoy(rutaId);
+        int despues = antes + conteo.subieron() - conteo.bajaron();
+
+        if (despues < 0) {
+            throw new ReglaDeNegocioException(
+                    "No pueden bajar más personas de las que van a bordo: había %d a bordo, subieron %d y bajaron %d."
+                            .formatted(antes, conteo.subieron(), conteo.bajaron()));
+        }
+
+        int capacidad = carga.capacidadDe(rutaId);
+        if (conteo.subieron() > 0 && despues > capacidad) {
+            throw new ReglaDeNegocioException(
+                    "El bus lleva como máximo %d personas: con este conteo quedarían %d a bordo."
+                            .formatted(capacidad, despues));
+        }
     }
 }

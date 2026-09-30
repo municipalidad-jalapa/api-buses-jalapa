@@ -36,6 +36,10 @@ ecoruta:
     # Tiempo minimo entre dos reservas creadas por el mismo dispositivo, cuente
     # o no como vigente la anterior (HU Desarrollo-95, anti-abuso de conteo).
     ritmo-minimo-segundos: 5
+  bus:
+    # QA (panel del conductor): tope de "Subió" cuando el bus no tiene
+    # capacidad cargada en la pantalla de Vehículos.
+    capacidad-por-defecto: ${BUS_CAPACIDAD_POR_DEFECTO:25}
   notificaciones:
     # Primer aviso: el bus se acerca. Segundo: ya llego a la parada.
     radio-aproximacion-metros: ${NOTIF_RADIO_APROXIMACION_METROS:250}
