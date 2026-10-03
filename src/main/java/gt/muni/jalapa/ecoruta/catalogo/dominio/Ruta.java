@@ -13,8 +13,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.SQLRestriction;
 import org.locationtech.jts.geom.LineString;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,10 +56,22 @@ public class Ruta {
     private boolean activa = true;
 
     /**
+     * Cuando se elimino desde el panel (V31). La fila se queda porque el
+     * historial la referencia; null = vigente.
+     */
+    @Column(name = "eliminada_en")
+    private Instant eliminadaEn;
+
+    public boolean estaEliminada() {
+        return eliminadaEn != null;
+    }
+
+    /**
      * Las paradas llegan ordenadas por el campo `orden`, no por id: es el orden
      * del recorrido y es lo que el mapa usa para trazar la linea.
      */
     @OneToMany(mappedBy = "ruta", fetch = FetchType.LAZY)
     @OrderBy("orden ASC")
+    @SQLRestriction("retirada_en IS NULL")
     private List<Parada> paradas = new ArrayList<>();
 }

@@ -129,7 +129,7 @@ public class AdministracionDelSistema {
         if (!rol.esConductor()) {
             return null;
         }
-        if (rutaId != null && !rutas.existsById(rutaId)) {
+        if (rutaId != null && !rutas.existsByIdAndEliminadaEnIsNull(rutaId)) {
             throw new ReglaDeNegocioException("La ruta no existe.");
         }
         return rutaId;
@@ -143,8 +143,7 @@ public class AdministracionDelSistema {
 
     @Transactional(readOnly = true)
     public List<RutaResponse> rutas() {
-        return rutas.findAll().stream()
-                .sorted((a, b) -> a.getId().compareTo(b.getId()))
+        return rutas.findByEliminadaEnIsNullOrderByIdAsc().stream()
                 .map(ruta -> new RutaResponse(ruta.getId(), ruta.getNombre(), ruta.isActiva(),
                         ruta.getParadas().size()))
                 .toList();

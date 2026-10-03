@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta.demanda;
 
 import gt.muni.jalapa.ecoruta.IntegracionPostgisTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -185,6 +186,88 @@ void limpiarDatosHu76() {
                         jsonPath("$.status")
                                 .value(403)
                 );
+    }
+
+    // QA, panel del conductor: "Bajo" no deja el contador en negativo y
+    // "Subio" no pasa la capacidad del bus.
+
+    @AfterEach
+    void quitarCapacidad() {
+        jdbc.update("UPDATE vehiculos SET capacidad = NULL WHERE ruta_id = 1");
+    }
+
+    @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void bajar_mas_personas_de_las_que_van_a_bordo_responde_422_y_no_marca_la_parada()
+            throws Exception {
+
+        mockMvc.perform(post(RUTA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":1,\"bajaron\":2}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422));
+
+        Long marcadas = jdbc.queryForObject("SELECT count(*) FROM paradas_atendidas", Long.class);
+        assertThat(marcadas).isZero();
+    }
+
+    @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void pueden_bajar_en_una_parada_los_que_subieron_en_otra()
+            throws Exception {
+
+        mockMvc.perform(post(RUTA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":4,\"bajaron\":0}"))
+                .andExpect(status().isOk());
+
+        // Van 4 a bordo: no pueden bajar 5.
+        mockMvc.perform(post("/api/v1/rutas/1/paradas/2/atendida")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":0,\"bajaron\":5}"))
+                .andExpect(status().isUnprocessableEntity());
+
+        mockMvc.perform(post("/api/v1/rutas/1/paradas/2/atendida")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":0,\"bajaron\":4}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void sin_capacidad_cargada_el_tope_de_subidas_es_25()
+            throws Exception {
+
+        jdbc.update("UPDATE vehiculos SET capacidad = NULL WHERE ruta_id = 1");
+
+        mockMvc.perform(post(RUTA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":26,\"bajaron\":0}"))
+                .andExpect(status().isUnprocessableEntity());
+
+        mockMvc.perform(post(RUTA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":25,\"bajaron\":0}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "conductor1", roles = "CONDUCTOR")
+    void con_capacidad_cargada_el_tope_es_el_del_bus()
+            throws Exception {
+
+        int buses = jdbc.update("UPDATE vehiculos SET capacidad = 10 WHERE ruta_id = 1 AND activo");
+        assertThat(buses).as("la ruta 1 necesita un bus activo para esta prueba").isEqualTo(1);
+
+        mockMvc.perform(post(RUTA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":11,\"bajaron\":0}"))
+                .andExpect(status().isUnprocessableEntity());
+
+        mockMvc.perform(post(RUTA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subieron\":10,\"bajaron\":0}"))
+                .andExpect(status().isOk());
     }
 
     private void insertarReserva(String estado) {

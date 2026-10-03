@@ -110,7 +110,7 @@ public class VehiculoAdminController {
     /** Una ruta, un bus activo (uq_vehiculo_activo_por_ruta): se avisa antes de chocar. */
     private void asignarRuta(Vehiculo vehiculo, Long rutaId) {
         if (rutaId != null) {
-            if (!rutas.existsById(rutaId)) {
+            if (!rutas.existsByIdAndEliminadaEnIsNull(rutaId)) {
                 throw new ReglaDeNegocioException("La ruta no existe.");
             }
             vehiculos.findFirstByRutaIdAndActivoTrue(rutaId)

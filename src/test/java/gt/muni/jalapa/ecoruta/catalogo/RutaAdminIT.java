@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,11 +26,14 @@ class RutaAdminIT extends IntegracionPostgisTest {
 
     private String trazadoOriginal;
     private Map<String, Object> paradaOriginal;
+    private List<Map<String, Object>> ordenOriginal;
 
     @BeforeEach
     void guardarOriginales() {
         trazadoOriginal = jdbc.queryForObject("SELECT ST_AsText(trazado) FROM rutas WHERE id = 1", String.class);
         paradaOriginal = jdbc.queryForMap("SELECT nombre, ST_AsText(ubicacion) AS ubicacion FROM paradas WHERE id = 1");
+        ordenOriginal = jdbc.queryForList(
+                "SELECT id, orden FROM paradas WHERE ruta_id = 1 AND retirada_en IS NULL ORDER BY orden");
     }
 
     @AfterEach
@@ -37,6 +41,10 @@ class RutaAdminIT extends IntegracionPostgisTest {
         jdbc.update("UPDATE rutas SET trazado = ST_GeomFromText(?, 4326) WHERE id = 1", trazadoOriginal);
         jdbc.update("UPDATE paradas SET nombre = ?, ubicacion = ST_GeomFromText(?, 4326) WHERE id = 1",
                 paradaOriginal.get("nombre"), paradaOriginal.get("ubicacion"));
+        // Mover una parada la reubica en el recorrido: se deja el orden como estaba.
+        ordenOriginal.forEach(fila -> jdbc.update("UPDATE paradas SET orden = -? WHERE id = ?",
+                fila.get("orden"), fila.get("id")));
+        jdbc.update("UPDATE paradas SET orden = -orden WHERE ruta_id = 1 AND orden < 0");
     }
 
     @Test
@@ -74,7 +82,7 @@ class RutaAdminIT extends IntegracionPostgisTest {
         mockMvc.perform(put("/api/v1/admin/rutas/1/trazado")
                         .contentType(APPLICATION_JSON)
                         .content("{\"puntos\":[{\"latitud\":14.63,\"longitud\":-89.98}]}"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnprocessableEntity());
 
         mockMvc.perform(put("/api/v1/admin/rutas/1/trazado")
                         .contentType(APPLICATION_JSON)

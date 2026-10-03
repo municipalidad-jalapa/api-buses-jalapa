@@ -31,6 +31,7 @@ public class PanelConductorService {
 
     private final ConductorRutaRepository conductorRuta;
     private final EtaService etas;
+    private final CargaDelBus carga;
     private final JdbcTemplate jdbc;
     private final Clock reloj;
 
@@ -51,10 +52,10 @@ public class PanelConductorService {
         // paradas, la siguiente, con todo pendiente otra vez.
         int vuelta = jdbc.queryForObject("""
                         SELECT CASE
-                                 WHEN (SELECT count(*) FROM paradas WHERE ruta_id = ?) > 0
+                                 WHEN (SELECT count(*) FROM paradas WHERE ruta_id = ? AND retirada_en IS NULL) > 0
                                   AND (SELECT count(DISTINCT parada_id) FROM paradas_atendidas
                                         WHERE ruta_id = ? AND fecha_servicio = CURRENT_DATE AND vuelta = v.actual)
-                                      >= (SELECT count(*) FROM paradas WHERE ruta_id = ?)
+                                      >= (SELECT count(*) FROM paradas WHERE ruta_id = ? AND retirada_en IS NULL)
                                  THEN v.actual + 1
                                  ELSE v.actual
                                END
@@ -81,6 +82,7 @@ public class PanelConductorService {
                                    AND a.vuelta = ?) AS atendida_en
                           FROM paradas p
                          WHERE p.ruta_id = ?
+                           AND p.retirada_en IS NULL
                          ORDER BY p.orden
                         """,
                 (rs, i) -> {
@@ -111,6 +113,6 @@ public class PanelConductorService {
         int aBordo = Math.max(0, conteo[0] - conteo[1]);
 
         return new PanelConductorResponse(rutaId, rutaNombre, eta.estado(), Instant.now(reloj), paradas,
-                conteo[0], conteo[1], aBordo, vuelta);
+                conteo[0], conteo[1], aBordo, vuelta, carga.capacidadDe(rutaId));
     }
 }

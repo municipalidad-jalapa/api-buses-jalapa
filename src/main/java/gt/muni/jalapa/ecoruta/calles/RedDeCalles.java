@@ -87,6 +87,122 @@ public class RedDeCalles {
         }
     }
 
+    /** Cada cuantos metros del trazo a mano se busca el cruce mas cercano. */
+    private static final double PASO_METROS = 35;
+
+    /** Tope de muestras por trazo: un trazo de ~14 km. Mas, se muestrea mas ralo. */
+    private static final int MUESTRAS_MAXIMAS = 400;
+
+    /**
+     * Ajusta a las calles un trazo dibujado a mano en el editor de rutas del
+     * panel (el "lapiz" del informe de QA).
+     *
+     * <p>Se toma una muestra del trazo cada {@value #PASO_METROS} m, cada muestra
+     * se engancha al cruce mas cercano y los cruces se unen por el camino mas
+     * corto con {@code pgr_dijkstraVia}, en el orden en que se dibujaron. El
+     * resultado sigue la geometria real de las calles de OpenStreetMap. Sin
+     * sentido de circulacion: el administrador dibuja por donde pasa el bus y
+     * se respeta lo que dibujo.
+     *
+     * @return vacio si la red no esta, el trazo no pasa cerca de ninguna calle
+     *         o no hay camino; quien llama se queda con el trazo a mano
+     */
+    @Transactional(readOnly = true)
+    public Optional<List<PuntoResponse>> ajustar(List<PuntoResponse> trazo) {
+        if (!propiedades.habilitada() || trazo.size() < 2 || !hayRed()) {
+            return Optional.empty();
+        }
+        try {
+            List<Long> cruces = new ArrayList<>();
+            for (PuntoResponse muestra : muestrear(trazo)) {
+                Long nodo = nodoCercano(muestra);
+                if (nodo == null) {
+                    continue;
+                }
+                int n = cruces.size();
+                if (n > 0 && cruces.get(n - 1).equals(nodo)) {
+                    continue;
+                }
+                // Ir a un cruce y volver al anterior (A, B, A) es el pulso de la
+                // mano sobre una esquina, no un recorrido: se descarta.
+                if (n > 1 && cruces.get(n - 2).equals(nodo)) {
+                    cruces.remove(n - 1);
+                    continue;
+                }
+                cruces.add(nodo);
+            }
+            if (cruces.size() < 2) {
+                return Optional.empty();
+            }
+
+            List<PuntoResponse> camino = jdbc.query("""
+                            SELECT ST_Y(g.geom) AS latitud, ST_X(g.geom) AS longitud
+                              FROM pgr_dijkstraVia(
+                                     'SELECT id, origen AS source, destino AS target,
+                                             costo AS cost, costo AS reverse_cost FROM calles',
+                                     ?::bigint[], directed => false, strict => false, U_turn_on_edge => true) d
+                              JOIN calles c ON c.id = d.edge
+                              CROSS JOIN LATERAL ST_DumpPoints(
+                                     CASE WHEN c.origen = d.node THEN c.trazo
+                                          ELSE ST_Reverse(c.trazo) END) g
+                             ORDER BY d.seq, g.path
+                            """,
+                    (rs, i) -> new PuntoResponse(rs.getDouble("latitud"), rs.getDouble("longitud")),
+                    arreglo(cruces));
+
+            // Donde termina una calle empieza la siguiente: el punto se repite.
+            List<PuntoResponse> limpio = new ArrayList<>();
+            for (PuntoResponse punto : camino) {
+                if (limpio.isEmpty() || !limpio.get(limpio.size() - 1).equals(punto)) {
+                    limpio.add(punto);
+                }
+            }
+            return limpio.size() < 2 ? Optional.empty() : Optional.of(limpio);
+        } catch (DataAccessException ex) {
+            log.warn("No se pudo ajustar el trazo a las calles, queda a mano: {}", ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Un punto cada {@value #PASO_METROS} m a lo largo del trazo, con el primero
+     * y el ultimo siempre incluidos. Distancias planas: a escala de una ciudad
+     * sobra.
+     */
+    static List<PuntoResponse> muestrear(List<PuntoResponse> trazo) {
+        double largo = 0;
+        for (int i = 1; i < trazo.size(); i++) {
+            largo += metros(trazo.get(i - 1), trazo.get(i));
+        }
+        double paso = Math.max(PASO_METROS, largo / MUESTRAS_MAXIMAS);
+
+        List<PuntoResponse> muestras = new ArrayList<>();
+        muestras.add(trazo.get(0));
+        double resto = paso;
+        for (int i = 1; i < trazo.size(); i++) {
+            PuntoResponse a = trazo.get(i - 1);
+            PuntoResponse b = trazo.get(i);
+            double tramo = metros(a, b);
+            double recorrido = 0;
+            while (tramo - recorrido >= resto) {
+                recorrido += resto;
+                double t = recorrido / tramo;
+                muestras.add(new PuntoResponse(a.latitud() + (b.latitud() - a.latitud()) * t,
+                        a.longitud() + (b.longitud() - a.longitud()) * t));
+                resto = paso;
+            }
+            resto -= tramo - recorrido;
+        }
+        muestras.add(trazo.get(trazo.size() - 1));
+        return muestras;
+    }
+
+    private static double metros(PuntoResponse a, PuntoResponse b) {
+        double dy = (b.latitud() - a.latitud()) * 110_540;
+        double dx = (b.longitud() - a.longitud()) * 111_320 * Math.cos(Math.toRadians(a.latitud()));
+        return Math.hypot(dx, dy);
+    }
+
     /** Un entorno sin la red importada sigue funcionando con el factor. */
     private boolean hayRed() {
         Integer filas = jdbc.queryForObject("SELECT count(*) FROM (SELECT 1 FROM calles LIMIT 1) c",

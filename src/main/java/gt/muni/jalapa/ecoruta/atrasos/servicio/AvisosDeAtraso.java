@@ -138,7 +138,7 @@ public class AvisosDeAtraso {
     private static AtrasoResponse respuesta(AvisoDeAtraso aviso) {
         return new AtrasoResponse(aviso.getId(), aviso.getRutaId(), aviso.getMotivo(),
                 aviso.getDemoraMinutos(),
-                aviso.getComentario() == null ? null : HtmlUtils.htmlEscape(aviso.getComentario()),
+                aviso.getComentario() == null ? null : HtmlUtils.htmlEscape(aviso.getComentario(), "UTF-8"),
                 aviso.getReportadoEn(), aviso.getVigenteHasta());
     }
 }

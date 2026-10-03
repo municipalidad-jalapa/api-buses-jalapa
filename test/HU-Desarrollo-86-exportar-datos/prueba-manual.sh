@@ -85,7 +85,7 @@ if [ "$MODO" = "simulado" ]; then
     # Linea base: lo que la base ya tenia hoy, para poder repetir el script sobre la misma base.
     curl -s "${AUTH[@]}" -o "$TMP/base.xlsx" "$(exportar_url "$HOY" "$HOY")"
     BASE_RES="$(resumen "$TMP/base.xlsx" 'Reservas creadas')"; BASE_ABO="$(resumen "$TMP/base.xlsx" 'Abordaron')"
-    BASE_CAN="$(resumen "$TMP/base.xlsx" 'Canceladas')"; BASE_VIG="$(resumen "$TMP/base.xlsx" 'Vigentes al exportar')"
+    BASE_CAN="$(resumen "$TMP/base.xlsx" 'Canceladas')"; BASE_VIG="$(resumen "$TMP/base.xlsx" 'Reservas aún activas')"
     BASE_LEC="$(resumen "$TMP/base.xlsx" 'Lecturas GPS')"; BASE_KM="$(resumen "$TMP/base.xlsx" 'Distancia estimada (km)')"
     echo "    linea base de hoy: ${BASE_RES:-0} reservas, ${BASE_LEC:-0} lecturas GPS"
     RUTA_JSON="$(curl -s "$B/api/v1/rutas/1")"
@@ -174,7 +174,7 @@ if [ "$MODO" = "simulado" ]; then
     esperar $((${BASE_RES:-0} + RESERVAS_CREADAS)) "$(resumen "$ARCHIVO" 'Reservas creadas')" "Resumen: reservas creadas (base + $RESERVAS_CREADAS)"
     esperar $((${BASE_ABO:-0} + ABORDARON)) "$(resumen "$ARCHIVO" 'Abordaron')" "Resumen: abordaron (base + $ABORDARON)"
     esperar $((${BASE_CAN:-0} + CANCELADAS)) "$(resumen "$ARCHIVO" 'Canceladas')" "Resumen: canceladas (base + $CANCELADAS)"
-    esperar $((${BASE_VIG:-0} + RESERVAS_CREADAS - ABORDARON - CANCELADAS)) "$(resumen "$ARCHIVO" 'Vigentes al exportar')" "Resumen: vigentes"
+    esperar $((${BASE_VIG:-0} + RESERVAS_CREADAS - ABORDARON - CANCELADAS)) "$(resumen "$ARCHIVO" 'Reservas aún activas')" "Resumen: vigentes"
     if [ "${BASE_RES:-0}" = "0" ]; then
         esperar "$N_PARADAS" "$(filas "$ARCHIVO" Demanda)" "hoja Demanda: una fila por parada con demanda"
     else

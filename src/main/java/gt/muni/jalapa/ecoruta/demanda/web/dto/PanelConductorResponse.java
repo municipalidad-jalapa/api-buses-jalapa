@@ -19,6 +19,7 @@ import java.util.List;
  * @param bajaronHoy  idem, los que bajaron
  * @param aBordo      subieron menos bajaron hoy, nunca negativo
  * @param vuelta      vuelta del dia que se muestra; atendidaEn es de esta vuelta
+ * @param capacidad   tope de personas a bordo: la del bus, o la de por defecto si no la cargaron
  */
 public record PanelConductorResponse(
         @Schema(example = "1") Long rutaId,
@@ -29,7 +30,8 @@ public record PanelConductorResponse(
         @Schema(example = "21") int subieronHoy,
         @Schema(example = "9") int bajaronHoy,
         @Schema(example = "12") int aBordo,
-        @Schema(example = "2") int vuelta) {
+        @Schema(example = "2") int vuelta,
+        @Schema(example = "25") int capacidad) {
 
     /**
      * @param reservasActivas personas esperando (reservas ACTIVA o RENOVADA)

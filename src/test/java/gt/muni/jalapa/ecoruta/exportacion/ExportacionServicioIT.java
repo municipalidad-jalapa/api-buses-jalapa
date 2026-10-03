@@ -301,11 +301,17 @@ class ExportacionServicioIT extends IntegracionPostgisTest {
         return todo.toString();
     }
 
+    /**
+     * Las vigentes (ACTIVA, RENOVADA) vencen a futuro: vencidas en el pasado, el
+     * barrido de ExpiradorDeReservas podria pasarlas a EXPIRADA antes de exportar.
+     */
     private void reserva(String dispositivoId, long paradaId, String estado, String creadaEn) {
         jdbc.update("""
                 INSERT INTO registros_espera (dispositivo_id, parada_id, estado, creado_en, expira_en)
-                VALUES (?, ?, ?, ?::timestamptz, ?::timestamptz + interval '20 minutes')
-                """, dispositivoId, paradaId, estado, creadaEn, creadaEn);
+                VALUES (?, ?, ?, ?::timestamptz,
+                        CASE WHEN ? IN ('ACTIVA', 'RENOVADA') THEN now() + interval '1 day'
+                             ELSE ?::timestamptz + interval '20 minutes' END)
+                """, dispositivoId, paradaId, estado, creadaEn, estado, creadaEn);
     }
 
     private void posicion(long vehiculoId, double latitud, double longitud, double velocidadKmh, String registradaEn) {

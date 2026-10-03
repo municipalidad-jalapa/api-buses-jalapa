@@ -134,9 +134,19 @@ class OpinionesIT extends IntegracionPostgisTest {
                     .andExpect(status().isCreated());
             assertThat(jdbc.queryForObject("SELECT texto FROM opiniones", String.class)).isEqualTo(texto);
             String devuelto = listar("").at("/opiniones/0/texto").asText();
-            assertThat(devuelto).isEqualTo(org.springframework.web.util.HtmlUtils.htmlEscape(texto));
+            assertThat(devuelto).isEqualTo(org.springframework.web.util.HtmlUtils.htmlEscape(texto, "UTF-8"));
             assertThat(org.springframework.web.util.HtmlUtils.htmlUnescape(devuelto)).isEqualTo(texto);
         }
+    }
+
+    @Test
+    void los_acentos_y_la_enie_salen_tal_cual_solo_se_neutraliza_lo_peligroso() throws Exception {
+        String texto = "Más trabajo en este apartado, ¿por qué? Año <b>";
+        opinar("acentos", json.writeValueAsString(java.util.Map.of(
+                "tipo", "comentario", "rutaId", 1, "texto", texto))).andExpect(status().isCreated());
+
+        assertThat(listar("").at("/opiniones/0/texto").asText())
+                .isEqualTo("Más trabajo en este apartado, ¿por qué? Año &lt;b&gt;");
     }
 
     // --- A.3 panel municipal -------------------------------------------------
