@@ -80,8 +80,13 @@ class ExportacionConDatosSimuladosIT extends IntegracionPostgisTest {
             boolean declaroNoAbordo = azar.nextInt(10) == 0;
             String dispositivo = new UUID(azar.nextLong(), azar.nextLong()).toString();
             dispositivos.add(dispositivo);
+            // Las vigentes vencen a futuro: si vencieran en el pasado, el barrido de
+            // ExpiradorDeReservas (cada 60 s) podria pasarlas a EXPIRADA entre el
+            // INSERT y la exportacion, y la prueba fallaria segun la hora.
+            boolean vigente = estado.equals("ACTIVA") || estado.equals("RENOVADA");
+            Instant expira = vigente ? Instant.now().plus(Duration.ofDays(1)) : creada.plusSeconds(1200);
             filas.add(new Object[]{dispositivo, parada.id(), estado, Timestamp.from(creada),
-                    Timestamp.from(creada.plusSeconds(1200)), declaroNoAbordo});
+                    Timestamp.from(expira), declaroNoAbordo});
 
             // Solo cuenta lo que cae dentro del rango EN DIAS DE GUATEMALA: las primeras 6 h UTC
             // del primer dia pertenecen al dia anterior, y las ultimas 6 h del rango, al siguiente.
