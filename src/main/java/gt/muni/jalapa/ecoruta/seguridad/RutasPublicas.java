@@ -19,7 +19,7 @@ import java.util.List;
  * en el mismo gesto.
  *
  * <p>{@link Cupo#ESTRICTO} marca las rutas que escriben algo por cada peticion
- * de un anonimo (una opinion, una sesion). Ademas del cupo general por IP,
+ * de quien no es personal (una opinion, una sesion). Ademas del cupo general por IP,
  * tienen uno propio mucho menor: el identificador del dispositivo lo pone el
  * cliente y no sirve de defensa por si solo.
  */
@@ -54,8 +54,9 @@ public final class RutasPublicas {
             new Ruta(HttpMethod.POST, "/api/v1/auth/conductor", Cupo.GENERAL, true),
             // SCRUM-173: inicio de sesion del panel municipal.
             new Ruta(HttpMethod.POST, "/api/v1/auth/admin", Cupo.GENERAL, true),
-            // SCRUM-26, bloque A: opinion anonima.
-            new Ruta(HttpMethod.POST, "/api/v1/opiniones", Cupo.ESTRICTO, true),
+            // SCRUM-26, bloque A: opinar exige la sesion del pasajero; cualquier cuenta de
+            // Google la obtiene, asi que sigue con el cupo estricto.
+            new Ruta(HttpMethod.POST, "/api/v1/opiniones", Cupo.ESTRICTO, false),
             // SCRUM-26, bloque B: abrir sesion y vincular lo hecho en el navegador.
             new Ruta(HttpMethod.POST, "/api/v1/sesion/pasajero", Cupo.ESTRICTO, true),
             new Ruta(HttpMethod.POST, "/api/v1/sesion/pasajero/vincular", Cupo.ESTRICTO, false));

@@ -43,7 +43,11 @@ public final class OpinionesDtos {
             @Schema(example = "3", nullable = true) Long vehiculoId) {
     }
 
-    /** @param texto neutralizado: el HTML que haya escrito la persona llega como texto. */
+    /**
+     * @param texto  neutralizado: el HTML que haya escrito la persona llega como texto.
+     * @param correo de la cuenta que opino, neutralizado; null en las opiniones
+     *               anonimas anteriores a exigir sesion o si la cuenta no tiene correo.
+     */
     public record OpinionResponse(
             Long id,
             Instant creadaEn,
@@ -57,6 +61,7 @@ public final class OpinionesDtos {
             Integer limpieza,
             Integer conduccion,
             String texto,
+            @Schema(example = "ana@gmail.com", nullable = true) String correo,
             Instant atendidaEn,
             String atendidaPor) {
     }

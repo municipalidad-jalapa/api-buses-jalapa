@@ -23,11 +23,11 @@ import org.springframework.web.filter.CorsFilter;
  * Cadena de seguridad de las opiniones (SCRUM-26, bloque A).
  *
  * <p>En un archivo propio y no en {@code SecurityConfig}, que tienen abierto
- * otras ramas: asi este modulo no choca con ellas. Registrar es publico;
- * listar y atender exige rol administrador. Un conductor recibe 403 y quien no
- * trae sesion, 401.
+ * otras ramas: asi este modulo no choca con ellas. Registrar exige la
+ * sesion del pasajero; listar y atender, rol administrador. Con otro rol se
+ * recibe 403 y sin sesion, 401.
  *
- * <p>El registro publico queda bajo {@link RateLimitFilter} con el cupo
+ * <p>El registro queda bajo {@link RateLimitFilter} con el cupo
  * estricto de {@link RutasPublicas}: el limite por navegador depende de una
  * cabecera que pone el cliente y por si solo se evade.
  */
@@ -55,6 +55,7 @@ public class OpinionesSecurityConfig {
                 .authorizeHttpRequests(rutas -> {
                     RutasPublicas.abrir(rutas);
                     rutas
+                        .requestMatchers(HttpMethod.POST, "/api/v1/opiniones").hasRole("PASAJERO")
                         .requestMatchers(HttpMethod.GET, "/api/v1/opiniones").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/opiniones/*/atendida").hasRole("ADMIN")
                         .anyRequest().denyAll();

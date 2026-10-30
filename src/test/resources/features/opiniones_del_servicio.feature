@@ -7,10 +7,18 @@ Característica: Opiniones del servicio
   para que la municipalidad sepa cómo funciona cada ruta y cada unidad
 
   @A1-criterio-1 @A1-criterio-2 @A1-criterio-4
-  Escenario: Un pasajero sin cuenta opina y el servidor resuelve el bus de la ruta
+  Escenario: Un pasajero con sesión opina y el servidor resuelve el bus de la ruta
     Cuando el navegador "nav-bdd" opina con 4 estrellas sobre la ruta 1
     Entonces la respuesta tiene codigo 201
     Y la opinión queda atribuida al navegador "nav-bdd" y al bus "BUS-01"
+
+  Escenario: Sin sesión no se puede opinar
+    Cuando el navegador "nav-bdd" opina sin sesión sobre la ruta 1
+    Entonces la respuesta tiene codigo 401
+
+  Escenario: El panel muestra el correo de quien opinó
+    Cuando el navegador "nav-bdd" opina con 4 estrellas sobre la ruta 1
+    Entonces el panel municipal muestra el correo "pasajero-bdd@gmail.com" junto a la opinión
 
   @A1-criterio-3
   Escenario: Una opinión sin texto ni calificación se rechaza

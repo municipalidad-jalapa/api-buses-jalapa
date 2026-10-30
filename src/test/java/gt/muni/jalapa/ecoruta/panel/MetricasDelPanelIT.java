@@ -3,6 +3,7 @@ package gt.muni.jalapa.ecoruta.panel;
 import gt.muni.jalapa.ecoruta.IntegracionPostgisTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -82,14 +83,14 @@ class MetricasDelPanelIT extends IntegracionPostgisTest {
 
     @Test
     void la_opinion_acepta_las_tres_valoraciones_como_campos_opcionales() throws Exception {
-        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-1")
+        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-1").header(HttpHeaders.AUTHORIZATION, pasajero())
                         .contentType(APPLICATION_JSON)
                         .content("""
                                 {"tipo":"calificacion","rutaId":1,"calidad":4,"limpieza":2,"conduccion":5}"""))
                 .andExpect(status().isCreated());
 
         // Sigue valiendo la calificacion general sola, del bloque A.
-        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-2")
+        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-2").header(HttpHeaders.AUTHORIZATION, pasajero())
                         .contentType(APPLICATION_JSON)
                         .content("{\"tipo\":\"calificacion\",\"rutaId\":1,\"estrellas\":5}"))
                 .andExpect(status().isCreated());
@@ -125,7 +126,7 @@ class MetricasDelPanelIT extends IntegracionPostgisTest {
 
     @Test
     void una_valoracion_fuera_de_rango_no_se_guarda() throws Exception {
-        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-6")
+        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-6").header(HttpHeaders.AUTHORIZATION, pasajero())
                         .contentType(APPLICATION_JSON)
                         .content("{\"tipo\":\"calificacion\",\"rutaId\":1,\"limpieza\":9}"))
                 .andExpect(status().isUnprocessableEntity());
@@ -133,12 +134,12 @@ class MetricasDelPanelIT extends IntegracionPostgisTest {
 
     @Test
     void una_opinion_solo_con_valoraciones_por_dimension_es_contenido_suficiente() throws Exception {
-        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-7")
+        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-7").header(HttpHeaders.AUTHORIZATION, pasajero())
                         .contentType(APPLICATION_JSON)
                         .content("{\"tipo\":\"calificacion\",\"rutaId\":1,\"conduccion\":3}"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-8")
+        mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-f-8").header(HttpHeaders.AUTHORIZATION, pasajero())
                         .contentType(APPLICATION_JSON)
                         .content("{\"tipo\":\"calificacion\",\"rutaId\":1}"))
                 .andExpect(status().isUnprocessableEntity());
@@ -146,8 +147,13 @@ class MetricasDelPanelIT extends IntegracionPostgisTest {
 
     private void opinar(String dispositivo, String cuerpo) throws Exception {
         mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", dispositivo)
+                        .header(HttpHeaders.AUTHORIZATION, pasajero())
                         .contentType(APPLICATION_JSON).content(cuerpo))
                 .andExpect(status().isCreated());
+    }
+
+    private String pasajero() {
+        return bearerDePasajero("metricas@gmail.com");
     }
 
     /** Reserva que el piloto marco como abordada: es lo que cuenta el panel. */

@@ -37,7 +37,7 @@ public class SesionPasajeroController {
             description = """
                     La web inicia sesion con Google en Firebase y envia el idToken. El backend
                     responde con su propio JWT con rol pasajero. La contrasena nunca pasa por
-                    EcoRuta. Sin cuenta, todo sigue funcionando como invitado.""")
+                    EcoRuta. Sin cuenta se usa todo como invitado, menos opinar.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Sesion emitida"),
             @ApiResponse(responseCode = "401", description = "idToken invalido o vencido",
@@ -48,7 +48,7 @@ public class SesionPasajeroController {
         return sesion.iniciar(peticion.idToken());
     }
 
-    @Operation(summary = "Asocia a la cuenta las reservas y opiniones de este navegador",
+    @Operation(summary = "Asocia a la cuenta las reservas de este navegador",
             description = "Idempotente: repetirla no duplica ni reasigna lo que ya es de otra cuenta.")
     @PostMapping("/vincular")
     public Vinculacion vincular(@Valid @RequestBody VincularRequest peticion, Authentication autenticado) {

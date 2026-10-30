@@ -52,11 +52,11 @@ public class OpinionService {
     private final Clock reloj;
 
     /**
-     * Registra una opinion, atribuida al identificador del navegador y, si hay
-     * sesion de pasajero, tambien a su cuenta. El vehiculo lo resuelve el
-     * servidor: el que tiene asignada la ruta ahora.
+     * Registra una opinion, atribuida a la cuenta del pasajero y al identificador
+     * del navegador. El vehiculo lo resuelve el servidor: el que tiene asignada la
+     * ruta ahora.
      *
-     * @param pasajeroId cuenta del pasajero; null si opina como invitado
+     * @param pasajeroId cuenta del pasajero; {@code OpinionesSecurityConfig} ya exigio la sesion
      */
     @Transactional
     public OpinionCreadaResponse registrar(String dispositivoId, Long pasajeroId, CrearOpinionRequest peticion) {
@@ -145,10 +145,11 @@ public class OpinionService {
                         SELECT o.id, o.creada_en, o.tipo, o.ruta_id, r.nombre AS ruta, o.vehiculo_id,
                                v.identificador AS vehiculo, o.estrellas,
                                o.calidad, o.limpieza, o.conduccion,
-                               o.texto, o.atendida_en, o.atendida_por
+                               o.texto, p.correo, o.atendida_en, o.atendida_por
                           FROM opiniones o
                           JOIN rutas r ON r.id = o.ruta_id
                           LEFT JOIN vehiculos v ON v.id = o.vehiculo_id
+                          LEFT JOIN pasajeros p ON p.id = o.pasajero_id
                         """ + donde + " ORDER BY o.creada_en DESC, o.id DESC LIMIT ? OFFSET ?",
                 FILA, conPagina.toArray());
 
@@ -254,6 +255,7 @@ public class OpinionService {
                 entero(rs, "limpieza"),
                 entero(rs, "conduccion"),
                 texto == null ? null : HtmlUtils.htmlEscape(texto, "UTF-8"),
+                rs.getString("correo") == null ? null : HtmlUtils.htmlEscape(rs.getString("correo"), "UTF-8"),
                 atendida == null ? null : atendida.toInstant(),
                 rs.getString("atendida_por") == null ? null : HtmlUtils.htmlEscape(rs.getString("atendida_por"), "UTF-8"));
     };
