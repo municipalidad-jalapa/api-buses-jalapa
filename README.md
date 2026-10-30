@@ -104,7 +104,7 @@ mvn spring-boot:run
 | `GET` | `/api/v1/admin/servicio` | `ROLE_ADMIN` — todas las rutas con su bus y última posición |
 | `GET` | `/api/v1/admin/exportaciones/servicio?desde=&hasta=` | `ROLE_ADMIN` — descarga `.xlsx` con demanda y recorridos (Desarrollo-86) |
 | `POST` | `/api/v1/integraciones/traccar/posiciones` | **token de integración** (`X-Traccar-Token`) — SCRUM-24 |
-| `POST` | `/api/v1/opiniones` | público — queja, comentario o calificación (SCRUM-26) |
+| `POST` | `/api/v1/opiniones` | `ROLE_PASAJERO` — queja, comentario o calificación (SCRUM-26) |
 | `GET` `PATCH` | `/api/v1/opiniones`, `/api/v1/opiniones/{id}/atendida` | `ROLE_ADMIN` — panel municipal |
 | `POST` | `/api/v1/sesion/pasajero` | público — idToken de Google → JWT de pasajero (SCRUM-26) |
 | `POST` | `/api/v1/sesion/pasajero/vincular` | **sesión de pasajero** — adopta lo hecho como invitado |

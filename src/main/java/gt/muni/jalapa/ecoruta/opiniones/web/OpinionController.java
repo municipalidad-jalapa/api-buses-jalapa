@@ -36,8 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 
 /**
- * Opiniones del servicio (SCRUM-26, bloque A). Registrar es publico y anonimo;
- * listar y atender es del panel municipal (rol administrador). La regla de
+ * Opiniones del servicio (SCRUM-26, bloque A). Registrar exige la sesion del
+ * pasajero; listar y atender es del panel municipal (rol administrador). La regla de
  * acceso vive en {@code OpinionesSecurityConfig}.
  */
 @Tag(name = "Opiniones", description = "Quejas, comentarios y calificaciones del pasajero (SCRUM-26)")
@@ -50,11 +50,15 @@ public class OpinionController {
 
     @Operation(summary = "Registra una opinion sobre el servicio",
             description = """
-                    Publico y sin cuenta: se atribuye al identificador anonimo del navegador
-                    (`X-Dispositivo-Id`). El vehiculo lo resuelve el servidor a partir de la
-                    ruta y se devuelve en la respuesta. Al menos texto o estrellas.""")
+                    Exige la sesion del pasajero: se atribuye a su cuenta y al identificador del
+                    navegador (`X-Dispositivo-Id`). El vehiculo lo resuelve el servidor a partir
+                    de la ruta y se devuelve en la respuesta. Al menos texto o estrellas.""")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Opinion registrada"),
+            @ApiResponse(responseCode = "401", description = "Sin sesion de pasajero",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "403", description = "La sesion es de otro rol",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "422", description = "Sin texto ni calificacion, ruta inexistente o datos invalidos",
                     content = @Content(schema = @Schema(implementation = ApiError.class))),
             @ApiResponse(responseCode = "429", description = "Limite de envios excedido",
@@ -70,7 +74,7 @@ public class OpinionController {
     }
 
     @Operation(summary = "Lista las opiniones para el panel municipal",
-            description = "Solo administrador. De la mas reciente a la mas antigua; el texto sale neutralizado.")
+            description = "Solo administrador. De la mas reciente a la mas antigua, con el correo de quien opino; el texto sale neutralizado.")
     @GetMapping
     public PaginaDeOpiniones listar(
             @RequestParam(required = false) String tipo,

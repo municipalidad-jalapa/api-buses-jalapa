@@ -1,6 +1,7 @@
 package gt.muni.jalapa.ecoruta;
 
 import gt.muni.jalapa.ecoruta.eta.servicio.EtaService;
+import gt.muni.jalapa.ecoruta.identidad.servicio.EmisorDeJwt;
 import gt.muni.jalapa.ecoruta.seguridad.ratelimit.RateLimitFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import java.time.Duration;
 
 /**
  * Base de las pruebas de integracion. Levanta PostGIS real y deja que Flyway
@@ -86,6 +89,18 @@ public abstract class IntegracionPostgisTest {
         // Los limites tambien: el cupo de una clase no debe gastarse en otra.
         limites.reiniciar();
     }
+
+    /** Bearer de un pasajero con cuenta: opinar exige la sesion. */
+    protected String bearerDePasajero(String correo) {
+        Long id = jdbc.queryForObject("""
+                INSERT INTO pasajeros (firebase_uid, correo) VALUES (?, ?)
+                ON CONFLICT (firebase_uid) DO UPDATE SET correo = EXCLUDED.correo RETURNING id
+                """, Long.class, "uid-" + correo, correo);
+        return "Bearer " + emisorDeJwt.emitir(String.valueOf(id), "pasajero", Duration.ofMinutes(30)).token();
+    }
+
+    @Autowired
+    private EmisorDeJwt emisorDeJwt;
 
     @Autowired
     private EtaService etas;

@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Duration;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +76,13 @@ public class PasosDeOpiniones {
         opinar(navegador, Map.of("tipo", "calificacion", "rutaId", ruta, "estrellas", estrellas));
     }
 
+    @Cuando("el navegador {string} opina sin sesión sobre la ruta {long}")
+    public void opina_sin_sesion(String navegador, long ruta) throws Exception {
+        contexto.guardarRespuesta(mockMvc.perform(post(RUTA).header("X-Dispositivo-Id", navegador)
+                .contentType(APPLICATION_JSON).content(json.writeValueAsString(
+                        Map.of("tipo", "calificacion", "rutaId", ruta, "estrellas", 4)))));
+    }
+
     @Cuando("el navegador {string} envía una opinión vacía sobre la ruta {long}")
     public void opina_vacio(String navegador, long ruta) throws Exception {
         opinar(navegador, Map.of("tipo", "comentario", "rutaId", ruta));
@@ -116,6 +124,11 @@ public class PasosDeOpiniones {
         assertThat(fila.get("identificador")).isEqualTo(bus);
     }
 
+    @Entonces("el panel municipal muestra el correo {string} junto a la opinión")
+    public void panel_muestra_correo(String correo) throws Exception {
+        assertThat(listar("").at("/opiniones/0/correo").asText()).isEqualTo(correo);
+    }
+
     @Entonces("el texto guardado es {string}")
     public void texto_guardado(String texto) {
         assertThat(jdbc.queryForObject("SELECT texto FROM opiniones", String.class)).isEqualTo(texto);
@@ -155,7 +168,16 @@ public class PasosDeOpiniones {
 
     private void opinar(String navegador, Map<String, Object> cuerpo) throws Exception {
         contexto.guardarRespuesta(mockMvc.perform(post(RUTA).header("X-Dispositivo-Id", navegador)
+                .header(HttpHeaders.AUTHORIZATION, sesionDePasajero())
                 .contentType(APPLICATION_JSON).content(json.writeValueAsString(cuerpo))));
+    }
+
+    private String sesionDePasajero() {
+        Long id = jdbc.queryForObject("""
+                INSERT INTO pasajeros (firebase_uid, correo) VALUES ('uid-bdd', 'pasajero-bdd@gmail.com')
+                ON CONFLICT (firebase_uid) DO UPDATE SET correo = EXCLUDED.correo RETURNING id
+                """, Long.class);
+        return "Bearer " + emisor.emitir(String.valueOf(id), "pasajero", Duration.ofMinutes(30)).token();
     }
 
     private JsonNode listar(String consulta) throws Exception {

@@ -65,7 +65,7 @@ class SesionPasajeroIT extends IntegracionPostgisTest {
     }
 
     @Test
-    void al_iniciar_sesion_las_reservas_y_opiniones_del_navegador_quedan_en_la_cuenta() throws Exception {
+    void al_iniciar_sesion_las_reservas_del_navegador_quedan_en_la_cuenta_pero_las_opiniones_anonimas_no() throws Exception {
         reservaDe("nav-ana");
         reservaDe("nav-ana");
         opinionDe("nav-ana");
@@ -75,13 +75,15 @@ class SesionPasajeroIT extends IntegracionPostgisTest {
         vincular(token, "nav-ana")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reservasVinculadas").value(2))
-                .andExpect(jsonPath("$.opinionesVinculadas").value(1));
+                .andExpect(jsonPath("$.opinionesVinculadas").value(0));
 
         Long ana = jdbc.queryForObject("SELECT id FROM pasajeros WHERE firebase_uid = 'uid-ana'", Long.class);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM registros_espera WHERE pasajero_id = ?", Integer.class, ana))
                 .isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM registros_espera WHERE dispositivo_id = 'nav-otro' AND pasajero_id IS NULL",
                 Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM opiniones WHERE pasajero_id IS NOT NULL", Integer.class))
+                .isZero();
     }
 
     @Test
@@ -100,7 +102,7 @@ class SesionPasajeroIT extends IntegracionPostgisTest {
     }
 
     @Test
-    void con_sesion_la_opinion_queda_en_la_cuenta_y_sin_sesion_sigue_anonima() throws Exception {
+    void con_sesion_la_opinion_queda_en_la_cuenta_y_sin_sesion_se_rechaza() throws Exception {
         String token = iniciar("tk-ana");
         mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-ana")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
@@ -108,10 +110,10 @@ class SesionPasajeroIT extends IntegracionPostgisTest {
                 .andExpect(status().isCreated());
         mockMvc.perform(post("/api/v1/opiniones").header("X-Dispositivo-Id", "nav-invitado")
                         .contentType(APPLICATION_JSON).content("{\"tipo\":\"calificacion\",\"rutaId\":1,\"estrellas\":4}"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isUnauthorized());
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM opiniones WHERE pasajero_id IS NOT NULL", Integer.class)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM opiniones WHERE pasajero_id IS NULL", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM opiniones WHERE pasajero_id IS NULL", Integer.class)).isZero();
     }
 
     @Test

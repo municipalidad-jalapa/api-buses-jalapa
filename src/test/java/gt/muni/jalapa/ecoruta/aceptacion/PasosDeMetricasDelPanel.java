@@ -8,10 +8,13 @@ import io.cucumber.java.es.Cuando;
 import io.cucumber.java.es.Dado;
 import io.cucumber.java.es.Entonces;
 import io.cucumber.java.es.Y;
+import gt.muni.jalapa.ecoruta.identidad.servicio.EmisorDeJwt;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,9 @@ public class PasosDeMetricasDelPanel {
 
     @Autowired
     private ObjectMapper json;
+
+    @Autowired
+    private EmisorDeJwt emisor;
 
     private final AtomicInteger secuencia = new AtomicInteger();
     private JsonNode abordajes;
@@ -152,6 +158,10 @@ public class PasosDeMetricasDelPanel {
     private void enviar(String cuerpo) throws Exception {
         contexto.guardarRespuesta(mockMvc.perform(post("/api/v1/opiniones")
                 .header("X-Dispositivo-Id", "nav-bdd-f-" + secuencia.incrementAndGet())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + emisor.emitir(String.valueOf(jdbc.queryForObject("""
+                        INSERT INTO pasajeros (firebase_uid, correo) VALUES ('uid-bdd-f', 'metricas-bdd@gmail.com')
+                        ON CONFLICT (firebase_uid) DO UPDATE SET correo = EXCLUDED.correo RETURNING id
+                        """, Long.class)), "pasajero", Duration.ofMinutes(30)).token())
                 .contentType(APPLICATION_JSON)
                 .content(cuerpo)));
     }

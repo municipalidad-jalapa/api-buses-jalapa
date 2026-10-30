@@ -8,6 +8,7 @@ import gt.muni.jalapa.ecoruta.opiniones.web.dto.OpinionesDtos.CrearOpinionReques
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.ResultActions;
@@ -64,6 +65,7 @@ class LimiteDeEnviosEvasionIT extends IntegracionPostgisTest {
         for (int i = 0; i < 50; i++) {
             int estado = mockMvc.perform(post("/api/v1/opiniones").with(ip)
                             .header("X-Dispositivo-Id", "evasion-" + i)
+                            .header(HttpHeaders.AUTHORIZATION, bearerDePasajero("evasion@gmail.com"))
                             .contentType(APPLICATION_JSON).content(OPINION))
                     .andReturn().getResponse().getStatus();
             if (estado == 201) {
@@ -188,6 +190,7 @@ class LimiteDeEnviosEvasionIT extends IntegracionPostgisTest {
     private ResultActions opinar(RequestPostProcessor ip, String dispositivo) throws Exception {
         return mockMvc.perform(post("/api/v1/opiniones").with(ip)
                 .header("X-Dispositivo-Id", dispositivo)
+                .header(HttpHeaders.AUTHORIZATION, bearerDePasajero("evasion@gmail.com"))
                 .contentType(APPLICATION_JSON).content(OPINION));
     }
 
