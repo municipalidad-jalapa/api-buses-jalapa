@@ -62,6 +62,10 @@ public class SesionDePasajero {
      * Asocia a la cuenta lo que este navegador hizo como invitado. Idempotente:
      * solo toma lo que no tiene cuenta, asi que repetirla no duplica nada y lo
      * que ya pertenece a otra cuenta no se reasigna.
+     *
+     * <p>Las opiniones no se toman: el panel municipal muestra el correo de quien
+     * opino, y una opinion anonima de este navegador pudo escribirla otra persona.
+     * El campo sigue en la respuesta, en 0, para no romper a los clientes.
      */
     @Transactional
     public Vinculacion vincular(Long pasajeroId, String dispositivoId) {
@@ -72,10 +76,6 @@ public class SesionDePasajero {
                 UPDATE registros_espera SET pasajero_id = ?
                  WHERE dispositivo_id = ? AND pasajero_id IS NULL
                 """, pasajeroId, dispositivoId);
-        int opiniones = jdbc.update("""
-                UPDATE opiniones SET pasajero_id = ?
-                 WHERE dispositivo_id = ? AND pasajero_id IS NULL
-                """, pasajeroId, dispositivoId);
-        return new Vinculacion(reservas, opiniones);
+        return new Vinculacion(reservas, 0);
     }
 }

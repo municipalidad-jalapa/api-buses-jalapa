@@ -4,7 +4,7 @@ Característica: Sesión opcional del pasajero
 
   Como pasajero
   quiero poder entrar con mi cuenta de Google o seguir como invitado
-  para conservar mis reservas y opiniones sin perder nada de lo que ya funciona sin cuenta
+  para conservar mis reservas y poder opinar sobre el servicio
 
   @B2-criterio-1
   Escenario: Con una cuenta de Google se obtiene la sesión propia con rol de pasajero
@@ -12,11 +12,11 @@ Característica: Sesión opcional del pasajero
     Entonces recibe una sesión del sistema con rol "pasajero"
 
   @B2-criterio-2 @B2-criterio-3
-  Escenario: Las reservas y opiniones del navegador quedan en la cuenta, una sola vez
+  Escenario: Las reservas del navegador quedan en la cuenta, una sola vez; las opiniones anónimas no
     Dado que el navegador "nav-bdd" tiene 2 reservas y 1 opinión como invitado
     Y que la cuenta de Google "uid-bdd-ana" inició sesión como pasajero
     Cuando vincula el navegador "nav-bdd"
-    Entonces se vincularon 2 reservas y 1 opinión
+    Entonces se vincularon 2 reservas y 0 opinión
     Cuando vincula el navegador "nav-bdd"
     Entonces se vincularon 0 reservas y 0 opinión
 

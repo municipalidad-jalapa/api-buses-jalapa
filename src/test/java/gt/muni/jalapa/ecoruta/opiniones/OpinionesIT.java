@@ -43,7 +43,19 @@ class OpinionesIT extends IntegracionPostgisTest {
     // --- A.1 registro ------------------------------------------------------
 
     @Test
-    void registra_sin_cuenta_y_el_servidor_resuelve_el_vehiculo_de_la_ruta() throws Exception {
+    void sin_sesion_de_pasajero_no_se_puede_opinar() throws Exception {
+        String cuerpo = "{\"tipo\":\"calificacion\",\"rutaId\":1,\"estrellas\":4}";
+        mockMvc.perform(post(RUTA).header("X-Dispositivo-Id", "nav-1").contentType(APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post(RUTA).header("X-Dispositivo-Id", "nav-1")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + emisor.emitirParaConductor("uid-conductor").token())
+                        .contentType(APPLICATION_JSON).content(cuerpo))
+                .andExpect(status().isForbidden());
+        assertThat(filas()).isZero();
+    }
+
+    @Test
+    void registra_con_cuenta_y_el_servidor_resuelve_el_vehiculo_de_la_ruta() throws Exception {
         opinar("nav-1", "{\"tipo\":\"calificacion\",\"rutaId\":1,\"estrellas\":4}")
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber())
@@ -80,7 +92,8 @@ class OpinionesIT extends IntegracionPostgisTest {
         opinar("nav-1", "{\"tipo\":\"felicitacion\",\"rutaId\":1,\"estrellas\":3}").andExpect(status().isUnprocessableEntity());
         opinar("nav-1", "{\"tipo\":\"comentario\",\"rutaId\":1,\"texto\":\"" + "a".repeat(501) + "\"}")
                 .andExpect(status().isUnprocessableEntity());
-        mockMvc.perform(post(RUTA).contentType(APPLICATION_JSON)
+        mockMvc.perform(post(RUTA).header(HttpHeaders.AUTHORIZATION, bearerDePasajero("ana@gmail.com"))
+                        .contentType(APPLICATION_JSON)
                         .content("{\"tipo\":\"calificacion\",\"rutaId\":1,\"estrellas\":3}"))
                 .andExpect(status().isUnprocessableEntity());
         assertThat(filas()).isZero();
@@ -150,6 +163,28 @@ class OpinionesIT extends IntegracionPostgisTest {
     }
 
     // --- A.3 panel municipal -------------------------------------------------
+
+    @Test
+    void el_panel_muestra_el_correo_de_quien_opino_y_nada_en_las_opiniones_anonimas_viejas() throws Exception {
+        insertar("QUEJA", 1, null, "anonima vieja", Instant.now().minus(Duration.ofDays(1)));
+        opinar("nav-1", "{\"tipo\":\"comentario\",\"rutaId\":1,\"texto\":\"con cuenta\"}")
+                .andExpect(status().isCreated());
+
+        JsonNode lista = listar("");
+        assertThat(lista.at("/opiniones/0/texto").asText()).isEqualTo("con cuenta");
+        assertThat(lista.at("/opiniones/0/correo").asText()).isEqualTo("ana@gmail.com");
+        assertThat(lista.at("/opiniones/1/correo").isNull()).isTrue();
+    }
+
+    @Test
+    void el_correo_sale_neutralizado() throws Exception {
+        mockMvc.perform(post(RUTA).header("X-Dispositivo-Id", "nav-1")
+                        .header(HttpHeaders.AUTHORIZATION, bearerDePasajero("<b>o'neil@gmail.com"))
+                        .contentType(APPLICATION_JSON).content("{\"tipo\":\"comentario\",\"rutaId\":1,\"texto\":\"x\"}"))
+                .andExpect(status().isCreated());
+
+        assertThat(listar("").at("/opiniones/0/correo").asText()).isEqualTo("&lt;b&gt;o&#39;neil@gmail.com");
+    }
 
     @Test
     void el_panel_lista_de_la_mas_reciente_a_la_mas_antigua_con_filtros_y_paginacion() throws Exception {
@@ -229,6 +264,7 @@ class OpinionesIT extends IntegracionPostgisTest {
 
     private ResultActions opinar(String dispositivo, String cuerpo) throws Exception {
         return mockMvc.perform(post(RUTA).header("X-Dispositivo-Id", dispositivo)
+                .header(HttpHeaders.AUTHORIZATION, bearerDePasajero("ana@gmail.com"))
                 .contentType(APPLICATION_JSON).content(cuerpo));
     }
 
