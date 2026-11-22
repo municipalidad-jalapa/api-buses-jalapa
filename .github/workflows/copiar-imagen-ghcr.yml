@@ -1,0 +1,29 @@
+name: Copiar imagen de produccion a GHCR
+
+# Temporal (migracion Azure -> AWS). Vive solo en la rama migracion/ghcr-copiar-imagen:
+# copia la imagen exacta que corre en produccion. No construye ni despliega.
+
+on:
+  push:
+    branches: [migracion/ghcr-copiar-imagen]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  copiar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Copiar por digest
+        env:
+          ACR_USUARIO: ${{ secrets.ACR_USERNAME }}
+          ACR_CLAVE: ${{ secrets.ACR_PASSWORD }}
+          GHCR_CLAVE: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$ACR_CLAVE" | skopeo login acrbusesjalapa.azurecr.io -u "$ACR_USUARIO" --password-stdin
+          printf '%s' "$GHCR_CLAVE" | skopeo login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          skopeo copy --preserve-digests             docker://acrbusesjalapa.azurecr.io/backend-api-buses@sha256:94a3a8b85fc9a91d9c204d1095081f79d00ebe2ab0c490f6efac32b1e05aed41             docker://ghcr.io/municipalidad-jalapa/backend-api-buses:650f33c9
+          test "$(skopeo inspect --format '{{.Digest}}' docker://ghcr.io/municipalidad-jalapa/backend-api-buses:650f33c9)" = "sha256:94a3a8b85fc9a91d9c204d1095081f79d00ebe2ab0c490f6efac32b1e05aed41"
