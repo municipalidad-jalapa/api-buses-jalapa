@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  # QA vive en el servidor de Lightsail (namespace qa): https://qa.mibusjalapa.lat
-  qa:
+  # QA vive en el servidor de Lightsail (namespace qa).
+  imagen-qa:
     if: github.ref == 'refs/heads/develop'
     permissions:
       contents: read
@@ -23,7 +23,7 @@ jobs:
     secrets: inherit
 
   # Un solo job: construye, publica y despliega. El environment production pide una aprobacion.
-  produccion:
+  imagen-produccion:
     if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
